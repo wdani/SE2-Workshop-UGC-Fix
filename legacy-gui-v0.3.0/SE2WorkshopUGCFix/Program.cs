@@ -34,6 +34,7 @@ internal static class Program
                 using var main = new FixForm();
                 using var recovery = new RecoveryPreviewForm(12345678UL);
                 using var fixtureDialog = new TestItemCreateForm();
+                using var suiteDialog = new DisposableE2EForm(12345678UL);
                 main.ShowInTaskbar = false;
                 main.Opacity = 0;
                 main.Show();
@@ -43,9 +44,10 @@ internal static class Program
                 var preview = controls.Single(c => c.Text == "RECOVERY PREVIEW");
                 var scan = controls.Single(c => c.Text.Contains("CHECK METADATA", StringComparison.OrdinalIgnoreCase));
                 var probe = controls.Single(c => c.Text == "READ-ONLY UGC PROBE");
-                var fixture = controls.Single(c => c.Text == "CREATE TEST ITEM");
+                var fixture = controls.Single(c => c.Text == "CREATE EMPTY ITEM");
+                var e2e = controls.Single(c => c.Text == "RUN FULL MOD E2E");
                 if (repair.Enabled || preview.Enabled || !scan.Enabled || !probe.Enabled ||
-                    !fixture.Enabled || !fixture.Visible)
+                    !fixture.Enabled || !fixture.Visible || !e2e.Enabled || !e2e.Visible)
                     throw new InvalidOperationException("Unsafe initial GUI button state.");
                 // Verify the two footer groups and that labels fit their buttons.
                 var actionGroups = Descendants(main).OfType<GroupBox>().ToArray();
@@ -110,7 +112,8 @@ internal sealed class FixForm : Form
 {
     private readonly TextBox _workshop = new() { PlaceholderText = "Paste your Steam Workshop URL or item ID", Dock = DockStyle.Fill };
     private readonly Button _scan = new() { Text = "1   CHECK METADATA", Height = 44, Dock = DockStyle.Fill };
-    private readonly Button _fixture = new() { Text = "CREATE TEST ITEM", Dock = DockStyle.Fill, Enabled = false };
+    private readonly Button _fixture = new() { Text = "CREATE EMPTY ITEM", Dock = DockStyle.Fill, Enabled = false };
+    private readonly Button _e2e = new() { Text = "RUN FULL MOD E2E", Dock = DockStyle.Fill, Enabled = false };
     private readonly Button _probe = new() { Text = "READ-ONLY UGC PROBE", Dock = DockStyle.Fill,
         Font = new System.Drawing.Font("Segoe UI", 9F) };
     private readonly Button _repair = new() { Text = "2   REPAIR MY ITEM", Height = 44, Dock = DockStyle.Fill, Enabled = false };
@@ -130,8 +133,8 @@ internal sealed class FixForm : Form
         Text = "SE2 Workshop UGC Metadata Fix   •   v0.4.0-preview.4 (READ-ONLY RECOVERY)";
         // Reserve actual vertical space for the grouped actions and security note.
         // The previous 33px toolbar row clipped buttons at normal Windows DPI.
-        ClientSize = new System.Drawing.Size(880, Program.FixtureLabEnabled ? 800 : 755);
-        MinimumSize = new System.Drawing.Size(760, Program.FixtureLabEnabled ? 735 : 700);
+        ClientSize = new System.Drawing.Size(880, Program.FixtureLabEnabled ? 850 : 755);
+        MinimumSize = new System.Drawing.Size(760, Program.FixtureLabEnabled ? 785 : 700);
         StartPosition = FormStartPosition.CenterScreen;
         Font = new System.Drawing.Font("Segoe UI", 10F);
         BackColor = System.Drawing.Color.White;
@@ -142,7 +145,7 @@ internal sealed class FixForm : Form
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 56));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 55));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 58));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, Program.FixtureLabEnabled ? 84 : 48));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, Program.FixtureLabEnabled ? 132 : 48));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 58));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
@@ -183,7 +186,7 @@ internal sealed class FixForm : Form
         _status.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
         var diagnosticButtons = new TableLayoutPanel {
             Dock = DockStyle.Fill, ColumnCount = 1,
-            RowCount = Program.FixtureLabEnabled ? 2 : 1,
+            RowCount = Program.FixtureLabEnabled ? 3 : 1,
             Margin = new Padding(7, 2, 0, 2)
         };
         diagnosticButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
@@ -191,7 +194,9 @@ internal sealed class FixForm : Form
             diagnosticButtons.RowStyles.Add(new RowStyle(SizeType.Percent, 100F / diagnosticButtons.RowCount));
         _fixture.Visible = Program.FixtureLabEnabled;
         _fixture.Enabled = Program.FixtureLabEnabled;
-        foreach (var action in Program.FixtureLabEnabled ? new[] { _probe, _fixture } : new[] { _probe }) {
+        _e2e.Visible = Program.FixtureLabEnabled;
+        _e2e.Enabled = Program.FixtureLabEnabled;
+        foreach (var action in Program.FixtureLabEnabled ? new[] { _probe, _fixture, _e2e } : new[] { _probe }) {
             action.Margin = new Padding(0, 2, 0, 2);
             action.FlatStyle = FlatStyle.Flat;
             action.ForeColor = System.Drawing.Color.FromArgb(35, 88, 140);
@@ -226,6 +231,16 @@ internal sealed class FixForm : Form
         }, 0, 9);
         _scan.Click += async (_, _) => await ScanAsync();
         _probe.Click += async (_, _) => await ProbeAsync();
+        _e2e.Click += (_, _) => {
+            if (_busy || !Program.FixtureLabEnabled) return;
+            if (!SteamFix.TryGetId(_workshop.Text, out ulong selectedId)) {
+                MessageBox.Show(this, "Enter the Workshop ID of your REAL published ModHUB test mod.",
+                    "Missing E2E test ID", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            using var dialog = new DisposableE2EForm(selectedId);
+            dialog.ShowDialog(this);
+        };
         _fixture.Click += (_, _) => {
             if (_busy) return;
             using var wizard = new TestItemCreateForm();
@@ -461,6 +476,7 @@ internal sealed class FixForm : Form
         _scan.Enabled = !active;
         _probe.Enabled = !active;
         _fixture.Enabled = !active && Program.FixtureLabEnabled;
+        _e2e.Enabled = !active && Program.FixtureLabEnabled;
         _preflight.Enabled = !active;
         _recover.Enabled = !active && _current is { OwnerMatches: true } &&
             (_current.Diagnosis.Condition is MetadataCondition.Missing or MetadataCondition.Malformed);
