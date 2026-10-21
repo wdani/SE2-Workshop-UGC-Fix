@@ -128,3 +128,49 @@ internal static class DisposableE2ERunService
             result.Steps.ToArray());
     }
 }
+
+// Emergency recovery for a *known injected* fault on the test item only.
+// Never infer arbitrary "old" identities, and never overwrite a changed item.
+internal static class DisposableE2EManualRescue
+{
+    internal static string Restore(ulong id, string backupDirectory, string typedApproval)
+        => SteamFix.WithSteam(() => RestoreConnected(id, backupDirectory, typedApproval));
+
+    private static string RestoreConnected(ulong id, string directory, string approval)
+    {
+        if (approval != "RESTORE TEST " + id)
+            throw new InvalidOperationException("Exact RESTORE TEST <ID> confirmation required.");
+        string root = Path.GetFullPath(Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "SE2WorkshopUGCFix", "Backups")) + Path.DirectorySeparatorChar;
+        string selected = Path.GetFullPath(directory).TrimEnd(Path.DirectorySeparatorChar)
+            + Path.DirectorySeparatorChar;
+        if (!selected.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Backup is not in the application's private backup directory.");
+
+        string originalPath = Path.Combine(selected, "e2e-original-PRIVATE.json");
+        string projectPath = Path.Combine(selected, "e2e-project-PRIVATE.vrgproj");
+        if (!File.Exists(originalPath) || !File.Exists(projectPath))
+            throw new InvalidOperationException("Both original metadata and ModHUB project backups are required.");
+        string original = File.ReadAllText(originalPath, new UTF8Encoding(false, true));
+        string project = File.ReadAllText(projectPath, new UTF8Encoding(false, true));
+        ulong owner = SteamUser.GetSteamID().m_SteamID;
+        if (owner == 0) throw new InvalidOperationException("Steam owner not signed in.");
+        // Independently recheck original real mod/project identity.
+        var manifest = DisposableModScenarios.Prepare(id, owner, owner, project, original);
+        var transport = new LiveDisposableMetadataTransport(id, owner);
+        string current = transport.ReadFresh(id).Raw;
+        if (current == original) return "Original already restored: SHA256 " + SteamFix.Hash(original);
+
+        var knownFault = manifest.Scenarios.FirstOrDefault(x =>
+            x.MayWriteToDisposableItem && x.Raw == current);
+        if (knownFault is null)
+            throw new InvalidOperationException(
+                "Current Steam metadata differs from all known test injections. STOP without overwriting.");
+        transport.SubmitMetadataOnly(id, original);
+        if (transport.ReadFresh(id).Raw != original)
+            throw new InvalidOperationException("Restore submitted but fresh readback did not match. STOP.");
+        return "RESTORED test item " + id + " from private same-item backup. SHA256: " +
+            SteamFix.Hash(original);
+    }
+}
