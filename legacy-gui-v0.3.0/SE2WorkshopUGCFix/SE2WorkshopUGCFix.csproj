@@ -18,5 +18,6 @@
     <PackageReference Include="Steamworks.NET.AnyCPU" Version="2026.165.2" />
     <Compile Include="../../src/SE2WorkshopUGCFix.Recovery/UniversalRecovery.cs" Link="UniversalRecovery.cs" />
     <Compile Include="../../src/SE2WorkshopUGCFix.Recovery/RecoveryReadOnlySession.cs" Link="RecoveryReadOnlySession.cs" />
+    <Compile Include="../../src/SE2WorkshopUGCFix.Recovery/RecoveryWritePreflight.cs" Link="RecoveryWritePreflight.cs" />
   </ItemGroup>
 </Project>
