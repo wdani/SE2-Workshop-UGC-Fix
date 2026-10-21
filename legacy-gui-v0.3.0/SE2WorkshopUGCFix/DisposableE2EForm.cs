@@ -14,6 +14,12 @@ internal sealed class DisposableE2EForm : Form
     private readonly TextBox _confirmation = new() { Dock = DockStyle.Fill };
     private readonly Button _run = new() { Text = "RUN FULL DISPOSABLE MOD TEST", Dock = DockStyle.Fill, Enabled = false };
     private readonly Button _copy = new() { Text = "COPY FULL E2E SAFE REPORT", Dock = DockStyle.Fill, Enabled = false };
+    private readonly TextBox _rescuePhrase = new() {
+        Dock = DockStyle.Fill, PlaceholderText = "If needed: RESTORE TEST <Workshop-ID>"
+    };
+    private readonly Button _rescue = new() {
+        Text = "EMERGENCY RESTORE FROM TEST BACKUP", Dock = DockStyle.Fill, Enabled = false
+    };
     private string? _reportPath;
     private readonly TextBox _log = new() {
         Dock = DockStyle.Fill, Multiline = true, ReadOnly = true,
@@ -26,17 +32,19 @@ internal sealed class DisposableE2EForm : Form
         _id = workshopId;
         Text = "Full E2E - real disposable SE2 ModHUB mod";
         StartPosition = FormStartPosition.CenterParent;
-        ClientSize = new Size(830, 615);
-        MinimumSize = new Size(730, 540);
+        ClientSize = new Size(830, 700);
+        MinimumSize = new Size(730, 630);
         Font = new Font("Segoe UI", 10F);
         var panel = new TableLayoutPanel {
             Dock = DockStyle.Fill, Padding = new Padding(18),
-            ColumnCount = 1, RowCount = 9
+            ColumnCount = 1, RowCount = 11
         };
         panel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         foreach (int n in new[] { 52, 106, 34, 46, 46, 42, 60 })
             panel.RowStyles.Add(new RowStyle(SizeType.Absolute, n));
         panel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
+        panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));
         panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
         Controls.Add(panel);
         panel.Controls.Add(new Label {
@@ -75,6 +83,37 @@ internal sealed class DisposableE2EForm : Form
         panel.Controls.Add(_run, 0, 6);
         panel.Controls.Add(_log, 0, 7);
         panel.Controls.Add(_copy, 0, 8);
+        panel.Controls.Add(_rescuePhrase, 0, 9);
+        panel.Controls.Add(_rescue, 0, 10);
+        _rescuePhrase.TextChanged += (_, _) =>
+            _rescue.Enabled = !_busy && _rescuePhrase.Text == "RESTORE TEST " + _id;
+        _rescue.Click += async (_, _) => {
+            if (_busy || _rescuePhrase.Text != "RESTORE TEST " + _id) return;
+            string pointer = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "SE2WorkshopUGCFix", "e2e-latest-backup-" + _id + ".txt");
+            if (!File.Exists(pointer)) {
+                MessageBox.Show(this, "No local test backup pointer found. No Steam write.");
+                return;
+            }
+            string directory = File.ReadAllText(pointer).Trim();
+            if (MessageBox.Show(this,
+                "Restore ONLY the known injected fault on TEST Workshop item " + _id +
+                " from the backed-up original? An unknown Steam state will be rejected.",
+                "Confirm emergency test rollback", MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) != DialogResult.Yes)
+                return;
+            _busy = true;
+            _rescue.Enabled = false;
+            try {
+                string outcome = await Task.Run(() =>
+                    DisposableE2EManualRescue.Restore(_id, directory, _rescuePhrase.Text));
+                _log.AppendText(outcome + Environment.NewLine);
+            } catch (Exception ex) {
+                _log.AppendText("EMERGENCY RESTORE REFUSED: " + ex.Message +
+                    Environment.NewLine);
+            } finally { _busy = false; }
+        };
         _copy.Click += (_, _) => {
             if (_reportPath is not null && File.Exists(_reportPath)) {
                 Clipboard.SetText(File.ReadAllText(_reportPath));
