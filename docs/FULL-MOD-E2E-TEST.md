@@ -91,6 +91,31 @@ Fixed in preview.6: diagnosis evaluates a copy with internal description cleared
 
 **Do not create or publish another mod.** Reuse the same live ModHUB test item and original project from the failed preview.5 attempt after the new preview.6 VM tests/publish pass. This change is not yet VM-validated.
 
+## Real Steam batch COMPLETED (2026-10-21 UTC, preview.6)
+
+A published and in-game-verified ModHUB LCD-image test mod `SE2 UGC E2E TEST - Recovery` was exercised against Steam Workshop item `3824260687` by its owner. The operator shared the program's consolidated safe JSON report (timestamp `2026-10-21T22:55:09.4711527+00:00`).
+
+| Executed case | Reported result | Actual qualification |
+| --- | --- | --- |
+| `malformed-json` | **PASS-LIVE** | Metadata-only Steam write, damaged-state classification, owner/identity-checked exact original backup proposal/preflight, live baseline restore and fresh exact readback |
+| `wrong-workshop-identity` | **PASS-LIVE** | Metadata-only Steam write of wrong item identity, planner refuses reconstruction, guarded baseline restore, fresh exact readback |
+| `empty-metadata` | **PASS-LIVE** | Metadata-only Steam write with zero metadata, successful missing-state classification and recovery preflight, live baseline restore, fresh exact readback |
+| `oversized-description-rejection` | **PASS-OFFLINE** | Pure local diagnostic using oversized payload; not submitted to Steam |
+| `oversized-other-rejection` | **PASS-OFFLINE** | Pure local diagnostic with unrelated oversized field and real nonempty description; not submitted to Steam |
+
+Summary flags: `complete=true`, `originalRestored=true`, `startedFromRealModhubProject=true`. Original remote developer-metadata SHA256 recorded by the batch:
+`E3F3353B0275FDA4330AB00A3A904ABC7A16B00AA2BD702D69FC4B7D38AD0270`.
+
+The batch uses only the **Steam developer-metadata setter**: public Workshop description, preview, content, tags and visibility are not written by the transport. Its final uncached Steam readback exactly matched the original saved metadata. **No independent post-test ModHUB/in-game smoke has yet been documented**.
+
+### Engineering interpretation and next milestone
+
+The **live Steam transport and backup restoration** succeeded, including an actual empty-metadata state. The app exercised the shared `RecoveryReadOnlySession` and `RecoveryWritePreflight` during the batch for the empty/malformed cases, but the E2E engine then submitted the **original baseline raw JSON** directly via the test transport. It did **not** submit the `RecoveryWriteAuthorization.CandidateJson` as an integrated ordinary-user recovery action.
+
+Therefore the next large development milestone is to connect a **separate, explicitly authorized owner-only recovery apply workflow** in the standard GUI, supporting a known exact-item original backup and, after independent schema scrutiny, an original `.vrgproj` with owner-matched reference. The experimental generic fallback must remain **non-writable**. Apply must verify private file checksums, owner, project identity, original unchanged state, exact typed workshop ID, metadata-only update callback and uncached byte-exact readback; it must stop on ambiguous outcomes without blind retries.
+
+Do **not** describe this prototype test as universal historical recovery or a public release yet. Final qualification still includes the creator verifying the original LCD image again in ModHUB / SE2 after the batch.
+
 ## E. Scope limitation
 
 A historical damaged mod can differ from this isolated test mod in its age, schema, dependencies or missing files. The batch establishes a strong E2E baseline but does not prove universal compatibility with *all* mod versions. No existing production mod should be used for these deliberate failure injections.
