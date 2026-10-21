@@ -8,6 +8,7 @@ root = Path(__file__).resolve().parents[1]
 gui = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/Program.cs").read_text(encoding="utf-8")
 preview = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/RecoveryPreviewForm.cs").read_text(encoding="utf-8")
 core = (root / "src/SE2WorkshopUGCFix.Recovery/UniversalRecovery.cs").read_text(encoding="utf-8")
+session = (root / "src/SE2WorkshopUGCFix.Recovery/RecoveryReadOnlySession.cs").read_text(encoding="utf-8")
 project = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/SE2WorkshopUGCFix.csproj").read_text(encoding="utf-8")
 legacy = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/MetadataPatch.cs").read_text(encoding="utf-8")
 
@@ -27,7 +28,18 @@ checks = [
     ("Recovery core never uses Steam write methods", "SteamUGC." not in core),
     ("Preview saves source and candidate privately", 'candidate-preview-PRIVATE.json' in preview and
      'original-developer-metadata-PRIVATE.json' in preview),
-    ("Preview rechecks original state", 'SteamFix.Hash(finalCheck.Raw) != originalHash' in preview),
+    ("Preview rechecks original state",
+     'session.OriginalRaw != initiallyRead.Raw' in preview and
+     'RecoveryReadOnlySession.Prepare(' in preview and
+     'after != original' in session),
+    ("Preview rechecks unchanged working reference",
+     'newReference != referenceRaw' in session),
+    ("Query errors are never treated as missing metadata",
+     'if (!data.QuerySucceeded)' in session and 'if (data.IsCached)' in session and
+     'return data.DeveloperMetadata ??' in session),
+    ("Read-only session never calls Steam API",
+     'SteamUGC.' not in session and 'SteamAPI.' not in session),
+
     ("Generic fallback stays explicitly non-writable", 'return new(false, RecoverySource.GenericReference' in core),
     ("Original oversized one-field repair still present", 'JsonNode.DeepEquals(expected, edited)' in legacy),
     ("Template refuses unreviewed keys", 'CheckKnownTemplateKeys(template);' in core and
