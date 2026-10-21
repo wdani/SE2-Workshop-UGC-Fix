@@ -37,7 +37,8 @@ internal static class Program
                 var preview = controls.Single(c => c.Text == "RECOVERY PREVIEW");
                 var scan = controls.Single(c => c.Text.Contains("CHECK METADATA", StringComparison.OrdinalIgnoreCase));
                 var probe = controls.Single(c => c.Text == "READ-ONLY UGC PROBE");
-                if (repair.Enabled || preview.Enabled || !scan.Enabled || !probe.Enabled)
+                var fixture = controls.Single(c => c.Text == "CREATE TEST ITEM");
+                if (repair.Enabled || preview.Enabled || !scan.Enabled || !probe.Enabled || !fixture.Enabled)
                     throw new InvalidOperationException("Unsafe initial GUI button state.");
                 // Verify the two footer groups and that labels fit their buttons.
                 var actionGroups = Descendants(main).OfType<GroupBox>().ToArray();
@@ -99,6 +100,7 @@ internal sealed class FixForm : Form
 {
     private readonly TextBox _workshop = new() { PlaceholderText = "Paste your Steam Workshop URL or item ID", Dock = DockStyle.Fill };
     private readonly Button _scan = new() { Text = "1   CHECK METADATA", Height = 44, Dock = DockStyle.Fill };
+    private readonly Button _fixture = new() { Text = "CREATE TEST ITEM", Dock = DockStyle.Fill, Enabled = true };
     private readonly Button _probe = new() { Text = "READ-ONLY UGC PROBE", Dock = DockStyle.Fill,
         Font = new System.Drawing.Font("Segoe UI", 9F) };
     private readonly Button _repair = new() { Text = "2   REPAIR MY ITEM", Height = 44, Dock = DockStyle.Fill, Enabled = false };
@@ -118,8 +120,8 @@ internal sealed class FixForm : Form
         Text = "SE2 Workshop UGC Metadata Fix   •   v0.4.0-preview.3 (READ-ONLY RECOVERY)";
         // Reserve actual vertical space for the grouped actions and security note.
         // The previous 33px toolbar row clipped buttons at normal Windows DPI.
-        ClientSize = new System.Drawing.Size(880, 755);
-        MinimumSize = new System.Drawing.Size(760, 700);
+        ClientSize = new System.Drawing.Size(880, 800);
+        MinimumSize = new System.Drawing.Size(760, 735);
         StartPosition = FormStartPosition.CenterScreen;
         Font = new System.Drawing.Font("Segoe UI", 10F);
         BackColor = System.Drawing.Color.White;
@@ -130,7 +132,7 @@ internal sealed class FixForm : Form
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 56));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 55));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 58));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 84));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 58));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
@@ -141,7 +143,7 @@ internal sealed class FixForm : Form
         var title = new Label { Text = "Workshop metadata recovery", Dock = DockStyle.Fill, Font = new System.Drawing.Font("Segoe UI", 19F, System.Drawing.FontStyle.Bold) };
         layout.Controls.Add(title, 0, 0);
         layout.Controls.Add(new Label {
-            Text = "For Space Engineers 2 (App 1133870). Detects oversized, empty, malformed, or healthy metadata. Only the proven oversized-description repair can write to Steam; missing-data recovery is PREVIEW ONLY.",
+            Text = "For Space Engineers 2 (App 1133870). Detects oversized, empty, malformed, or healthy metadata. Existing-item changes are limited to the proven description patch; missing-data recovery is PREVIEW ONLY.",
             Dock = DockStyle.Fill, AutoSize = false, ForeColor = System.Drawing.Color.FromArgb(70, 80, 92)
         }, 0, 1);
         layout.Controls.Add(_workshop, 0, 2);
@@ -169,11 +171,22 @@ internal sealed class FixForm : Form
         statusBar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 27));
         _status.Dock = DockStyle.Fill;
         _status.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-        _probe.Margin = new Padding(7, 4, 0, 4);
-        _probe.FlatStyle = FlatStyle.Flat;
-        _probe.ForeColor = System.Drawing.Color.FromArgb(35, 88, 140);
+        var diagnosticButtons = new TableLayoutPanel {
+            Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2,
+            Margin = new Padding(7, 2, 0, 2)
+        };
+        diagnosticButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        diagnosticButtons.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+        diagnosticButtons.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+        foreach (var action in new[] { _probe, _fixture }) {
+            action.Margin = new Padding(0, 2, 0, 2);
+            action.FlatStyle = FlatStyle.Flat;
+            action.ForeColor = System.Drawing.Color.FromArgb(35, 88, 140);
+            action.BackColor = System.Drawing.Color.FromArgb(246, 249, 253);
+            diagnosticButtons.Controls.Add(action);
+        }
         statusBar.Controls.Add(_status, 0, 0);
-        statusBar.Controls.Add(_probe, 1, 0);
+        statusBar.Controls.Add(diagnosticButtons, 1, 0);
         layout.Controls.Add(statusBar, 0, 4);
         layout.Controls.Add(_stats, 0, 5);
         var caption = new Label { Text = "Activity / diagnostic log", Dock = DockStyle.Fill, Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold) };
@@ -200,6 +213,18 @@ internal sealed class FixForm : Form
         }, 0, 9);
         _scan.Click += async (_, _) => await ScanAsync();
         _probe.Click += async (_, _) => await ProbeAsync();
+        _fixture.Click += (_, _) => {
+            if (_busy) return;
+            using var wizard = new TestItemCreateForm();
+            wizard.ShowDialog(this);
+            if (wizard.CreatedItemId is ulong id) {
+                _workshop.Text = id.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                _status.Text = "New test-item ID entered. Use READ-ONLY UGC PROBE; do NOT REPAIR.";
+                _status.ForeColor = System.Drawing.Color.DarkOrange;
+                Append("Disposable Workshop test item created: " + id +
+                    ". No content or metadata uploaded. Visibility not yet verified.");
+            }
+        };
         _repair.Click += async (_, _) => await RepairAsync();
         _backup.Click += (_, _) => OpenBackup();
         _report.Click += (_, _) => CopySafeReport();
@@ -422,6 +447,7 @@ internal sealed class FixForm : Form
         _busy = active;
         _scan.Enabled = !active;
         _probe.Enabled = !active;
+        _fixture.Enabled = !active;
         _preflight.Enabled = !active;
         _recover.Enabled = !active && _current is { OwnerMatches: true } &&
             (_current.Diagnosis.Condition is MetadataCondition.Missing or MetadataCondition.Malformed);
