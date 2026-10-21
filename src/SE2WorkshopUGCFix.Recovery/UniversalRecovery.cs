@@ -95,6 +95,7 @@ internal static class UniversalRecovery
             throw new ArgumentException("Working metadata author differs from verified Steam owner.");
         var local = ReadLocalMetadata(originalModhubMetadata, project);
         string title = PreferTitle(manualTitle, local?.Name, project.Name);
+        CheckKnownTemplateKeys(template);
         if (!(template["$Bundles"]?["VRage"]?.GetValue<string>() ?? "").StartsWith("2.4.", StringComparison.Ordinal))
             throw new ArgumentException("Working-item schema version has not been reviewed; needs a compatibility update.");
         var working = template["$Value"]!;
@@ -115,6 +116,9 @@ internal static class UniversalRecovery
         basic["Tags"] = TagsNode(local?.Tags);
         basic["Id"] = null;
         basic["PreviewFilePath"] = null;
+        basic["WorkshopURL"] = null;
+        basic["CreatedAt"] = "0001-01-01T00:00:00.0000000";
+        basic["UpdatedAt"] = "0001-01-01T00:00:00.0000000";
         basic["Dependencies"] = null;
         basic["OwnerName"] = null;
         basic["VotesUp"] = 0;
@@ -288,6 +292,37 @@ internal static class UniversalRecovery
             modGuid.ToByteArray().Take(8).Any(b => b != 0) ||
             modGuid.ToByteArray().Skip(12).Any(b => b != 0))
             throw new ArgumentException("Mismatched or invalid project/Steam identity");
+    }
+
+    private static void CheckKnownTemplateKeys(JsonNode node)
+    {
+        // A working item must supply only a REVIEWED schema. Unknown fields could
+        // leak foreign identity/content; reject instead of copying them blindly.
+        RequireKnownKeys(node, "$Bundles", "$Type", "$Value");
+        var value = node["$Value"] ?? throw new ArgumentException("Missing template $Value");
+        RequireKnownKeys(value, "Id", "PreviewUrl", "FullMetadata", "Author",
+            "IsReferenceToRemote", "LastLocallyUpdated");
+        var full = value["FullMetadata"] ?? throw new ArgumentException("Missing FullMetadata");
+        RequireKnownKeys(full, "$Type", "Id", "ProjectID", "Version", "BaseMetadata");
+        var basic = full["BaseMetadata"] ?? throw new ArgumentException("Missing BaseMetadata");
+        RequireKnownKeys(basic, "Id", "Title", "Description", "Visiblity", "Tags",
+            "IsSubscribed", "VotesUp", "VotesDown", "Rating", "IsOwner",
+            "NumSubscriptions", "Size", "OwnerName", "CreatedAt",
+            "UpdatedAt", "WorkshopURL", "PreviewFilePath", "Dependencies");
+        // A template-derived profile must not import unknown identities.
+        RequireKnownKeys(full["Id"]!, "Id", "ServiceName");
+        RequireKnownKeys(full["ProjectID"]!, "Guid", "ModId", "ServiceId");
+        RequireKnownKeys(full["ProjectID"]!["ModId"]!, "Id", "ServiceName");
+    }
+
+    private static void RequireKnownKeys(JsonNode node, params string[] names)
+    {
+        if (node is not JsonObject obj)
+            throw new ArgumentException("Unexpected metadata node type in schema.");
+        var permitted = new HashSet<string>(names, StringComparer.Ordinal);
+        foreach (var entry in obj)
+            if (!permitted.Contains(entry.Key))
+                throw new ArgumentException("Unreviewed metadata key: " + entry.Key);
     }
 
     private static string ReadProjectGuid(JsonNode root) =>
