@@ -11,7 +11,7 @@ internal sealed record RecoveryRemoteSnapshot(
     bool QuerySucceeded, bool IsCached, string? DeveloperMetadata);
 
 internal sealed record VerifiedRecoveryPreview(
-    ulong ItemId, ulong OwnerId, MetadataCondition Condition,
+    ulong ItemId, ulong OwnerId, ulong? ReferenceItemId, MetadataCondition Condition,
     RecoveryPlan Plan, string OriginalRaw, string OriginalSha256,
     string CandidateSha256, string? ReferenceRaw, string? ReferenceSha256);
 
@@ -83,7 +83,7 @@ internal static class RecoveryReadOnlySession
         }
 
         return new VerifiedRecoveryPreview(
-            itemId, signedInSteamId, state, plan, original, Hash(original),
+            itemId, signedInSteamId, workingItemId, state, plan, original, Hash(original),
             Hash(plan.CandidateJson), referenceRaw, referenceHash);
     }
 
@@ -91,7 +91,7 @@ internal static class RecoveryReadOnlySession
     // - query failed, even if the API sets metadata to null or "";
     // - successful, uncached, exactly empty ("") metadata, which is Missing;
     // - cached/stale results, wrong app/owner/item.
-    private static string CheckFresh(
+    internal static string CheckFresh(
         RecoveryRemoteSnapshot data, ulong expectedId, ulong expectedOwner)
     {
         if (!data.QuerySucceeded)
