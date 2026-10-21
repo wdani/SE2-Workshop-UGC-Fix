@@ -75,12 +75,10 @@ internal static class DisposableModScenarios
         hugeDescription["$Value"]!["FullMetadata"]!["BaseMetadata"]!["Description"] =
             new string('X', 5200);
         var hugeOther = JsonNode.Parse(liveDeveloperMetadata)!;
-        // Isolate "oversized for OTHER reasons" from the live ModHUB
-        // description. A real published mod normally has a description,
-        // which would otherwise make Diagnose classify this as
-        // OversizedDescription even if the extra field caused the overflow.
-        // This is an OFFLINE-only scenario: do not modify the live metadata.
-        hugeOther["$Value"]!["FullMetadata"]!["BaseMetadata"]!["Description"] = "";
+        // Keep the published test mod's REAL description intact. The general
+        // diagnosis must classify oversized-other correctly even when a
+        // perfectly normal nonempty ModHUB description is present.
+        // This scenario is OFFLINE-ONLY, never sent to Steam.
         hugeOther["ExtraOversizedField"] = new string('X', 5200);
         var scenarios = new [] {
             new DisposableScenario("malformed-json", "{", MetadataCondition.Malformed, true),
