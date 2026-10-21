@@ -21,5 +21,7 @@
     <Compile Include="../../src/SE2WorkshopUGCFix.Recovery/RecoveryWritePreflight.cs" Link="RecoveryWritePreflight.cs" />
     <Compile Include="../../src/SE2WorkshopUGCFix.Recovery/SteamMetadataProbePolicy.cs" Link="SteamMetadataProbePolicy.cs" />
     <Compile Include="../../src/SE2WorkshopUGCFix.Recovery/TestFixturePolicy.cs" Link="TestFixturePolicy.cs" />
+    <Compile Include="../../src/SE2WorkshopUGCFix.Recovery/DisposableModScenarios.cs" Link="DisposableModScenarios.cs" />
+    <Compile Include="../../src/SE2WorkshopUGCFix.Recovery/DisposableE2EEngine.cs" Link="DisposableE2EEngine.cs" />
   </ItemGroup>
 </Project>
