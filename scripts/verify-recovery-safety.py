@@ -35,8 +35,8 @@ checks = [
     ("Original identity is enforced", 'ReadOriginalProject(originalVrgproj, itemId)' in core),
     ("Owner is checked in recovery preview", 'remote.Owner != owner' in preview),
     ("UI footer grouped instead of four cramped buttons",
-     "CreateActionGroup(\"BACKUPS & REPORTS\"" in gui and
-     "CreateActionGroup(\"TOOLS & RECOVERY\"" in gui and
+     "CreateActionGroup(\"BACKUPS / REPORTS\"" in gui and
+     "CreateActionGroup(\"TOOLS / RECOVERY\"" in gui and
      "RowStyle(SizeType.Absolute, 148)" in gui),
     ("Healthy diagnostics show success instead of no-fix warning",
      'case MetadataCondition.Healthy:' in gui and
