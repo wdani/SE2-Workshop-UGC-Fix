@@ -92,6 +92,10 @@ internal static class DisposableE2ERunService
         var manifest = DisposableModScenarios.Prepare(id, owner, first.Owner, project, first.Raw);
 
         string directory = SteamFix.NewBackupFolder(id);
+        string pointer = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "SE2WorkshopUGCFix", "e2e-latest-backup-" + id + ".txt");
+        File.WriteAllText(pointer, directory, new UTF8Encoding(false));
         string baselineFile = Path.Combine(directory, "e2e-original-PRIVATE.json");
         File.WriteAllText(baselineFile, manifest.OriginalRaw, new UTF8Encoding(false));
         if (File.ReadAllText(baselineFile, new UTF8Encoding(false, true)) != manifest.OriginalRaw)
