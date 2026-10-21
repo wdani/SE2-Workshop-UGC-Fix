@@ -80,3 +80,13 @@ Do not run this procedure unless the owner approves adding one empty test item t
 - If the result is not confirmed or Steam returns no details for an uninitialized item, STOP without retrying; the test is inconclusive. A manually created item must not be deliberately damaged.
 
 Steam Workshop legal agreement: https://steamcommunity.com/workshop/workshoplegalagreement/
+
+## F. Full ModHUB test in ONE run (preview.5)
+
+The previous bare disposable Steam CreateItem `3824227768` proved 0-byte read semantics, but lacks real ModHUB project identity and is not a replacement for an actual mod.
+
+For end-to-end recovery use a freshly **ModHUB-created and published** actual `SE2 UGC E2E TEST ...` mod, with one harmless in-game-verifiable change. Then run `RUN-FIXTURE-LAB.cmd`, enter the new mod's Workshop ID, click **RUN FULL MOD E2E**, select its unmodified original `.vrgproj`, type `RUN FULL E2E <ID>`, and give the final approval. The runner performs the full fault+restore batch automatically and provides **COPY FULL E2E SAFE REPORT**. Do not run on existing production mods.
+
+The test modifies **developer metadata on that disposable mod**, unlike the read-only probe. All actual mutations need a valid original backup and fresh Steam ownership check and are automatically restored when state matches the known fault; unknown states stop. On error, use the displayed local backup and **EMERGENCY RESTORE FROM TEST BACKUP** only after inspection.
+
+Detailed workflow and full scenario matrix: [FULL-MOD-E2E-TEST.md](FULL-MOD-E2E-TEST.md).
