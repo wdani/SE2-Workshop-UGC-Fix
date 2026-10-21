@@ -12,6 +12,8 @@ session = (root / "src/SE2WorkshopUGCFix.Recovery/RecoveryReadOnlySession.cs").r
 preflight = (root / "src/SE2WorkshopUGCFix.Recovery/RecoveryWritePreflight.cs").read_text(encoding="utf-8")
 probe = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/SteamReadProbe.cs").read_text(encoding="utf-8")
 probe_policy = (root / "src/SE2WorkshopUGCFix.Recovery/SteamMetadataProbePolicy.cs").read_text(encoding="utf-8")
+creator = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/TestItemCreator.cs").read_text(encoding="utf-8")
+fixture = (root / "src/SE2WorkshopUGCFix.Recovery/TestFixturePolicy.cs").read_text(encoding="utf-8")
 project = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/SE2WorkshopUGCFix.csproj").read_text(encoding="utf-8")
 legacy = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/MetadataPatch.cs").read_text(encoding="utf-8")
 
