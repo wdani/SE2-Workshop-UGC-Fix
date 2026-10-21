@@ -17,13 +17,63 @@ namespace SE2WorkshopUGCFix;
 internal static class Program
 {
     [STAThread]
-    private static void Main()
+    private static int Main(string[] args)
     {
+        // The offline UI smoke mode never initializes Steam and cannot submit updates.
+        // Exit codes make this executable usable by a Windows test runner.
+        if (args.Length == 1 && args[0] == "--smoke-ui")
+        {
+            try
+            {
+                ApplicationConfiguration.Initialize();
+                using var main = new FixForm();
+                using var recovery = new RecoveryPreviewForm(12345678UL);
+                main.ShowInTaskbar = false;
+                main.Opacity = 0;
+                main.Show();
+                Application.DoEvents();
+                var controls = Descendants(main).OfType<Button>().ToArray();
+                var repair = controls.Single(c => c.Text.Contains("REPAIR", StringComparison.OrdinalIgnoreCase));
+                var preview = controls.Single(c => c.Text == "RECOVERY PREVIEW");
+                var scan = controls.Single(c => c.Text.Contains("CHECK METADATA", StringComparison.OrdinalIgnoreCase));
+                if (repair.Enabled || preview.Enabled || !scan.Enabled)
+                    throw new InvalidOperationException("Unsafe initial GUI button state.");
+                if (!recovery.Text.Contains("Recovery Preview", StringComparison.Ordinal))
+                    throw new InvalidOperationException("Recovery preview form failed to initialize.");
+                recovery.ShowInTaskbar = false;
+                recovery.Opacity = 0;
+                recovery.Show();
+                Application.DoEvents();
+                if (!Descendants(recovery).OfType<Button>()
+                    .Any(c => c.Text == "BUILD READ-ONLY RECOVERY PREVIEW"))
+                    throw new InvalidOperationException("Recovery preview button missing.");
+                recovery.Hide();
+                main.Hide();
+                return 0;
+            }
+            catch (Exception)
+            {
+                // WinExe has no console; the PowerShell/batch caller checks exit code 1.
+                return 1;
+            }
+        }
+
         // AppID is set before SteamAPI.Init; no steam_appid.txt or account secrets.
         Environment.SetEnvironmentVariable("SteamAppId", "1133870");
         Environment.SetEnvironmentVariable("SteamGameId", "1133870");
         ApplicationConfiguration.Initialize();
         Application.Run(new FixForm());
+        return 0;
+    }
+
+    private static IEnumerable<Control> Descendants(Control root)
+    {
+        foreach (Control child in root.Controls)
+        {
+            yield return child;
+            foreach (Control grandchild in Descendants(child))
+                yield return grandchild;
+        }
     }
 }
 
