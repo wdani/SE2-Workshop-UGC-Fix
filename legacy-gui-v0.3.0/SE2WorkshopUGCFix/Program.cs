@@ -38,6 +38,23 @@ internal static class Program
                 var scan = controls.Single(c => c.Text.Contains("CHECK METADATA", StringComparison.OrdinalIgnoreCase));
                 if (repair.Enabled || preview.Enabled || !scan.Enabled)
                     throw new InvalidOperationException("Unsafe initial GUI button state.");
+                // Verify the two footer groups and that labels fit their buttons.
+                var actionGroups = Descendants(main).OfType<GroupBox>().ToArray();
+                if (actionGroups.Length != 2 ||
+                    !actionGroups.Any(g => g.Text == "BACKUPS & REPORTS") ||
+                    !actionGroups.Any(g => g.Text == "TOOLS & RECOVERY"))
+                    throw new InvalidOperationException("Footer action groups were not initialized.");
+                foreach (var group in actionGroups) {
+                    var buttons = Descendants(group).OfType<Button>().ToArray();
+                    if (buttons.Length != 2)
+                        throw new InvalidOperationException("Footer group must contain exactly two actions.");
+                    foreach (var button in buttons) {
+                        var measured = TextRenderer.MeasureText(button.Text, button.Font);
+                        if (button.ClientSize.Width < Math.Max(170, measured.Width + 18) ||
+                            button.ClientSize.Height < 34)
+                            throw new InvalidOperationException("A footer button is too small for its caption.");
+                    }
+                }
                 if (!recovery.Text.Contains("Recovery Preview", StringComparison.Ordinal))
                     throw new InvalidOperationException("Recovery preview form failed to initialize.");
                 recovery.ShowInTaskbar = false;
