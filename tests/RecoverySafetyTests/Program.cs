@@ -93,6 +93,17 @@ var basic = value["FullMetadata"]!["BaseMetadata"]!;
 Expect(basic["Title"]!.GetValue<string>() == "Original title" && basic["Description"]!.GetValue<string>() == "", "original title; empty internal description");
 Expect(basic["Tags"]!.AsArray().All(t => t!.GetValue<string>() != "ModTagParticles"), "comparison tags not leaked");
 Expect(basic["PreviewFilePath"] is null, "comparison preview not leaked");
+Expect(basic["WorkshopURL"] is null, "working-item Workshop URL not inherited");
+Expect(basic["Dependencies"] is null && basic["OwnerName"] is null, "working-item dependencies/owner not inherited");
+var withForeignUrl = Template(Comparison, Owner);
+withForeignUrl["$Value"]!["FullMetadata"]!["BaseMetadata"]!["WorkshopURL"] = "https://steamcommunity.com/sharedfiles/filedetails/?id=3820098766";
+var noForeignUrl = UniversalRecovery.FromWorkingItem(Target, Owner, Owner, Owner, "", project, local, withForeignUrl.ToJsonString());
+Expect(JsonNode.Parse(noForeignUrl.CandidateJson)!["$Value"]!["FullMetadata"]!["BaseMetadata"]!["WorkshopURL"] is null,
+    "explicit foreign URL sanitized in candidate");
+var unknownTemplate = Template(Comparison, Owner);
+unknownTemplate["$Value"]!["FullMetadata"]!["BaseMetadata"]!["UnknownPrivateField"] = "other mod secret";
+Refuse(() => UniversalRecovery.FromWorkingItem(Target, Owner, Owner, Owner, "", project, local, unknownTemplate.ToJsonString()),
+    "unknown template fields rejected instead of blindly copied");
 Refuse(() => UniversalRecovery.FromWorkingItem(Target, Owner, Owner + 1, Owner, "", project, local, working), "wrong target owner rejects");
 Refuse(() => UniversalRecovery.FromWorkingItem(Target, Owner, Owner, Owner + 1, "", project, local, working), "wrong comparison owner rejects");
 Refuse(() => UniversalRecovery.FromWorkingItem(Target, Owner, Owner, Owner, working, project, local, working), "healthy current item cannot be overwritten");
