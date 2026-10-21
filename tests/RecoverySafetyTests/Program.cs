@@ -330,4 +330,18 @@ Expect(SteamMetadataProbePolicy.Evaluate(Evidence(true, true, "", item: Comparis
 Expect(SteamMetadataProbePolicy.Evaluate(Evidence(true, true, "", owner: Owner + 1)).Status == SteamProbeStatus.WrongOwner,
        "read-only probe refuses wrong Steam owner");
 
+
+// Consent/one-attempt policy: does not access Steam and must fail closed.
+Expect(TestFixturePolicy.MayCreate(TestFixturePolicy.Confirmation, false),
+    "exact typed test-item confirmation accepted for first attempt");
+Expect(!TestFixturePolicy.MayCreate("CREATE EMPTY SE2 TEST ITEM ", false),
+    "test-item confirmation rejects extra whitespace");
+Expect(!TestFixturePolicy.MayCreate("create empty se2 test item", false),
+    "test-item confirmation is case sensitive");
+Expect(!TestFixturePolicy.MayCreate("", false) &&
+       !TestFixturePolicy.MayCreate(null, false),
+    "blank fixture confirmations blocked");
+Expect(!TestFixturePolicy.MayCreate(TestFixturePolicy.Confirmation, true),
+    "existing fixture creation ledger blocks duplicate creation");
+
 Console.WriteLine($"ALL {count} OFFLINE SAFETY CHECKS PASSED; NO STEAM API WAS CALLED.");
