@@ -90,6 +90,12 @@ Expect(UniversalRecovery.Diagnose(Template(Target, Owner, new string('x', 6000))
 var oversizedOther = Template(Target, Owner);
 oversizedOther["$Value"]!["Padding"] = new string('x', 6000);
 Expect(UniversalRecovery.Diagnose(oversizedOther.ToJsonString(), Target).Condition == MetadataCondition.OversizedOther, "other oversized payload not blindly patched");
+var oversizedOtherWithDescription = Template(Target, Owner, new string('d', 180));
+oversizedOtherWithDescription["$Value"]!["Padding"] = new string('x', 6000);
+Expect(UniversalRecovery.Diagnose(oversizedOtherWithDescription.ToJsonString(), Target).Condition ==
+       MetadataCondition.OversizedOther,
+       "large unrelated data stays OversizedOther even with a long existing description");
+
 
 var plan = UniversalRecovery.FromWorkingItem(Target, Owner, Owner, Owner, "", project, local, working);
 var candidate = JsonNode.Parse(plan.CandidateJson)!;
@@ -365,9 +371,9 @@ Expect(manifest.Scenarios.Count == 5 &&
 var otherFault = manifest.Scenarios.Single(c => c.Name == "oversized-other-rejection");
 var originalDescription = JsonNode.Parse(manifest.OriginalRaw)!["$Value"]!["FullMetadata"]!["BaseMetadata"]!["Description"]!.GetValue<string>();
 var otherDescription = JsonNode.Parse(otherFault.Raw)!["$Value"]!["FullMetadata"]!["BaseMetadata"]!["Description"]!.GetValue<string>();
-Expect(originalDescription.Length > 0 && otherDescription.Length == 0 &&
+Expect(originalDescription.Length > 0 && otherDescription == originalDescription &&
        UniversalRecovery.Diagnose(otherFault.Raw, Target).Condition == MetadataCondition.OversizedOther,
-    "E2E oversized-other isolates a real nonempty ModHUB description without changing saved original");
+    "E2E oversized-other preserves the real ModHUB description while classifying the actual cause");
 var mockAll = new E2EMemorySteam(Target, Owner, manifest.OriginalRaw);
 var batch = DisposableE2EEngine.Run(manifest, mockAll);
 Expect(batch.Complete && batch.OriginalRestored &&
