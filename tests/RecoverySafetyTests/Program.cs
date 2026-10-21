@@ -19,6 +19,15 @@ void Refuse(Action attempt, string label) {
     catch (ArgumentException) { Console.WriteLine("PASS " + label); count++; return; }
     throw new Exception("FAILED: " + label);
 }
+void RefuseUnsafe(Action attempt, string label) {
+    try { attempt(); }
+    catch (Exception e) when (e is ArgumentException or InvalidOperationException) {
+        Console.WriteLine("PASS " + label);
+        count++;
+        return;
+    }
+    throw new Exception("FAILED: " + label);
+}
 string ModId(ulong id) {
     var b = BitConverter.GetBytes(checked((uint)id));
     return "00000000-0000-0000-" + $"{b[0]:x2}{b[1]:x2}-{b[2]:x2}{b[3]:x2}00000000";
@@ -118,4 +127,82 @@ var originalBackup = Template(Target, Owner).ToJsonString();
 Expect(UniversalRecovery.FromOriginalBackup(Target, Owner, Owner, "", originalBackup).EligibleForApply, "complete original backup supported");
 Refuse(() => UniversalRecovery.FromOriginalBackup(Target, Owner, Owner, "", working), "backup for other ID rejects");
 Refuse(() => UniversalRecovery.FromOriginalBackup(Target, Owner, Owner, "", Template(Target, Owner, new string('x', 6000)).ToJsonString()), "oversized backup rejects");
+
+// End-to-end READ-ONLY session tests with a fake fresh Steam response.
+// A failed query must NEVER look like a successful zero-byte result.
+RecoveryRemoteSnapshot Snapshot(ulong id, ulong owner, string raw,
+    bool succeeded = true, bool cached = false, uint appId = 1133870) =>
+    new(id, appId, owner, succeeded, cached, raw);
+
+int reads = 0;
+RecoveryRemoteSnapshot Fresh(ulong id) {
+    reads++;
+    return id == Target ? Snapshot(id, Owner, "") :
+        id == Comparison ? Snapshot(id, Owner, working) :
+        throw new Exception("Unexpected fake Workshop item query");
+}
+var recoveredWithWorking = RecoveryReadOnlySession.Prepare(
+    Target, Owner, Fresh, null, project, local, Comparison);
+Expect(recoveredWithWorking.Condition == MetadataCondition.Missing &&
+       recoveredWithWorking.Plan.Source == RecoverySource.WorkingItem &&
+       recoveredWithWorking.ReferenceSha256 is not null,
+       "fresh 0-byte + original local project + working reference produces read-only proposal");
+Expect(reads == 4, "both original and reference re-read uncached before preview completion");
+reads = 0;
+var recoveredFromBackup = RecoveryReadOnlySession.Prepare(
+    Target, Owner, Fresh, originalBackup, null, null, null);
+Expect(recoveredFromBackup.Plan.Source == RecoverySource.OriginalBackup && reads == 2,
+    "exact original backup proposal checks target before and after");
+reads = 0;
+var fallbackNoTemplate = RecoveryReadOnlySession.Prepare(
+    Target, Owner, Fresh, null, project, local, null);
+Expect(fallbackNoTemplate.Plan.Source == RecoverySource.GenericReference &&
+       !fallbackNoTemplate.Plan.EligibleForApply && reads == 2,
+       "no comparison mod produces a NON-WRITABLE generic proposal");
+
+RefuseUnsafe(() => RecoveryReadOnlySession.Prepare(Target, Owner,
+    id => Snapshot(id, Owner, "", succeeded: false), null, project, local, null),
+    "Steam query failure NEVER misclassified as zero-byte metadata");
+RefuseUnsafe(() => RecoveryReadOnlySession.Prepare(Target, Owner,
+    id => Snapshot(id, Owner, "", cached: true), null, project, local, null),
+    "cached Steam query blocks recovery");
+RefuseUnsafe(() => RecoveryReadOnlySession.Prepare(Target, Owner,
+    id => Snapshot(id, Owner, "", appId: 0), null, project, local, null),
+    "wrong Steam AppId blocks recovery");
+RefuseUnsafe(() => RecoveryReadOnlySession.Prepare(Target, Owner,
+    id => Snapshot(id + 1, Owner, ""), null, project, local, null),
+    "wrong Workshop identity blocks recovery");
+RefuseUnsafe(() => RecoveryReadOnlySession.Prepare(Target, Owner,
+    id => Snapshot(id, Owner + 1, ""), null, project, local, null),
+    "wrong owner blocks recovery");
+RefuseUnsafe(() => RecoveryReadOnlySession.Prepare(Target, Owner,
+    id => new RecoveryRemoteSnapshot(id, 1133870, Owner, true, false, null),
+    null, project, local, null),
+    "null Steam metadata cannot masquerade as confirmed empty");
+RefuseUnsafe(() => RecoveryReadOnlySession.Prepare(Target, Owner,
+    id => Snapshot(id, Owner, originalBackup), null, project, local, null),
+    "healthy remote metadata refuses reconstruction");
+int staleOriginalReads = 0;
+RefuseUnsafe(() => RecoveryReadOnlySession.Prepare(Target, Owner,
+    id => Snapshot(id, Owner, staleOriginalReads++ == 0 ? "" : "{changed}"),
+    originalBackup, null, null, null),
+    "original changes between read and preview completion: STOP");
+int staleReferenceReads = 0;
+RefuseUnsafe(() => RecoveryReadOnlySession.Prepare(Target, Owner,
+    id => id == Target ? Snapshot(Target, Owner, "") :
+      Snapshot(Comparison, Owner, staleReferenceReads++ == 0 ? working : Template(Comparison, Owner, "changed").ToJsonString()),
+    null, project, local, Comparison),
+    "reference changes between two queries: STOP");
+RefuseUnsafe(() => RecoveryReadOnlySession.Prepare(Target, Owner,
+    id => id == Target ? Snapshot(Target, Owner, "") :
+      Snapshot(Comparison, Owner + 1, working),
+    null, project, local, Comparison),
+    "different working-item owner blocks preview");
+RefuseUnsafe(() => RecoveryReadOnlySession.Prepare(Target, Owner,
+    Fresh, null, null, null, null),
+    "no original project, backup or reference cannot generate recovery identity");
+RefuseUnsafe(() => RecoveryReadOnlySession.Prepare(Target, Owner,
+    Fresh, originalBackup, null, null, Comparison),
+    "conflicting backup and comparison source selection rejected");
+
 Console.WriteLine($"ALL {count} OFFLINE SAFETY CHECKS PASSED; NO STEAM API WAS CALLED.");
