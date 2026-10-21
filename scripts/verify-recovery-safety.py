@@ -34,6 +34,10 @@ checks = [
      'Unreviewed metadata key:' in core),
     ("Original identity is enforced", 'ReadOriginalProject(originalVrgproj, itemId)' in core),
     ("Owner is checked in recovery preview", 'remote.Owner != owner' in preview),
+    ("Offline UI smoke entrypoint exists", '"--smoke-ui"' in gui and "new RecoveryPreviewForm(12345678UL)" in gui),
+    ("UI smoke does not initialize Steam", 
+     "SteamAPI.Init()" not in gui[gui.index('if (args.Length == 1 && args[0] == "--smoke-ui")'):gui.index('// AppID is set before SteamAPI.Init')]),
+
 ]
 bad = 0
 for label, ok in checks:
