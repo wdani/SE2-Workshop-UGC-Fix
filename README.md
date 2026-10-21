@@ -108,3 +108,16 @@ A separate `RUN-FIXTURE-LAB.cmd` in the local Windows test ZIP enables a **user-
 Creation is guarded by an exact typed confirmation plus a final dialog, and a durable local attempt/receipt prevents automatic retries after ambiguous results. Visibility cannot be guaranteed private; no existing production item should be used as a fixture. See [disposable-item testing](docs/DISPOSABLE-EMPTY-METADATA-TEST.md).
 
 **New creator implementation has not yet passed the next VM build and Windows smoke.**
+
+
+## Integrated SE2 mod E2E test (preview.5, DEVELOPMENT)
+
+To avoid dozens of manual tiny probes, the separate **fixture lab** now contains a **RUN FULL MOD E2E** test for a **real ModHUB-published, intentionally disposable mod** whose name begins `SE2 UGC E2E TEST`. This is different from the earlier bare CreateItem fixture: a genuine ModHUB project carries a real `.vrgproj`, GUID and published Workshop linkage.
+
+In one user-confirmed run, the suite saves the original metadata and project, then exercises malformed metadata, invalid Workshop identity, empty metadata (when Steam accepts it), and two oversized rejection cases. After every live change it re-queries Steam, invokes the actual preview/write-preflight logic where applicable and restores the original metadata by exact readback. A single safe report summarizes the entire run. The test transport never sets public Workshop title, description, tags, visibility or content.
+
+**Never run this destructive-injection suite on an active or valuable mod.** It requires an original same-item `.vrgproj`, matching user ownership, a specific test title prefix and a separate typed `RUN FULL E2E <WorkshopID>` confirmation. Emergency manual restore is restricted to known injected fault payloads and the original backup. `RUN-APP.cmd` does not expose the suite; only `RUN-FIXTURE-LAB.cmd` does.
+
+Full instructions: [One-pass real ModHUB E2E test](docs/FULL-MOD-E2E-TEST.md).
+
+**Status:** committed to Draft PR and pending VM/offline tests + native Windows smoke. Not a stable/public release or proof of broad game compatibility.
