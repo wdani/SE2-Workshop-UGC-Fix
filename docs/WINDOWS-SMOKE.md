@@ -45,3 +45,23 @@ Record the commit SHA, test package SHA256, the smoke PASS/FAIL line, Windows ve
 3. Design and independently review the missing-metadata write path (still disabled).
 4. Use a disposable creator-owned Workshop test item and verify metadata-only submit + uncached readback.
 5. Only then consider beta release and public documentation.
+
+
+## D. Read-only Steam metadata API probe (preview.3)
+
+**Purpose:** determine whether Steamworks reports an existing owner-controlled Workshop item with no developer metadata as a successful empty string (`GetQueryUGCMetadata == true` and 0 UTF-8 bytes), or as a failed metadata retrieval (`false`). Steamworks documentation describes the boolean return but does not explicitly guarantee which result an absent-value item produces; never equate `false` with 0 bytes.
+
+1. Run the included `RUN-UI-SMOKE.cmd` first after extracting the new preview.3 ZIP; it does not initialize Steam.
+2. Start Steam, sign into the account that **owns** the tested Workshop item, close SE2 and ModHUB, then open `RUN-APP.cmd`.
+3. Paste a known **healthy owner-controlled item**, e.g. Bulk Production x100 `3810512193`. Click **READ-ONLY UGC PROBE** beside the status message.
+4. Confirm the result says **Present** with a nonzero byte count; use **COPY SAFE REPORT** and preserve it privately. The report does not contain raw metadata, owner SteamID or credentials.
+5. Later, when a **disposable owner-controlled item with legitimately absent developer metadata** is available, run exactly the same read-only probe on that item. Do **not** deliberately delete/blank metadata on a production mod or use any write tool for this diagnostic step.
+6. Interpret results:
+   - `ConfirmedEmpty`: details query successful/uncached, `GetQueryUGCMetadata=true`, string length 0. Candidate preview may be investigated, **no upload**.
+   - `MetadataCallFailed`: item details valid but `GetQueryUGCMetadata=false`, **UNKNOWN**, not proven 0-byte metadata.
+   - `QueryFailed`, `CachedQuery`, `UnexpectedItem`, `WrongOwner`, `AmbiguousNull`: STOP and inspect the safe report; do not attempt repair.
+   - `Present`: normal metadata, not the missing-data test case.
+
+Only safe API status flags, the item ID, byte count and SHA256 are logged. **Never upload the PRIVATE JSON backups or run REPAIR on a production item.**
+
+Official Steamworks API reference: https://partner.steamgames.com/doc/api/ISteamUGC#GetQueryUGCMetadata
