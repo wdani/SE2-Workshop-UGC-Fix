@@ -2,7 +2,7 @@
 
 A community-maintained diagnostic and recovery tool for **Space Engineers 2 Steam Workshop developer metadata**.
 
-> **Development status: pre-release.** The original Windows GUI v0.3.0 source has been imported under `legacy-gui-v0.3.0/`. A new v0.4.0-dev **read-only** missing-metadata preview wizard is being integrated with the existing oversized-description fix. **The new missing-metadata APPLY flow is not enabled or validated as a public release.**
+> **Development status: pre-release.** The original Windows GUI v0.3.0 source has been imported under `legacy-gui-v0.3.0/`. A new v0.4.0-preview.2 **read-only** missing-metadata preview wizard is being integrated with the existing oversized-description fix. **The new missing-metadata APPLY flow is not enabled or validated as a public release.**
 
 ## Why this exists
 
@@ -79,3 +79,7 @@ This code was initially developed in [Space-Engineers-Modding draft PR #10](http
 ## License
 
 Not yet chosen. Public visibility alone does not grant a software license. Please do not redistribute or relicense until the repository owner chooses a license.
+
+### UI layout update (preview.2)
+
+The Windows GUI now separates backups/reports from prevention/recovery controls into two accessible groups, uses larger action targets, and displays healthy metadata in green rather than an orange no-repair warning. The new UI layout still requires native Windows retesting.
