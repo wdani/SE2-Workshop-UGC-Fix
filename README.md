@@ -90,3 +90,12 @@ The Windows GUI now separates backups/reports from prevention/recovery controls 
 The `RecoveryReadOnlySession` verifies fresh Steam reads before/after building proposals. An independent `RecoveryWritePreflight` now verifies private backups, working-reference freshness, owner, identity and the typed `RESTORE <Workshop ID>` phrase entirely **offline**. This latter guard is **not connected to Steam** and is not an enabled repair feature.
 
 Next qualification gates are: re-run the .NET offline test matrix and Windows GUI cross-compilation, validate a Windows read-only preview on a dedicated owned test Workshop item, and then separately review a metadata-only recovery transport. Do not deliberately corrupt an existing production mod to run these checks.
+
+
+### Read-only Steam API diagnostic (preview.3, unreleased)
+
+The Windows GUI has an explicit **READ-ONLY UGC PROBE** button beside the status line. It is useful if the regular `CHECK METADATA` fails: the probe records the **uncached Workshop details** response and **the independent boolean result of `GetQueryUGCMetadata`**. A failed metadata call (false) is `MetadataCallFailed / UNKNOWN`, **not** automatically interpreted as empty developer metadata. `ConfirmedEmpty` requires a successful metadata call (true) with a 0-byte returned string. All reports omit raw private developer metadata and signed-in Steam account IDs. The probe never enables a Steam write.
+
+The Steamworks documentation does not definitively specify missing-value behavior for all client versions. Compare a known healthy owned item against a **disposable** owner-controlled item only. No existing production mod should be deliberately damaged as a test fixture.
+
+Follow [Windows smoke and read-only probe instructions](docs/WINDOWS-SMOKE.md). This new diagnostic source has not yet passed the latest .NET/Windows runtime tests.
