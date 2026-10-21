@@ -91,6 +91,16 @@ checks = [
      '"--fixture-lab"' in gui),
     ("Fixture creation confirmation is exact",
      "string.Equals(typed, Confirmation, StringComparison.Ordinal)" in fixture),
+    ("Oversized-other diagnosis checks actual description contribution",
+     "candidate = root.DeepClone()" in core and
+     'candidate["$Value"]!["FullMetadata"]!["BaseMetadata"]!["Description"] = "";' in core and
+     "Encoding.UTF8.GetByteCount(candidate.ToJsonString()) < SteamLimitBytes" in core),
+    ("E2E oversized-other preserves real ModHUB description",
+     'hugeOther["ExtraOversizedField"]' in disposable and
+     "hugeOther[\"$Value\"]!" not in disposable),
+    ("E2E scenario preparation failure explicitly reports no Steam writes",
+     "PRECHECK FAILED" in e2e_runner and
+     "NO STEAM METADATA UPDATE WAS SENT" in e2e_runner),
     ("Real ModHUB E2E refuses production item and fake project",
      "3810512193UL" in disposable and
      "RequiredTitlePrefix" in disposable and
