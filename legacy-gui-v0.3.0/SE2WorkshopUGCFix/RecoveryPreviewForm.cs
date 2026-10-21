@@ -7,7 +7,7 @@ using System.Windows.Forms;
 
 namespace SE2WorkshopUGCFix;
 
-internal sealed record RecoveryPreviewResult(string SafeSummary, string BackupFolder);
+internal sealed record RecoveryPreviewResult(string SafeSummary, string BackupFolder, VerifiedRecoveryPreview Session);
 
 internal static class RecoveryPreviewService
 {
@@ -108,7 +108,7 @@ internal static class RecoveryPreviewService
             + "NO STEAM WRITE / NO UPLOAD IMPLEMENTED.\r\n"
             + "Private backup directory: " + dir + "\r\n"
             + session.Plan.Explanation;
-        return new(result, dir);
+        return new(result, dir, session);
     }
 
     private static string ReadSmallFile(string path)
@@ -128,6 +128,14 @@ internal sealed class RecoveryPreviewForm : Form
     private readonly TextBox _comparison = new() { Dock = DockStyle.Fill, PlaceholderText = "Optional: your OTHER working Workshop item ID" };
     private readonly TextBox _result = new() { Dock = DockStyle.Fill, Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Both };
     private readonly Button _preview = new() { Dock = DockStyle.Fill, Text = "BUILD READ-ONLY RECOVERY PREVIEW", Height = 44 };
+    private readonly TextBox _confirmation = new() {
+        Dock = DockStyle.Fill, PlaceholderText = "To apply: RESTORE <original Workshop ID>"
+    };
+    private readonly Button _apply = new() {
+        Dock = DockStyle.Fill, Text = "RESTORE MY WORKSHOP METADATA (CONFIRM FIRST)",
+        Enabled = false, Height = 42
+    };
+    private RecoveryPreviewResult? _ready;
     private readonly ulong _id;
 
     internal RecoveryPreviewForm(ulong workshopId)
@@ -135,8 +143,8 @@ internal sealed class RecoveryPreviewForm : Form
         _id = workshopId;
         Text = "Safe Recovery Preview — Workshop item " + workshopId;
         StartPosition = FormStartPosition.CenterParent;
-        MinimumSize = new System.Drawing.Size(730, 595);
-        ClientSize = new System.Drawing.Size(830, 675);
+        MinimumSize = new System.Drawing.Size(730, 670);
+        ClientSize = new System.Drawing.Size(830, 745);
         Font = new System.Drawing.Font("Segoe UI", 10);
         var layout = new TableLayoutPanel {
             Dock = DockStyle.Fill, Padding = new Padding(16), ColumnCount = 1, RowCount = 10
@@ -146,9 +154,9 @@ internal sealed class RecoveryPreviewForm : Form
         for (int n = 0; n < 4; n++) layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 64));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 54));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 22));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 18));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
         Controls.Add(layout);
         layout.Controls.Add(new Label {
             Text = "This is a safe read-only proposal. Choose an original full backup OR original project files. " +
@@ -167,8 +175,19 @@ internal sealed class RecoveryPreviewForm : Form
         layout.Controls.Add(comparisonPanel, 0, 4);
         layout.Controls.Add(_preview, 0, 5);
         layout.Controls.Add(_result, 0, 6);
-        layout.Controls.Add(new Label { Text = "Only the original creator can run this; no public description, content or Steam metadata is changed.", Dock = DockStyle.Fill }, 0, 7);
+        layout.Controls.Add(_confirmation, 0, 7);
+        layout.Controls.Add(_apply, 0, 8);
+        layout.Controls.Add(new Label {
+            Text = "Writes affect INTERNAL developer metadata only. Public description, title and content are not set by this tool.",
+            Dock = DockStyle.Fill, ForeColor = System.Drawing.Color.FromArgb(96, 98, 106)
+        }, 0, 9);
+
+        // Input changes invalidate the entire prior live Steam preview.
+        foreach (var source in new[] { _backupFile, _vrgproj, _local, _comparison })
+            source.TextChanged += (_, _) => InvalidatePreview();
+        _confirmation.TextChanged += (_, _) => UpdateApplyAvailability();
         _preview.Click += async (_, _) => await PreviewAsync();
+        _apply.Click += async (_, _) => await ApplyAsync();
     }
 
     private static void AddFileField(TableLayoutPanel layout, int row, string name, TextBox textBox, string filter)
@@ -191,9 +210,67 @@ internal sealed class RecoveryPreviewForm : Form
         layout.Controls.Add(outer, 0, row);
     }
 
+    private void InvalidatePreview()
+    {
+        _ready = null;
+        _confirmation.Clear();
+        _apply.Enabled = false;
+    }
+
+    private void UpdateApplyAvailability()
+    {
+        _apply.Enabled = _ready is { Session.Plan.EligibleForApply: true } &&
+            _ready.Session.Plan.Source is RecoverySource.OriginalBackup or RecoverySource.WorkingItem &&
+            _confirmation.Text == "RESTORE " + _id;
+    }
+
+    private async Task ApplyAsync()
+    {
+        if (!_apply.Enabled || _ready is not { } selected) return;
+        if (MessageBox.Show(this,
+            "This WILL update ONLY developer metadata on your owned Workshop item " + _id +
+            ".\\n\\nSource: " + selected.Session.Plan.Source +
+            "\\nCandidate size: " + selected.Session.Plan.CandidateBytes + " bytes" +
+            "\\n\\nThe public Workshop title, description, files and preview image are not updated." +
+            "\\n\\nThe original remote data and all sources are saved locally. " +
+            "Steam ownership and unchanged original bytes will be rechecked immediately before update." +
+            "\\n\\nDo you authorize this ONE metadata-only Steam update?",
+            "Confirm Steam developer metadata RESTORE",
+            MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
+            MessageBoxDefaultButton.Button2) != DialogResult.Yes) return;
+        _preview.Enabled = false;
+        _apply.Enabled = false;
+        _confirmation.Enabled = false;
+        _result.Text = "Verifying source files, owner and Steam metadata; submitting one update...";
+        try {
+            var applied = await Task.Run(() =>
+                RecoveryApplyService.Apply(selected, _confirmation.Text));
+            _result.Text = applied.SafeSummary +
+                "\\r\\nSafe result report: " + applied.SafeReportPath;
+            MessageBox.Show(this,
+                "Steam returned the exact recovered developer metadata. " +
+                "Please restart ModHUB and verify the mod in SE2.",
+                "Restore readback verified", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        } catch (Exception ex) {
+            _result.Text = "RESTORE NOT CONFIRMED — do not retry blindly.\\r\\n" +
+                ex.Message + "\\r\\nPrivate backup: " + selected.BackupFolder;
+            MessageBox.Show(this,
+                "Restore could not be confirmed. Do not repeat a Steam write " +
+                "until the item has been inspected again.\\n\\n" + ex.Message,
+                "Restore stopped", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        } finally {
+            _ready = null; // Require a fresh preview after ANY attempted update.
+            _confirmation.Enabled = true;
+            _confirmation.Clear();
+            _preview.Enabled = true;
+            _apply.Enabled = false;
+        }
+    }
+
     private async Task PreviewAsync()
     {
         if (_preview.Enabled == false) return;
+        InvalidatePreview();
         string originalBackup = _backupFile.Text.Trim();
         string project = _vrgproj.Text.Trim();
         string local = _local.Text.Trim();
@@ -203,7 +280,14 @@ internal sealed class RecoveryPreviewForm : Form
         try {
             RecoveryPreviewResult info = await Task.Run(() =>
                 RecoveryPreviewService.Prepare(_id, originalBackup, project, local, working));
-            _result.Text = info.SafeSummary;
+            _ready = info;
+            _result.Text = info.SafeSummary +
+                (info.Session.Plan.EligibleForApply &&
+                 info.Session.Plan.Source is RecoverySource.OriginalBackup or RecoverySource.WorkingItem
+                    ? "\\r\\n\\r\\nEligible source: enter RESTORE " + _id +
+                      " below to enable the one-time metadata-only restore."
+                    : "\\r\\n\\r\\nUnverified source. Steam upload stays BLOCKED.");
+            UpdateApplyAvailability();
         } catch (Exception ex) {
             _result.Text = "PREVIEW STOPPED. NO STEAM CHANGES.\r\n" + ex.Message;
         } finally { _preview.Enabled = true; }
