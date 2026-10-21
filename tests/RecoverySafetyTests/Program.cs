@@ -344,4 +344,74 @@ Expect(!TestFixturePolicy.MayCreate("", false) &&
 Expect(!TestFixturePolicy.MayCreate(TestFixturePolicy.Confirmation, true),
     "existing fixture creation ledger blocks duplicate creation");
 
+
+// FULL BATCH end-to-end simulation for one genuine-project-shaped disposable mod.
+var sampleProject = Project(Target);
+sampleProject["$Value"]!["Name"] = "SE2 UGC E2E TEST - Isolation";
+var sampleMetadata = Template(Target, Owner);
+sampleMetadata["$Value"]!["FullMetadata"]!["BaseMetadata"]!["Title"] =
+    "SE2 UGC E2E TEST - Isolation";
+sampleMetadata["$Value"]!["FullMetadata"]!["ProjectID"]!["Guid"] =
+    "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+var manifest = DisposableModScenarios.Prepare(Target, Owner, Owner,
+    sampleProject.ToJsonString(), sampleMetadata.ToJsonString());
+Expect(manifest.Scenarios.Count == 5 &&
+       manifest.Scenarios.Count(c => c.MayWriteToDisposableItem) == 3,
+    "single real ModHUB-bound E2E fixture prepares all five failure cases");
+var mockAll = new E2EMemorySteam(Target, Owner, manifest.OriginalRaw);
+var batch = DisposableE2EEngine.Run(manifest, mockAll);
+Expect(batch.Complete && batch.OriginalRestored &&
+       mockAll.Current == manifest.OriginalRaw && mockAll.Submits == 6,
+    "single E2E batch injects three live faults, restores after each, tests oversized offline");
+Expect(batch.Steps.Count == 5 && batch.Steps.All(x => x.Status.StartsWith("PASS-")),
+    "single batch returns one complete five-scenario report");
+var mockRejectEmpty = new E2EMemorySteam(Target, Owner, manifest.OriginalRaw) {
+    RejectZeroByteWrite = true
+};
+var partialBatch = DisposableE2EEngine.Run(manifest, mockRejectEmpty);
+Expect(!partialBatch.Complete && partialBatch.OriginalRestored &&
+       mockRejectEmpty.Current == manifest.OriginalRaw &&
+       partialBatch.Steps.Any(x => x.Status == "BLOCKED"),
+    "Steam refusing empty metadata does not damage baseline or claim a full pass");
+RefuseUnsafe(() => DisposableModScenarios.Prepare(Target, Owner+1, Owner,
+    sampleProject.ToJsonString(), sampleMetadata.ToJsonString()),
+    "full ModHUB test refuses wrong signed-in owner");
+var fakeProject = Project(Target);
+RefuseUnsafe(() => DisposableModScenarios.Prepare(Target, Owner, Owner,
+    fakeProject.ToJsonString(), sampleMetadata.ToJsonString()),
+    "full ModHUB test refuses non-test project title");
+RefuseUnsafe(() => DisposableModScenarios.Prepare(3810512193UL, Owner, Owner,
+    sampleProject.ToJsonString(), sampleMetadata.ToJsonString()),
+    "full ModHUB test refuses production x100 Workshop ID");
+var fakeOtherProject = Project(Comparison);
+fakeOtherProject["$Value"]!["Name"] = "SE2 UGC E2E TEST - Isolation";
+RefuseUnsafe(() => DisposableModScenarios.Prepare(Target, Owner, Owner,
+    fakeOtherProject.ToJsonString(), sampleMetadata.ToJsonString()),
+    "full ModHUB test rejects different .vrgproj Workshop ID");
+
+
 Console.WriteLine($"ALL {count} OFFLINE SAFETY CHECKS PASSED; NO STEAM API WAS CALLED.");
+
+sealed class E2EMemorySteam : IDisposableUgcTransport
+{
+    private readonly ulong _id;
+    private readonly ulong _owner;
+    internal string Current;
+    internal int Submits;
+    internal bool RejectZeroByteWrite;
+    internal E2EMemorySteam(ulong id, ulong owner, string raw) {
+        _id = id; _owner = owner; Current = raw;
+    }
+    public DisposableRemote ReadFresh(ulong itemId) {
+        if (itemId != _id) throw new InvalidOperationException("Wrong Workshop ID");
+        return new DisposableRemote(Current, _owner);
+    }
+    public void SubmitMetadataOnly(ulong itemId, string raw) {
+        if (itemId != _id) throw new InvalidOperationException("Wrong Workshop ID");
+        if (RejectZeroByteWrite && raw.Length == 0)
+            throw new InvalidOperationException("Steam metadata empty payload rejected");
+        Current = raw;
+        Submits++;
+    }
+}
+
