@@ -65,3 +65,18 @@ Record the commit SHA, test package SHA256, the smoke PASS/FAIL line, Windows ve
 Only safe API status flags, the item ID, byte count and SHA256 are logged. **Never upload the PRIVATE JSON backups or run REPAIR on a production item.**
 
 Official Steamworks API reference: https://partner.steamgames.com/doc/api/ISteamUGC#GetQueryUGCMetadata
+
+
+## E. Dedicated test-item creation (preview.4, explicit developer opt-in)
+
+The **default** `RUN-APP.cmd` remains a diagnosis/preview app and does **not** expose Workshop item creation. `RUN-FIXTURE-LAB.cmd` is the only packaged launcher which enables the extra **CREATE TEST ITEM** control. This control creates a **new** Steam account Workshop item, so treat the action as real and user-authorized.
+
+Do not run this procedure unless the owner approves adding one empty test item to their Steam Workshop account. Read the [full disposable-item plan](DISPOSABLE-EMPTY-METADATA-TEST.md) first.
+
+- Build and extract the new preview.4 ZIP; run `RUN-UI-SMOKE.cmd` first.
+- With Steam signed in, SE2/ModHUB closed, run `RUN-FIXTURE-LAB.cmd`. Click **CREATE TEST ITEM** and type `CREATE EMPTY SE2 TEST ITEM`. Confirm the second Yes/No dialog.
+- The tool makes exactly one `CreateItem` call, saves the local attempt before sending it, and never submits content or metadata. It cannot guarantee the item's visibility; never assume it is private.
+- If it succeeds, the new ID fills the item field. Click **READ-ONLY UGC PROBE** and share only **COPY SAFE REPORT**.
+- If the result is not confirmed or Steam returns no details for an uninitialized item, STOP without retrying; the test is inconclusive. A manually created item must not be deliberately damaged.
+
+Steam Workshop legal agreement: https://steamcommunity.com/workshop/workshoplegalagreement/
