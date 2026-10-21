@@ -32,6 +32,7 @@ internal sealed class FixForm : Form
     private readonly TextBox _workshop = new() { PlaceholderText = "Paste your Steam Workshop URL or item ID", Dock = DockStyle.Fill };
     private readonly Button _scan = new() { Text = "1   CHECK METADATA", Height = 44, Dock = DockStyle.Fill };
     private readonly Button _repair = new() { Text = "2   REPAIR MY ITEM", Height = 44, Dock = DockStyle.Fill, Enabled = false };
+    private readonly Button _recover = new() { Text = "RECOVERY PREVIEW", Height = 36, Dock = DockStyle.Fill, Enabled = false };
     private readonly Button _preflight = new() { Text = "DESCRIPTION PREFLIGHT", Height = 36, Dock = DockStyle.Fill };
     private readonly Button _report = new() { Text = "COPY SAFE REPORT", Height = 36, Dock = DockStyle.Fill, Enabled = false };
     private readonly Button _backup = new() { Text = "OPEN BACKUP FOLDER", Height = 36, Dock = DockStyle.Fill, Enabled = false };
@@ -44,7 +45,7 @@ internal sealed class FixForm : Form
 
     public FixForm()
     {
-        Text = "SE2 Workshop UGC Metadata Fix   •   v0.3.0";
+        Text = "SE2 Workshop UGC Metadata Fix   •   v0.4.0-dev (PREVIEW ONLY)";
         ClientSize = new System.Drawing.Size(780, 635);
         MinimumSize = new System.Drawing.Size(680, 610);
         StartPosition = FormStartPosition.CenterScreen;
@@ -68,7 +69,7 @@ internal sealed class FixForm : Form
         var title = new Label { Text = "Workshop metadata recovery", Dock = DockStyle.Fill, Font = new System.Drawing.Font("Segoe UI", 19F, System.Drawing.FontStyle.Bold) };
         layout.Controls.Add(title, 0, 0);
         layout.Controls.Add(new Label {
-            Text = "For Space Engineers 2 (App 1133870). Repairs ONLY oversized developer metadata caused by an embedded ModHUB description. Your Workshop content and public description are not changed.",
+            Text = "For Space Engineers 2 (App 1133870). Detects oversized, empty, malformed, or healthy metadata. Only the proven oversized-description repair can write to Steam; missing-data recovery is PREVIEW ONLY.",
             Dock = DockStyle.Fill, AutoSize = false, ForeColor = System.Drawing.Color.FromArgb(70, 80, 92)
         }, 0, 1);
         layout.Controls.Add(_workshop, 0, 2);
@@ -93,15 +94,14 @@ internal sealed class FixForm : Form
         var caption = new Label { Text = "Activity / diagnostic log", Dock = DockStyle.Fill, Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold) };
         layout.Controls.Add(caption, 0, 6);
         layout.Controls.Add(_log, 0, 7);
-        var outputActions = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, RowCount = 1 };
-        outputActions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33F));
-        outputActions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33F));
-        outputActions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.34F));
+        var outputActions = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 4, RowCount = 1 };
+        for (int i = 0; i < 4; i++) outputActions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
         _backup.Margin = new Padding(0, 0, 8, 0);
         _report.Margin = new Padding(8, 0, 0, 0);
         outputActions.Controls.Add(_backup, 0, 0);
         outputActions.Controls.Add(_report, 1, 0);
         outputActions.Controls.Add(_preflight, 2, 0);
+        outputActions.Controls.Add(_recover, 3, 0);
         layout.Controls.Add(outputActions, 0, 8);
         layout.Controls.Add(new Label {
             Text = "No password required. No automatic publish. Only the signed-in Workshop item's owner may repair. Always keep the original backup.",
@@ -111,6 +111,11 @@ internal sealed class FixForm : Form
         _repair.Click += async (_, _) => await RepairAsync();
         _backup.Click += (_, _) => OpenBackup();
         _report.Click += (_, _) => CopySafeReport();
+        _recover.Click += (_, _) => {
+            if (_busy || _current is null) return;
+            using var preview = new RecoveryPreviewForm(_current.ItemId);
+            preview.ShowDialog(this);
+        };
         _preflight.Click += (_, _) => {
             if (_busy) return;
             using var dialog = new PreflightForm(_current?.OriginalRaw, _current?.ItemId);
@@ -122,6 +127,7 @@ internal sealed class FixForm : Form
             _lastBackupPath = null;
             _backup.Enabled = false;
             _report.Enabled = false;
+            _recover.Enabled = false;
             _stats.Text = "No item inspected yet.";
             _status.Text = "Workshop input changed. Run CHECK METADATA before any repair.";
             _status.ForeColor = System.Drawing.Color.FromArgb(47, 65, 83);
@@ -135,7 +141,7 @@ internal sealed class FixForm : Form
             MessageBox.Show(this, "A Steam request is still running. Wait for the result before closing the app.",
                 "Please wait", MessageBoxButtons.OK, MessageBoxIcon.Information);
         };
-        Append("This utility only fixes the confirmed 'metadata > 5000 bytes + long embedded Description' case.");
+        Append("This version classifies missing and malformed metadata and PREVIEWS recovery. Only the original oversized-description patch can change Steam.");
         Append("If metadata is invalid JSON, too short, belongs to someone else, or has an unfamiliar structure, it will refuse to update.");
     }
 
@@ -150,6 +156,7 @@ internal sealed class FixForm : Form
         _lastBackupPath = null;
         _backup.Enabled = false;
         _report.Enabled = false;
+        _recover.Enabled = false;
         _stats.Text = "Waiting for Steam metadata...";
         UpdateRepairAvailability();
         SetBusy(true, "Reading fresh data from Steam (no changes)...");
@@ -164,7 +171,11 @@ internal sealed class FixForm : Form
             Append($"Original SHA256: {info.OriginalHash}");
             Append($"Backed up original data: {info.BackupDirectory}");
             Append(info.Reason);
-            _status.Text = info.Eligible ? "MATCH: This is the known oversized-description error. Repair available." : "NO FIX PROPOSED: The known error was not confirmed.";
+            Append("Detected: " + info.Diagnosis.Condition + " — " + info.Diagnosis.Explanation);
+            _recover.Enabled = info.Diagnosis.Condition is MetadataCondition.Missing or MetadataCondition.Malformed;
+            _status.Text = info.Eligible ? "MATCH: Oversized description patch available." :
+                _recover.Enabled ? "Recovery sources required; PREVIEW ONLY. Steam write disabled for missing/corrupt data." :
+                "NO SAFE REPAIR PROPOSED: see diagnosis.";
             _status.ForeColor = info.Eligible ? System.Drawing.Color.DarkGreen : System.Drawing.Color.DarkOrange;
         } catch (Exception ex) {
             _status.Text = "CHECK FAILED – nothing was changed on Steam.";
@@ -213,6 +224,7 @@ internal sealed class FixForm : Form
         _busy = active;
         _scan.Enabled = !active;
         _preflight.Enabled = !active;
+        _recover.Enabled = !active && (_current?.Diagnosis.Condition is MetadataCondition.Missing or MetadataCondition.Malformed);
         _workshop.Enabled = !active;
         UpdateRepairAvailability();
         if (status is not null) { _status.Text = status; _status.ForeColor = System.Drawing.Color.FromArgb(47, 65, 83); }
@@ -250,7 +262,7 @@ internal sealed class FixForm : Form
 
 internal sealed record ScanInfo(ulong ItemId, string Title, bool Eligible, string Reason, int OriginalBytes,
     int? CandidateBytes, int? DescriptionChars, string OriginalHash, string? CandidateHash,
-    string? CandidateRaw, string OriginalRaw, string BackupDirectory, ulong SteamOwner);
+    string? CandidateRaw, string OriginalRaw, string BackupDirectory, ulong SteamOwner, MetadataDiagnosis Diagnosis);
 
 internal sealed record RemoteInfo(string Raw, ulong Owner);
 
@@ -271,7 +283,7 @@ internal static class SteamFix
         return match.Success && ulong.TryParse(match.Groups[1].Value, out id) && id > 0;
     }
 
-    private static T WithSteam<T>(Func<T> action)
+    internal static T WithSteam<T>(Func<T> action)
     {
         if (!SteamAPI.Init()) throw new InvalidOperationException("Steam initialization failed. Start Steam and log in, then close SE2 and ModHUB.");
         try {
@@ -291,6 +303,7 @@ internal static class SteamFix
         File.WriteAllText(Path.Combine(dir, "original-developer-metadata-PRIVATE.json"), remote.Raw, Utf8NoBom);
 
         PatchEvaluation patch = MetadataPatch.Evaluate(remote.Raw, id);
+        MetadataDiagnosis diagnosis = UniversalRecovery.Diagnose(remote.Raw, id);
         bool ownerMatches = remote.Owner != 0 &&
             SteamUser.GetSteamID().m_SteamID != 0 &&
             remote.Owner == SteamUser.GetSteamID().m_SteamID;
@@ -304,13 +317,13 @@ internal static class SteamFix
 
         var info = new ScanInfo(id, patch.Title, eligible, reason, patch.OriginalBytes,
             patch.CandidateBytes, patch.DescriptionChars,
-            hash, candidateHash, candidate, remote.Raw, dir, remote.Owner);
+            hash, candidateHash, candidate, remote.Raw, dir, remote.Owner, diagnosis);
         File.WriteAllText(Path.Combine(dir, "report-SAFE-TO-SHARE.json"), JsonSerializer.Serialize(new {
             appId = AppId, workshopItem = id, dateUtc = DateTimeOffset.UtcNow,
             originalBytes = patch.OriginalBytes, originalHash = hash,
             candidateBytes = patch.CandidateBytes, candidateHash,
             descriptionChars = patch.DescriptionChars,
-            ownerMatches, eligible, reason,
+            ownerMatches, eligible, reason, classification = diagnosis.Condition.ToString(),
             workshopDescriptionUpdated = false, contentUpdated = false
         }, new JsonSerializerOptions { WriteIndented = true }), Utf8NoBom);
         return info;
@@ -374,7 +387,7 @@ internal static class SteamFix
         return patch.CandidateRaw;
     }
 
-    private static RemoteInfo ReadRemote(ulong id)
+    internal static RemoteInfo ReadRemote(ulong id)
     {
         var handle = SteamUGC.CreateQueryUGCDetailsRequest(new[] { new PublishedFileId_t(id) }, 1);
         try {
@@ -397,15 +410,17 @@ internal static class SteamFix
                 details.m_eResult != EResult.k_EResultOK || details.m_nPublishedFileId.m_PublishedFileId != id ||
                 details.m_nConsumerAppID.m_AppId != AppId)
                 throw new InvalidOperationException("Steam returned unexpected Workshop item.");
-            if (!SteamUGC.GetQueryUGCMetadata(handle, 0, out string raw, ReadBuffer) || string.IsNullOrEmpty(raw))
-                throw new InvalidOperationException("No developer metadata returned. This specific fix cannot be applied.");
-            return new RemoteInfo(raw, details.m_ulSteamIDOwner);
+            // Successful Steam API calls returning empty metadata are NOT deleted items.
+            // An unsuccessful metadata query is still an error, not a missing-data state.
+            if (!SteamUGC.GetQueryUGCMetadata(handle, 0, out string raw, ReadBuffer))
+                throw new InvalidOperationException("Steam metadata retrieval failed (not equivalent to empty developer metadata).");
+            return new RemoteInfo(raw ?? "", details.m_ulSteamIDOwner);
         } finally { SteamUGC.ReleaseQueryUGCRequest(handle); }
     }
 
-    private static string Hash(string raw) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(raw)));
+    internal static string Hash(string raw) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(raw)));
 
-    private static string NewBackupFolder(ulong id)
+    internal static string NewBackupFolder(ulong id)
     {
         string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "SE2WorkshopUGCFix", "Backups", id + "-" + DateTime.UtcNow.ToString("yyyyMMdd-HHmmss") + "-" + Guid.NewGuid().ToString("N")[..6]);
