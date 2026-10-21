@@ -300,4 +300,34 @@ RefuseUnsafe(() => RecoveryWritePreflight.Authorize(
     null, "RESTORE " + Target),
     "changed live owner blocks authorization");
 
+
+// Steamworks metadata API probe: FALSE is NOT the same as TRUE + empty.
+SteamProbeObservation Evidence(bool detailsOk, bool metaOk, string? raw,
+    bool cached = false, uint appId = 1133870,
+    ulong item = Target, ulong owner = Owner) =>
+    new(Target, item, appId, owner, Owner, detailsOk, cached, metaOk, raw);
+var realZero = SteamMetadataProbePolicy.Evaluate(Evidence(true, true, ""));
+Expect(realZero.Status == SteamProbeStatus.ConfirmedEmpty &&
+       realZero.EligibleForRecoveryPreview && realZero.MetadataBytes == 0,
+       "read-only probe distinguishes TRUE + zero bytes");
+var noMetadataCall = SteamMetadataProbePolicy.Evaluate(Evidence(true, false, ""));
+Expect(noMetadataCall.Status == SteamProbeStatus.MetadataCallFailed &&
+       !noMetadataCall.EligibleForRecoveryPreview && noMetadataCall.MetadataBytes is null,
+       "read-only probe FALSE with blank output is UNKNOWN, never missing");
+var failedDetails = SteamMetadataProbePolicy.Evaluate(Evidence(false, false, ""));
+Expect(failedDetails.Status == SteamProbeStatus.QueryFailed,
+       "read-only probe fails closed on unsuccessful details query");
+Expect(SteamMetadataProbePolicy.Evaluate(Evidence(true, true, "test")).Status == SteamProbeStatus.Present,
+       "read-only probe reports metadata present when returned");
+Expect(SteamMetadataProbePolicy.Evaluate(Evidence(true, true, null)).Status == SteamProbeStatus.AmbiguousNull,
+       "read-only probe refuses success plus null output");
+Expect(SteamMetadataProbePolicy.Evaluate(Evidence(true, true, "", cached: true)).Status == SteamProbeStatus.CachedQuery,
+       "read-only probe refuses cached empty data");
+Expect(SteamMetadataProbePolicy.Evaluate(Evidence(true, true, "", appId: 0)).Status == SteamProbeStatus.UnexpectedItem,
+       "read-only probe refuses wrong app");
+Expect(SteamMetadataProbePolicy.Evaluate(Evidence(true, true, "", item: Comparison)).Status == SteamProbeStatus.UnexpectedItem,
+       "read-only probe refuses wrong Workshop item");
+Expect(SteamMetadataProbePolicy.Evaluate(Evidence(true, true, "", owner: Owner + 1)).Status == SteamProbeStatus.WrongOwner,
+       "read-only probe refuses wrong Steam owner");
+
 Console.WriteLine($"ALL {count} OFFLINE SAFETY CHECKS PASSED; NO STEAM API WAS CALLED.");
