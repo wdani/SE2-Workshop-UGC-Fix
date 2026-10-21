@@ -45,7 +45,10 @@ checks = [
     ("Template refuses unreviewed keys", 'CheckKnownTemplateKeys(template);' in core and
      'Unreviewed metadata key:' in core),
     ("Original identity is enforced", 'ReadOriginalProject(originalVrgproj, itemId)' in core),
-    ("Owner is checked in recovery preview", 'remote.Owner != owner' in preview),
+    ("Owner is checked in recovery preview and fresh query session",
+     'initiallyRead.Owner != owner' in preview and
+     'if (data.OwnerId == 0 || data.OwnerId != expectedOwner)' in session and
+     'SteamUser.GetSteamID().m_SteamID' in preview),
     ("UI footer grouped instead of four cramped buttons",
      "CreateActionGroup(\"BACKUPS / REPORTS\"" in gui and
      "CreateActionGroup(\"TOOLS / RECOVERY\"" in gui and
