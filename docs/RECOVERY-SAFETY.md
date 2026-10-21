@@ -54,3 +54,21 @@ Reference: https://partner.steamgames.com/doc/api/ISteamUGC#GetQueryUGCMetadata
 The offline test harness uses a fake reader and covers: confirmed 0-byte success, failed query, cached response, null output, wrong owner/app/item, original changed between reads, reference changed between reads, original backup, original+comparison, no-comparison fallback, and malformed remote JSON.
 
 **These safeguards apply to candidate PREVIEW only**, not an authorization to upload anything. Any future actual Steam apply must re-run the checks directly before submitting.
+
+
+## Offline-only pre-submission authorization (in development)
+
+`RecoveryWritePreflight.Authorize` creates an **in-memory decision record only**, without reading or writing files or calling Steam. It is **NOT connected to any Steam write button**. The existing legacy oversized-description one-field patch remains a separate, previously tested behavior.
+
+A future restore requires all of these independently:
+- a previously validated **same-item backup** or a vetted **owner-matched working-item schema**; never the generic experimental reference;
+- a preview of remote metadata that was truly empty or malformed (identity conflict and healthy state prohibit recovery);
+- the same Steam item, signed-in owner, **original ProjectGUID**, and safe candidate UTF-8 size;
+- exact equality of locally stored private original and candidate JSON, including SHA-256 and byte size;
+- for a working reference, its privately saved JSON and its **freshly re-queried** live counterpart must match;
+- the original item must also be **freshly re-queried** and unchanged since the proposal;
+- an exact manual confirmation in the form `RESTORE <ORIGINAL_WORKSHOP_ID>`.
+
+A result from `RecoveryWritePreflight` is a code-level **permission candidate**, not a successful upload or an authorization to publish a real Workshop item. The user must separately approve a controlled disposable-item trial, and a future live transport must handle Steam callbacks, timeouts, and readback verification without retrying ambiguous outcomes.
+
+The static guard and synthetic tests cover the negative gates. **Compilation and execution of this new stage are pending a fresh dev-worker test run.**
