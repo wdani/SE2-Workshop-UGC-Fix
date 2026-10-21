@@ -190,6 +190,7 @@ internal sealed class FixForm : Form
         for (int i = 0; i < diagnosticButtons.RowCount; i++)
             diagnosticButtons.RowStyles.Add(new RowStyle(SizeType.Percent, 100F / diagnosticButtons.RowCount));
         _fixture.Visible = Program.FixtureLabEnabled;
+        _fixture.Enabled = Program.FixtureLabEnabled;
         foreach (var action in Program.FixtureLabEnabled ? new[] { _probe, _fixture } : new[] { _probe }) {
             action.Margin = new Padding(0, 2, 0, 2);
             action.FlatStyle = FlatStyle.Flat;
