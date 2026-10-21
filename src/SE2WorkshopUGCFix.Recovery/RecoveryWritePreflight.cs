@@ -15,7 +15,7 @@ internal sealed record RecoveryWriteAuthorization(
 
 // Safety decision only. The caller must provide privately stored backup text,
 // not merely a reported hash. A future transport MUST repeat these checks
-// immediately before calling ONLY SteamUGC.SetItemMetadata on the original item.
+// immediately before any future metadata-only Steam submission on the original item.
 internal static class RecoveryWritePreflight
 {
     internal static RecoveryWriteAuthorization Authorize(
