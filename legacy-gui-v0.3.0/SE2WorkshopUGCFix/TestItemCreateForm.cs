@@ -55,6 +55,7 @@ internal sealed class TestItemCreateForm : Form
                 _result.Text = "CREATED: " + created.ItemId + Environment.NewLine +
                     "Result: " + created.SteamResult + Environment.NewLine +
                     "Agreement needed: " + created.NeedsWorkshopAgreement + Environment.NewLine +
+                    "Workshop agreement: https://steamcommunity.com/workshop/workshoplegalagreement/" + Environment.NewLine +
                     "Receipt: " + created.ReceiptPath + Environment.NewLine +
                     "No metadata/content sent. Visibility remains unverified.";
             }
