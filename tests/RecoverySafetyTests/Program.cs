@@ -160,6 +160,16 @@ Expect(fallbackNoTemplate.Plan.Source == RecoverySource.GenericReference &&
        !fallbackNoTemplate.Plan.EligibleForApply && reads == 2,
        "no comparison mod produces a NON-WRITABLE generic proposal");
 
+var malformedRemote = RecoveryReadOnlySession.Prepare(
+    Target, Owner, id => Snapshot(id, Owner, "{truncated"), originalBackup,
+    null, null, null);
+Expect(malformedRemote.Condition == MetadataCondition.Malformed &&
+       malformedRemote.Plan.Source == RecoverySource.OriginalBackup,
+       "malformed/truncated remote metadata can use exact same-item backup, read-only");
+RefuseUnsafe(() => RecoveryReadOnlySession.Prepare(Target, Owner,
+    id => Snapshot(id, Owner, working), originalBackup, null, null, null),
+    "foreign/identity-conflict JSON can NEVER be overwritten as malformed");
+
 RefuseUnsafe(() => RecoveryReadOnlySession.Prepare(Target, Owner,
     id => Snapshot(id, Owner, "", succeeded: false), null, project, local, null),
     "Steam query failure NEVER misclassified as zero-byte metadata");
