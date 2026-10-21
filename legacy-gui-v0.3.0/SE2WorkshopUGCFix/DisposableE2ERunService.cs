@@ -10,11 +10,11 @@ using System.Threading;
 
 namespace SE2WorkshopUGCFix;
 
-internal sealed class LiveDisposableMetadataTransport : IDisposableUgcTransport
+internal sealed class OwnerOnlyMetadataTransport : IDisposableUgcTransport
 {
     private readonly ulong _id;
     private readonly ulong _owner;
-    internal LiveDisposableMetadataTransport(ulong id, ulong owner) {
+    internal OwnerOnlyMetadataTransport(ulong id, ulong owner) {
         _id = id;
         _owner = owner;
     }
@@ -29,14 +29,26 @@ internal sealed class LiveDisposableMetadataTransport : IDisposableUgcTransport
         return new(item.Raw, item.Owner);
     }
 
+    // Production recovery uses the same proven metadata-only Steam transport as
+    // the disposable batch, with one last byte-exact optimistic concurrency gate.
+    internal void SubmitMetadataOnlyIfUnchanged(ulong itemId, string expectedCurrentRaw, string raw)
+        => SubmitCore(itemId, raw, expectedCurrentRaw);
+
     public void SubmitMetadataOnly(ulong itemId, string raw)
+        => SubmitCore(itemId, raw, null);
+
+    private void SubmitCore(ulong itemId, string raw, string? expectedCurrentRaw)
     {
         if (itemId != _id || _owner == 0 || SteamUser.GetSteamID().m_SteamID != _owner)
             throw new InvalidOperationException("Steam owner/item mismatch: no submit.");
         if (Encoding.UTF8.GetByteCount(raw) >= UniversalRecovery.SteamLimitBytes)
             throw new InvalidOperationException("Developer metadata exceeds Steam byte limit.");
-        // Fresh owner verification before EVERY metadata mutation.
-        ReadFresh(_id);
+        // Fresh owner + expected raw bytes verification immediately before
+        // starting a metadata-only update. No blind retries of uncertain calls.
+        var beforeSubmit = ReadFresh(_id);
+        if (expectedCurrentRaw is not null && beforeSubmit.Raw != expectedCurrentRaw)
+            throw new InvalidOperationException(
+                "Steam developer metadata changed after authorization. NO UPDATE SENT.");
         var handle = SteamUGC.StartItemUpdate(new AppId_t(1133870), new PublishedFileId_t(_id));
         if (handle == UGCUpdateHandle_t.Invalid)
             throw new InvalidOperationException("StartItemUpdate returned invalid handle.");
@@ -116,7 +128,7 @@ internal static class DisposableE2ERunService
 
         stage?.Invoke("Original metadata and real ModHUB project backed up locally.");
         var result = DisposableE2EEngine.Run(manifest,
-            new LiveDisposableMetadataTransport(id, owner), stage);
+            new OwnerOnlyMetadataTransport(id, owner), stage);
 
         string report = Path.Combine(directory, "e2e-report-SAFE-TO-SHARE.json");
         File.WriteAllText(report, JsonSerializer.Serialize(new {
@@ -169,7 +181,7 @@ internal static class DisposableE2EManualRescue
         if (owner == 0) throw new InvalidOperationException("Steam owner not signed in.");
         // Independently recheck original real mod/project identity.
         var manifest = DisposableModScenarios.Prepare(id, owner, owner, project, original);
-        var transport = new LiveDisposableMetadataTransport(id, owner);
+        var transport = new OwnerOnlyMetadataTransport(id, owner);
         string current = transport.ReadFresh(id).Raw;
         if (current == original) return "Original already restored: SHA256 " + SteamFix.Hash(original);
 
