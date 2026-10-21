@@ -9,6 +9,7 @@ gui = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/Program.cs").read_text(encodi
 preview = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/RecoveryPreviewForm.cs").read_text(encoding="utf-8")
 core = (root / "src/SE2WorkshopUGCFix.Recovery/UniversalRecovery.cs").read_text(encoding="utf-8")
 session = (root / "src/SE2WorkshopUGCFix.Recovery/RecoveryReadOnlySession.cs").read_text(encoding="utf-8")
+preflight = (root / "src/SE2WorkshopUGCFix.Recovery/RecoveryWritePreflight.cs").read_text(encoding="utf-8")
 project = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/SE2WorkshopUGCFix.csproj").read_text(encoding="utf-8")
 legacy = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/MetadataPatch.cs").read_text(encoding="utf-8")
 
@@ -40,6 +41,19 @@ checks = [
     ("Read-only session never calls Steam API",
      'SteamUGC.' not in session and 'SteamAPI.' not in session),
 
+    ("Future-apply preflight has NO Steam API or filesystem writes",
+     "SteamUGC." not in preflight and "SteamAPI." not in preflight and
+     "File.WriteAll" not in preflight and "File.Delete" not in preflight),
+    ("Future-apply preflight rejects generic source",
+     "preview.Plan.Source is not (RecoverySource.OriginalBackup or RecoverySource.WorkingItem)" in preflight),
+    ("Future-apply requires exact typed item-specific phrase",
+     '"RESTORE " + preview.ItemId' in preflight),
+    ("Future-apply checks private originals/candidate and hashes",
+     "Hash(storedOriginalBackup) != preview.OriginalSha256" in preflight and
+     "Hash(storedCandidateBackup) != preview.CandidateSha256" in preflight),
+    ("Future-apply checks fresh reference and target remotely",
+     "RecoveryReadOnlySession.CheckFresh(" in preflight and
+     "readFresh(referenceId)" in preflight and "readFresh(preview.ItemId)" in preflight),
     ("Generic fallback stays explicitly non-writable", 'return new(false, RecoverySource.GenericReference' in core),
     ("Original oversized one-field repair still present", 'JsonNode.DeepEquals(expected, edited)' in legacy),
     ("Template refuses unreviewed keys", 'CheckKnownTemplateKeys(template);' in core and
