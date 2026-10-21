@@ -89,7 +89,14 @@ internal static class DisposableE2ERunService
         ulong owner = SteamUser.GetSteamID().m_SteamID;
         if (owner == 0) throw new InvalidOperationException("Steam login required.");
         RemoteInfo first = SteamFix.ReadRemote(id);
-        var manifest = DisposableModScenarios.Prepare(id, owner, first.Owner, project, first.Raw);
+        DisposableTestManifest manifest;
+        try {
+            // All five scenarios are prepared BEFORE the first Steam mutation.
+            manifest = DisposableModScenarios.Prepare(id, owner, first.Owner, project, first.Raw);
+        } catch (Exception ex) when (ex is ArgumentException or InvalidOperationException) {
+            throw new InvalidOperationException(
+                "PRECHECK FAILED — NO STEAM METADATA UPDATE WAS SENT. " + ex.Message, ex);
+        }
 
         string directory = SteamFix.NewBackupFolder(id);
         string pointer = Path.Combine(
