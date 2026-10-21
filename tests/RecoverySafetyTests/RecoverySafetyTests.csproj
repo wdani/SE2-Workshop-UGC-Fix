@@ -8,6 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../../src/SE2WorkshopUGCFix.Recovery/UniversalRecovery.cs" />
+    <Compile Include="../../src/SE2WorkshopUGCFix.Recovery/RecoveryReadOnlySession.cs" />
     <Compile Include="Program.cs" />
   </ItemGroup>
 </Project>
