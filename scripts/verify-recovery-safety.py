@@ -72,6 +72,8 @@ checks = [
      "getQueryUGCMetadataReturnedTrue = metadataOk" in probe and
      "responseWasCached = cached" in probe and
      "returnedItemMatches = returnedId == id" in probe),
+    ("Probe safe-report message does not claim nonexistent private backups",
+     'Read-only probe report copied. No original/candidate metadata JSON was created by this probe.' in gui),
     ("Probe UI never unlocks repair or recovery",
      "SteamReadProbe.Run(id)" in gui and
      '_current = null;' in gui and
