@@ -242,6 +242,12 @@ internal static class UniversalRecovery
             throw new ArgumentException("Not a ModHUB project metadata file");
         var val = root["$Value"] ?? throw new ArgumentException("Missing ModHUB project data");
         var stored = val["ProjectID"];
+        // ModHUB sometimes stores zeros for local-only IDs; nonzero IDs must match.
+        var localWorkshopId = val["Id"]?["Id"]?.GetValue<string>();
+        if (!string.IsNullOrWhiteSpace(localWorkshopId) &&
+            localWorkshopId != Guid.Empty.ToString("D") &&
+            !string.Equals(localWorkshopId, project.ModId, StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("Local ModHUB item Id conflicts with original .vrgproj.");
         var recordedGuid = stored?["Guid"]?.GetValue<string>();
         var recordedModId = stored?["ModId"]?["Id"]?.GetValue<string>();
         if (!string.IsNullOrWhiteSpace(recordedGuid) && recordedGuid != Guid.Empty.ToString("D") &&
@@ -299,6 +305,7 @@ internal static class UniversalRecovery
         // A working item must supply only a REVIEWED schema. Unknown fields could
         // leak foreign identity/content; reject instead of copying them blindly.
         RequireKnownKeys(node, "$Bundles", "$Type", "$Value");
+        RequireKnownKeys(node["$Bundles"]!, "VRage", "System.Runtime");
         var value = node["$Value"] ?? throw new ArgumentException("Missing template $Value");
         RequireKnownKeys(value, "Id", "PreviewUrl", "FullMetadata", "Author",
             "IsReferenceToRemote", "LastLocallyUpdated");
