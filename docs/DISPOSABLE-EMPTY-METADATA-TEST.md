@@ -1,6 +1,6 @@
 # Isolated 0-byte Steam UGC metadata test plan (NO production-mod changes)
 
-Status: PLANNED — not performed. Owner must approve creation of a disposable item and any subsequent item updates. This document **does not** authorize tools to perform Steam writes.
+Status: **Creation and first read-only 0-byte observation COMPLETED (2026-10-21).** No developer metadata update or restoration has been performed. All future Workshop-item updates still require a separate explicit test authorization.
 
 ## Baseline already observed
 
@@ -37,6 +37,31 @@ A developer-only creator has been implemented in the local Windows test build. I
 Only ONE attempt per installation is permitted by the development tool. It never deletes created items. It never calls any existing-item update method. Before treating a new item as private, independently inspect its visibility in Steam; the creator does not set visibility.
 
 **This implementation still needs a fresh developer VM build and real Windows smoke test** before the creator is used. Any Steam account state mutation remains dependent on the on-screen user confirmation.
+
+## Verified live 0-byte observation (2026-10-21)
+
+The owner used `v0.4.0-preview.4` to create a **disposable empty item** via `SteamUGC.CreateItem` and immediately ran `READ-ONLY UGC PROBE`. New item ID: `3824227768`.
+
+| Probe evidence | Observed |
+| --- | --- |
+| Details query | `k_EResultOK`, successful |
+| Cached response | `false` |
+| Item and consumer AppId | correct (`1133870`) |
+| Item owned by signed-in user | `true` |
+| `GetQueryUGCMetadata` return bool | `true` |
+| Returned metadata string null | `false` |
+| UTF-8 byte count | **0** |
+| SHA256 | `E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855` |
+| Classification | **`ConfirmedEmpty`** |
+| Steam update submitted | **`false`** |
+
+**Proved:** An existing newly created SE2 Steam Workshop item can be read freshly, owned/identity-verified, and have truly empty developer metadata returned as a successful empty string. The GUI's read-only probe works on real Steam for this scenario.
+
+**NOT proved:** A historical damaged item's original .vrgproj identity can be reconstructed from a blank account item. This item has **no real original ProjectGUID or ModId**; the missing identity must not be fabricated. No metadata-only write/readback or SE2/ModHUB recognition has happened.
+
+**Immediate next safe check:** Run the existing **CHECK METADATA** button on item `3824227768`, expecting `Missing` and `eligible=false` for the legacy oversized-description repair. The control item `3810512193` remains `Present` at 1,479 bytes. Save only redacted safe reports.
+
+A future disposable-only metadata transport experiment could submit a **clearly synthetic marker** to this disposable item to exercise `StartItemUpdate` → `SetItemMetadata` → `SubmitItemUpdate` → fresh readback, but this is **not an SE2 identity recovery**, is **not implemented**, and requires separately reviewed guardrails and owner confirmation. No additional Workshop item should be created for that step.
 
 ## Safe source of a truly missing-metadata test item
 
