@@ -16,5 +16,6 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Steamworks.NET.AnyCPU" Version="2026.165.2" />
+    <Compile Include="../../src/SE2WorkshopUGCFix.Recovery/UniversalRecovery.cs" Link="UniversalRecovery.cs" />
   </ItemGroup>
 </Project>
