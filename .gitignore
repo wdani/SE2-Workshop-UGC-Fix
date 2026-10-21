@@ -1,0 +1,29 @@
+# Developer environment
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+bin/
+obj/
+artifacts/
+TestResults/
+Release/
+publish/
+*.log
+
+# Never publish real Steam metadata, credentials, captures or case-specific restoration artifacts
+*.steam-credentials
+*steam_appid.txt
+**/Backups/
+**/Private/
+**/*-PRIVATE.json
+**/RESTORE-CANDIDATE-*.json
+**/working-*-developer-metadata.json
+**/safe-preview-result.txt
+**/summary.json
+**/hosts.yml
+
+# OS
+.DS_Store
+Thumbs.db
