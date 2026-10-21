@@ -144,7 +144,7 @@ internal static class UniversalRecovery
     {
         CheckOwner(signedInSteamId, targetOwner);
         var project = ReadOriginalProject(originalVrgproj, itemId);
-        var local = ReadLocalMetadata(originalModhubMetadata);
+        var local = ReadLocalMetadata(originalModhubMetadata, project);
         string title = PreferTitle(manualTitle, local?.Name, project.Name);
         var tags = TagsNode(local?.Tags);
         var root = new JsonObject {
