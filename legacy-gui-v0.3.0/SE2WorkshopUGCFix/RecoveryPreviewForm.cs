@@ -23,102 +23,91 @@ internal static class RecoveryPreviewService
     {
         ulong owner = SteamUser.GetSteamID().m_SteamID;
         if (owner == 0) throw new InvalidOperationException("Steam user not signed in.");
-        RemoteInfo remote = SteamFix.ReadRemote(targetId);
-        if (remote.Owner != owner)
+
+        // Record the initial successful, uncached Steam response even if user
+        // files are bad. SteamFix.ReadRemote throws on failed/cached/wrong-app queries.
+        RemoteInfo initiallyRead = SteamFix.ReadRemote(targetId);
+        if (initiallyRead.Owner != owner)
             throw new InvalidOperationException("The signed-in account does not own the original item.");
+        MetadataDiagnosis diagnosis = UniversalRecovery.Diagnose(initiallyRead.Raw, targetId);
+        if (diagnosis.Condition is not (MetadataCondition.Missing or MetadataCondition.Malformed))
+            throw new InvalidOperationException("Recovery preview not available: " + diagnosis.Condition);
 
-        MetadataDiagnosis condition = UniversalRecovery.Diagnose(remote.Raw, targetId);
-        if (condition.Condition is not (MetadataCondition.Missing or MetadataCondition.Malformed))
-            throw new InvalidOperationException("Recovery preview applies ONLY to empty or malformed metadata. Current state: "
-                + condition.Condition + ". See CHECK METADATA for the correct action.");
-
-        // Securely preserve evidence BEFORE parsing untrusted local files.
         string dir = SteamFix.NewBackupFolder(targetId);
-        string originalHash = SteamFix.Hash(remote.Raw);
-        File.WriteAllText(Path.Combine(dir, "original-developer-metadata-PRIVATE.json"), remote.Raw, new UTF8Encoding(false));
+        var noBom = new UTF8Encoding(false);
+        File.WriteAllText(Path.Combine(dir, "original-developer-metadata-PRIVATE.json"), initiallyRead.Raw, noBom);
 
-        string? originalProject = null;
-        string? localMetadata = null;
-        string? comparisonRaw = null;
-        string source;
-        string templateHash = "N/A";
-        RecoveryPlan plan;
-
-        if (!string.IsNullOrWhiteSpace(backupJsonPath)) {
-            string backup = ReadSmallFile(backupJsonPath);
-            File.WriteAllText(Path.Combine(dir, "source-backup-PRIVATE.json"), backup, new UTF8Encoding(false));
-            plan = UniversalRecovery.FromOriginalBackup(targetId, owner, remote.Owner, remote.Raw, backup);
-            source = "Exact-item backup";
-        } else {
-            if (string.IsNullOrWhiteSpace(vrgprojPath))
-                throw new ArgumentException("Choose the original .vrgproj project file or a complete older developer-metadata backup.");
-            originalProject = ReadSmallFile(vrgprojPath);
-            if (!string.IsNullOrWhiteSpace(modhubPath))
-                localMetadata = ReadSmallFile(modhubPath);
-            File.WriteAllText(Path.Combine(dir, "original-project-PRIVATE.json"), originalProject, new UTF8Encoding(false));
-            if (localMetadata != null)
-                File.WriteAllText(Path.Combine(dir, "original-modhub-metadata-PRIVATE.json"), localMetadata, new UTF8Encoding(false));
-
-            if (!string.IsNullOrWhiteSpace(comparisonInput)) {
-                if (!SteamFix.TryGetId(comparisonInput, out ulong comparisonId) || comparisonId == targetId)
-                    throw new ArgumentException("Enter a DIFFERENT valid working Workshop item ID.");
-                var comparison = SteamFix.ReadRemote(comparisonId);
-                if (comparison.Owner != owner)
-                    throw new InvalidOperationException("Working reference item must belong to the same signed-in account.");
-                if (UniversalRecovery.Diagnose(comparison.Raw, comparisonId).Condition != MetadataCondition.Healthy)
-                    throw new InvalidOperationException("The comparison item has no valid, safe metadata.");
-                comparisonRaw = comparison.Raw;
-                templateHash = SteamFix.Hash(comparison.Raw);
-                File.WriteAllText(Path.Combine(dir, "working-reference-PRIVATE.json"), comparison.Raw, new UTF8Encoding(false));
-                plan = UniversalRecovery.FromWorkingItem(targetId, owner, remote.Owner, comparison.Owner,
-                    remote.Raw, originalProject, localMetadata, comparison.Raw);
-                source = "Original project + owner-matched working schema";
-            } else {
-                plan = UniversalRecovery.FromGenericReference(targetId, originalProject, localMetadata, owner, remote.Owner);
-                source = "Synthetic generic reference — NOT APPROVED FOR UPLOAD";
-            }
+        string? originalBackup = string.IsNullOrWhiteSpace(backupJsonPath) ? null : ReadSmallFile(backupJsonPath);
+        string? project = string.IsNullOrWhiteSpace(vrgprojPath) ? null : ReadSmallFile(vrgprojPath);
+        string? local = string.IsNullOrWhiteSpace(modhubPath) ? null : ReadSmallFile(modhubPath);
+        ulong? comparisonId = null;
+        if (!string.IsNullOrWhiteSpace(comparisonInput)) {
+            if (!SteamFix.TryGetId(comparisonInput, out ulong id))
+                throw new ArgumentException("Invalid reference Workshop item ID.");
+            comparisonId = id;
         }
 
-        // A proposal is ALWAYS read-only here, even when offline validation says
-        // that a future separately reviewed APPLY could be possible.
-        string candidateHash = SteamFix.Hash(plan.CandidateJson);
-        File.WriteAllText(Path.Combine(dir, "candidate-preview-PRIVATE.json"), plan.CandidateJson, new UTF8Encoding(false));
-        string mode = plan.EligibleForApply ? "REVIEWABLE CANDIDATE (no upload implemented)"
-            : "EXPERIMENTAL PREVIEW ONLY (requires independent schema validation)";
+        // The pure session reads the target again, builds an owner-checked
+        // candidate, then RE-QUERIES both target and reference, if provided.
+        // No write method exists anywhere in this workflow.
+        var session = RecoveryReadOnlySession.Prepare(targetId, owner, id => {
+            RemoteInfo live = SteamFix.ReadRemote(id);
+            return new RecoveryRemoteSnapshot(
+                id, RecoveryReadOnlySession.ExpectedAppId, live.Owner,
+                QuerySucceeded: true, IsCached: false, live.Raw);
+        }, originalBackup, project, local, comparisonId);
+
+        if (session.OriginalRaw != initiallyRead.Raw)
+            throw new InvalidOperationException(
+                "Original metadata changed since first diagnostic query. Preview rejected.");
+
+        if (originalBackup is not null)
+            File.WriteAllText(Path.Combine(dir, "source-backup-PRIVATE.json"), originalBackup, noBom);
+        if (project is not null)
+            File.WriteAllText(Path.Combine(dir, "original-project-PRIVATE.json"), project, noBom);
+        if (local is not null)
+            File.WriteAllText(Path.Combine(dir, "original-modhub-metadata-PRIVATE.json"), local, noBom);
+        if (session.ReferenceRaw is not null)
+            File.WriteAllText(Path.Combine(dir, "working-reference-PRIVATE.json"), session.ReferenceRaw, noBom);
+        File.WriteAllText(Path.Combine(dir, "candidate-preview-PRIVATE.json"),
+            session.Plan.CandidateJson, noBom);
+
+        string source = session.Plan.Source switch {
+            RecoverySource.OriginalBackup => "Verified original same-item backup",
+            RecoverySource.WorkingItem => "Original project and owned comparison schema",
+            RecoverySource.GenericReference => "Synthetic reference, unverified, preview-only",
+            _ => throw new InvalidOperationException("Unknown recovery source")
+        };
+        string mode = session.Plan.Source == RecoverySource.GenericReference
+            ? "EXPERIMENTAL PREVIEW ONLY — no upload permitted"
+            : "REVIEWABLE CANDIDATE — NO UPLOAD IMPLEMENTED";
+
         var report = new {
             status = "PREVIEW COMPLETE — NO STEAM CHANGES",
             workshopItem = targetId,
-            classification = condition.Condition.ToString(),
-            originalBytes = condition.Bytes,
-            originalSha256 = originalHash,
-            candidateBytes = plan.CandidateBytes,
-            candidateSha256 = candidateHash,
-            schemaTemplateSha256 = templateHash,
+            classification = session.Condition.ToString(),
+            originalBytes = Encoding.UTF8.GetByteCount(session.OriginalRaw),
+            originalSha256 = session.OriginalSha256,
+            candidateBytes = session.Plan.CandidateBytes,
+            candidateSha256 = session.CandidateSha256,
+            schemaTemplateSha256 = session.ReferenceSha256,
             source, mode,
-            warning = plan.Explanation,
+            warning = session.Plan.Explanation,
             steamChanges = false
         };
         File.WriteAllText(Path.Combine(dir, "report-SAFE-TO-SHARE.json"),
-            JsonSerializer.Serialize(report, new JsonSerializerOptions { WriteIndented = true }),
-            new UTF8Encoding(false));
-
-        // Be cautious with API query races: a scan here is not permission to
-        // upload; the future APPLY must re-check the current state and ownership.
-        RemoteInfo finalCheck = SteamFix.ReadRemote(targetId);
-        if (finalCheck.Owner != owner || SteamFix.Hash(finalCheck.Raw) != originalHash ||
-            finalCheck.Raw != remote.Raw)
-            throw new InvalidOperationException("Steam changed during preview. Candidate not approved; do not upload.");
+            JsonSerializer.Serialize(report, new JsonSerializerOptions { WriteIndented = true }), noBom);
 
         string result = "READ-ONLY RECOVERY PREVIEW COMPLETE\r\n"
             + "Original Workshop item: " + targetId + "\r\n"
-            + "Detected state: " + condition.Condition + "\r\n"
+            + "Detected state: " + session.Condition + "\r\n"
             + "Recovery source: " + source + "\r\n"
-            + "Candidate size: " + plan.CandidateBytes + " UTF-8 bytes\r\n"
-            + "Candidate SHA256: " + candidateHash + "\r\n"
+            + "Candidate size: " + session.Plan.CandidateBytes + " UTF-8 bytes\r\n"
+            + "Candidate SHA256: " + session.CandidateSha256 + "\r\n"
             + "Status: " + mode + "\r\n"
             + "NO STEAM WRITE / NO UPLOAD IMPLEMENTED.\r\n"
             + "Private backup directory: " + dir + "\r\n"
-            + plan.Explanation;
+            + session.Plan.Explanation;
         return new(result, dir);
     }
 
