@@ -33,6 +33,7 @@ internal static class Program
                 ApplicationConfiguration.Initialize();
                 using var main = new FixForm();
                 using var recovery = new RecoveryPreviewForm(12345678UL);
+                using var fixtureDialog = new TestItemCreateForm();
                 main.ShowInTaskbar = false;
                 main.Opacity = 0;
                 main.Show();
@@ -63,6 +64,9 @@ internal static class Program
                             throw new InvalidOperationException("A footer button is too small for its caption.");
                     }
                 }
+                if (Descendants(fixtureDialog).OfType<Button>()
+                    .Single(c => c.Text == "CREATE ONE EMPTY TEST ITEM").Enabled)
+                    throw new InvalidOperationException("Test-item creation must start locked.");
                 if (!recovery.Text.Contains("Recovery Preview", StringComparison.Ordinal))
                     throw new InvalidOperationException("Recovery preview form failed to initialize.");
                 recovery.ShowInTaskbar = false;
