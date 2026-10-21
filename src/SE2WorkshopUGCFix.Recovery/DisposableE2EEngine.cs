@@ -37,7 +37,6 @@ internal static class DisposableE2EEngine
         string baseline = manifest.OriginalRaw;
         string hash = Hash(baseline);
         bool broken = false;
-        string lastInjected = baseline;
 
         DisposableRemote VerifiedFresh()
         {
@@ -63,7 +62,6 @@ internal static class DisposableE2EEngine
             transport.SubmitMetadataOnly(manifest.ItemId, baseline);
             AssertState(baseline, "restored readback");
             broken = false;
-            lastInjected = baseline;
         }
 
         try {
@@ -80,7 +78,6 @@ internal static class DisposableE2EEngine
                 AssertState(baseline, "before " + scenario.Name);
                 if (Hash(baseline) != hash)
                     throw new InvalidOperationException("Original backup hash changed.");
-                lastInjected = scenario.Raw;
                 try {
                     transport.SubmitMetadataOnly(manifest.ItemId, scenario.Raw);
                     // Submission returned verified success, but still require
