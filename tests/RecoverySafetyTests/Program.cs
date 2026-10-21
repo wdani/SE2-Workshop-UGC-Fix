@@ -215,4 +215,89 @@ RefuseUnsafe(() => RecoveryReadOnlySession.Prepare(Target, Owner,
     Fresh, originalBackup, null, null, Comparison),
     "conflicting backup and comparison source selection rejected");
 
+
+// Offline future-APPLY authorization: nothing below has a Steam write path.
+// Accept ONLY old exact-item backups or owner-verified comparison proposals.
+var authorizationFromBackup = RecoveryWritePreflight.Authorize(
+    recoveredFromBackup, Owner, Fresh,
+    recoveredFromBackup.OriginalRaw, recoveredFromBackup.Plan.CandidateJson, null,
+    "RESTORE " + Target);
+Expect(authorizationFromBackup.ItemId == Target &&
+       authorizationFromBackup.Source == RecoverySource.OriginalBackup &&
+       authorizationFromBackup.CandidateSha256 == recoveredFromBackup.CandidateSha256,
+       "exact original backup passes offline-only write preflight after new live re-query");
+var authorizationFromComparison = RecoveryWritePreflight.Authorize(
+    recoveredWithWorking, Owner, Fresh,
+    recoveredWithWorking.OriginalRaw, recoveredWithWorking.Plan.CandidateJson,
+    recoveredWithWorking.ReferenceRaw, "RESTORE " + Target);
+Expect(authorizationFromComparison.Source == RecoverySource.WorkingItem &&
+       authorizationFromComparison.ReferenceSha256 == recoveredWithWorking.ReferenceSha256,
+       "working reference requires and passes independent last-minute reference re-query");
+RefuseUnsafe(() => RecoveryWritePreflight.Authorize(
+    fallbackNoTemplate, Owner, Fresh,
+    fallbackNoTemplate.OriginalRaw, fallbackNoTemplate.Plan.CandidateJson, null,
+    "RESTORE " + Target),
+    "generic fallback can NEVER authorize a Steam upload even with confirmation");
+RefuseUnsafe(() => RecoveryWritePreflight.Authorize(
+    recoveredFromBackup, Owner, Fresh,
+    recoveredFromBackup.OriginalRaw, recoveredFromBackup.Plan.CandidateJson, null,
+    "RESTORE " + Comparison),
+    "wrong Workshop ID in typed approval blocks authorization");
+RefuseUnsafe(() => RecoveryWritePreflight.Authorize(
+    recoveredFromBackup, Owner + 1, Fresh,
+    recoveredFromBackup.OriginalRaw, recoveredFromBackup.Plan.CandidateJson, null,
+    "RESTORE " + Target),
+    "wrong current signed-in owner blocks authorization");
+RefuseUnsafe(() => RecoveryWritePreflight.Authorize(
+    recoveredFromBackup, Owner, Fresh,
+    "missing-original-backup", recoveredFromBackup.Plan.CandidateJson, null,
+    "RESTORE " + Target),
+    "modified original backup blocks authorization");
+RefuseUnsafe(() => RecoveryWritePreflight.Authorize(
+    recoveredFromBackup, Owner, Fresh,
+    recoveredFromBackup.OriginalRaw, "{}", null,
+    "RESTORE " + Target),
+    "modified candidate backup blocks authorization");
+RefuseUnsafe(() => RecoveryWritePreflight.Authorize(
+    recoveredWithWorking, Owner, Fresh,
+    recoveredWithWorking.OriginalRaw, recoveredWithWorking.Plan.CandidateJson,
+    null, "RESTORE " + Target),
+    "missing private reference backup blocks authorization");
+RefuseUnsafe(() => RecoveryWritePreflight.Authorize(
+    recoveredWithWorking, Owner, Fresh,
+    recoveredWithWorking.OriginalRaw, recoveredWithWorking.Plan.CandidateJson,
+    "modified-reference", "RESTORE " + Target),
+    "tampered private reference backup blocks authorization");
+RefuseUnsafe(() => RecoveryWritePreflight.Authorize(
+    recoveredWithWorking, Owner,
+    id => id == Target ? Snapshot(Target, Owner, "") :
+      Snapshot(Comparison, Owner, Template(Comparison, Owner, "changed").ToJsonString()),
+    recoveredWithWorking.OriginalRaw, recoveredWithWorking.Plan.CandidateJson,
+    recoveredWithWorking.ReferenceRaw, "RESTORE " + Target),
+    "stale reference metadata blocks last-minute authorization");
+RefuseUnsafe(() => RecoveryWritePreflight.Authorize(
+    recoveredFromBackup, Owner,
+    id => Snapshot(Target, Owner, "{changed}"),
+    recoveredFromBackup.OriginalRaw, recoveredFromBackup.Plan.CandidateJson,
+    null, "RESTORE " + Target),
+    "changed target metadata blocks last-minute authorization");
+RefuseUnsafe(() => RecoveryWritePreflight.Authorize(
+    recoveredFromBackup, Owner,
+    id => Snapshot(Target, Owner, "", succeeded: false),
+    recoveredFromBackup.OriginalRaw, recoveredFromBackup.Plan.CandidateJson,
+    null, "RESTORE " + Target),
+    "failed final Steam query blocks authorization");
+RefuseUnsafe(() => RecoveryWritePreflight.Authorize(
+    recoveredFromBackup, Owner,
+    id => Snapshot(Target, Owner, "", cached: true),
+    recoveredFromBackup.OriginalRaw, recoveredFromBackup.Plan.CandidateJson,
+    null, "RESTORE " + Target),
+    "cached final Steam query blocks authorization");
+RefuseUnsafe(() => RecoveryWritePreflight.Authorize(
+    recoveredFromBackup, Owner,
+    id => Snapshot(Target, Owner + 1, ""),
+    recoveredFromBackup.OriginalRaw, recoveredFromBackup.Plan.CandidateJson,
+    null, "RESTORE " + Target),
+    "changed live owner blocks authorization");
+
 Console.WriteLine($"ALL {count} OFFLINE SAFETY CHECKS PASSED; NO STEAM API WAS CALLED.");
