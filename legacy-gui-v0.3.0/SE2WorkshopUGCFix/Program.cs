@@ -36,7 +36,8 @@ internal static class Program
                 var repair = controls.Single(c => c.Text.Contains("REPAIR", StringComparison.OrdinalIgnoreCase));
                 var preview = controls.Single(c => c.Text == "RECOVERY PREVIEW");
                 var scan = controls.Single(c => c.Text.Contains("CHECK METADATA", StringComparison.OrdinalIgnoreCase));
-                if (repair.Enabled || preview.Enabled || !scan.Enabled)
+                var probe = controls.Single(c => c.Text == "READ-ONLY UGC PROBE");
+                if (repair.Enabled || preview.Enabled || !scan.Enabled || !probe.Enabled)
                     throw new InvalidOperationException("Unsafe initial GUI button state.");
                 // Verify the two footer groups and that labels fit their buttons.
                 var actionGroups = Descendants(main).OfType<GroupBox>().ToArray();
@@ -98,6 +99,8 @@ internal sealed class FixForm : Form
 {
     private readonly TextBox _workshop = new() { PlaceholderText = "Paste your Steam Workshop URL or item ID", Dock = DockStyle.Fill };
     private readonly Button _scan = new() { Text = "1   CHECK METADATA", Height = 44, Dock = DockStyle.Fill };
+    private readonly Button _probe = new() { Text = "READ-ONLY UGC PROBE", Dock = DockStyle.Fill,
+        Font = new System.Drawing.Font("Segoe UI", 9F) };
     private readonly Button _repair = new() { Text = "2   REPAIR MY ITEM", Height = 44, Dock = DockStyle.Fill, Enabled = false };
     private readonly Button _recover = new() { Text = "RECOVERY PREVIEW", Height = 36, Dock = DockStyle.Fill, Enabled = false };
     private readonly Button _preflight = new() { Text = "DESCRIPTION PREFLIGHT", Height = 36, Dock = DockStyle.Fill };
@@ -158,7 +161,20 @@ internal sealed class FixForm : Form
         actions.Controls.Add(_scan, 0, 0);
         actions.Controls.Add(_repair, 1, 0);
         layout.Controls.Add(actions, 0, 3);
-        layout.Controls.Add(_status, 0, 4);
+        // Explicit diagnostic can run even when ordinary CHECK METADATA fails.
+        // It never enables repair and does not submit any Steam changes.
+        var statusBar = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1,
+            Padding = new Padding(0), Margin = new Padding(0) };
+        statusBar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 73));
+        statusBar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 27));
+        _status.Dock = DockStyle.Fill;
+        _status.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+        _probe.Margin = new Padding(7, 4, 0, 4);
+        _probe.FlatStyle = FlatStyle.Flat;
+        _probe.ForeColor = System.Drawing.Color.FromArgb(35, 88, 140);
+        statusBar.Controls.Add(_status, 0, 0);
+        statusBar.Controls.Add(_probe, 1, 0);
+        layout.Controls.Add(statusBar, 0, 4);
         layout.Controls.Add(_stats, 0, 5);
         var caption = new Label { Text = "Activity / diagnostic log", Dock = DockStyle.Fill, Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold) };
         layout.Controls.Add(caption, 0, 6);
@@ -183,6 +199,7 @@ internal sealed class FixForm : Form
             Font = new System.Drawing.Font("Segoe UI", 9F)
         }, 0, 9);
         _scan.Click += async (_, _) => await ScanAsync();
+        _probe.Click += async (_, _) => await ProbeAsync();
         _repair.Click += async (_, _) => await RepairAsync();
         _backup.Click += (_, _) => OpenBackup();
         _report.Click += (_, _) => CopySafeReport();
@@ -247,6 +264,51 @@ internal sealed class FixForm : Form
         }
         group.Controls.Add(buttons);
         return group;
+    }
+
+    private async Task ProbeAsync()
+    {
+        if (_busy) return;
+        if (!SteamFix.TryGetId(_workshop.Text, out ulong id)) {
+            MessageBox.Show(this, "Enter a valid Workshop item ID or Steam Workshop URL.",
+                "Invalid Workshop ID", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+        // A diagnostic must NEVER unlock the legacy Steam repair or recovery preview.
+        _current = null;
+        _lastBackupPath = null;
+        _backup.Enabled = false;
+        _report.Enabled = false;
+        _recover.Enabled = false;
+        _stats.Text = "Reading raw Steam API status...";
+        SetBusy(true, "READ-ONLY: recording uncached Steam API results...");
+        Append($"Read-only Steam UGC probe for item {id} started...");
+        try {
+            var info = await Task.Run(() => SteamReadProbe.Run(id));
+            _lastBackupPath = Path.GetDirectoryName(info.ReportFile);
+            _backup.Enabled = _lastBackupPath is not null && Directory.Exists(_lastBackupPath);
+            _report.Enabled = File.Exists(info.ReportFile);
+            _stats.Text = $"Probe: {info.Assessment.Status}  |  Bytes: {info.Assessment.MetadataBytes?.ToString("N0") ?? "UNKNOWN"}";
+            _status.Text = info.Assessment.Status switch {
+                SteamProbeStatus.Present => "UGC API RESULT: metadata present. Use CHECK METADATA.",
+                SteamProbeStatus.ConfirmedEmpty => "UGC API RESULT: TRUE with 0 bytes — no Steam changes.",
+                SteamProbeStatus.MetadataCallFailed => "UGC API RESULT: FALSE — missing metadata NOT confirmed.",
+                _ => "READ-ONLY PROBE: see diagnostic result; no repair enabled."
+            };
+            _status.ForeColor = info.Assessment.Status == SteamProbeStatus.Present
+                ? System.Drawing.Color.DarkGreen : System.Drawing.Color.DarkOrange;
+            Append(info.Assessment.Explanation);
+            Append("Safe report available via COPY SAFE REPORT. No Steam update was sent.");
+        } catch (Exception ex) {
+            _status.Text = "READ-ONLY PROBE FAILED — Steam data unchanged.";
+            _status.ForeColor = System.Drawing.Color.DarkRed;
+            Append("Probe error: " + ex.Message);
+            MessageBox.Show(this, ex.Message, "Read-only Steam diagnostic failed",
+                MessageBoxButtons.OK, MessageBoxIcon.Error);
+        } finally {
+            _current = null;
+            SetBusy(false);
+        }
     }
 
     private async Task ScanAsync()
@@ -359,6 +421,7 @@ internal sealed class FixForm : Form
     {
         _busy = active;
         _scan.Enabled = !active;
+        _probe.Enabled = !active;
         _preflight.Enabled = !active;
         _recover.Enabled = !active && _current is { OwnerMatches: true } &&
             (_current.Diagnosis.Condition is MetadataCondition.Missing or MetadataCondition.Malformed);
