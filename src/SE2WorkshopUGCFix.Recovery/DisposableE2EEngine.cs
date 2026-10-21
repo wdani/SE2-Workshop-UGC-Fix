@@ -108,9 +108,24 @@ internal static class DisposableE2EEngine
                             "RESTORE " + manifest.ItemId);
                         if (allow.CandidateJson != baseline || nReads < 3)
                             throw new InvalidOperationException("Recovery core produced wrong backup.");
-                    } else if (UniversalRecovery.Diagnose(
-                        scenario.Raw, manifest.ItemId).Condition != MetadataCondition.IdentityConflict) {
-                        throw new InvalidOperationException("Identity-conflict test did not fail closed.");
+                    } else {
+                        bool plannerRefused = false;
+                        try {
+                            RecoveryRemoteSnapshot Probe(ulong id) {
+                                var r = VerifiedFresh();
+                                return new(id, RecoveryReadOnlySession.ExpectedAppId,
+                                    r.OwnerId, true, false, r.Raw);
+                            }
+                            RecoveryReadOnlySession.Prepare(manifest.ItemId,
+                                manifest.OwnerId, Probe, baseline, null, null, null);
+                        } catch (InvalidOperationException) {
+                            plannerRefused = true;
+                        } catch (ArgumentException) {
+                            plannerRefused = true;
+                        }
+                        if (!plannerRefused)
+                            throw new InvalidOperationException(
+                                "Unsafe identity conflict not refused by recovery planner.");
                     }
 
                     RestoreKnownInjected(scenario.Raw);
