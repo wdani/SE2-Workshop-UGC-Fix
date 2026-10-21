@@ -60,6 +60,8 @@ Cross-compile the Windows WinForms app from Linux (build check only, **cannot ru
 bash scripts/build-windows-gui-docker.sh
 ```
 
+To build an **unreleased local Windows smoke-test ZIP** and run the form-initialization test on Windows, see [Windows smoke instructions](docs/WINDOWS-SMOKE.md).
+
 This may download Windows targeting packs and Steamworks.NET from NuGet during restore. It does not run Steam or make any Workshop changes. Actual **Windows runtime testing** is still mandatory before a release.
 
 This runs the unit tests inside the official .NET 9 SDK container; it does **not** initialize Steam or modify any Workshop item. For a Windows compile test, build `legacy-gui-v0.3.0/SE2WorkshopUGCFix/SE2WorkshopUGCFix.csproj` with .NET 9 on Windows.
