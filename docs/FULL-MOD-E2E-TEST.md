@@ -8,6 +8,16 @@ We have already proven two live Steam states on 2026-10-21:
 
 The empty test item has **no ModHUB-generated original project identity**. For a genuine full recovery, use a real ModHUB project that the game publishes, not a fabricated ProjectGUID.
 
+## Recommended concrete fixture: a custom SE2 LCD image
+
+The owner has already created the local ModHUB project `SE2 UGC E2E TEST - Recovery`, visible in both Mod HUB and the VRAGE3 Editor. Its `Assets` folder is initially empty. **Do not create another project**.
+
+Use a single local PNG containing a clearly readable `SE2 UGC E2E TEST` message on a contrasting background. In the editor's **project** `Assets` folder (not read-only `Vanilla`), drag in the PNG to import it. In the Vanilla asset search, find `LcdCoreConfiguration` and select its **Partial Override**, saving the override to the test project's own Assets. In the override Inspector, find `Images`, add an element, and drag the imported PNG into the new image entry. Save the project, then **Project > Start Game** and verify the new image appears in an LCD's `Text and Image` mode. Use the short Workshop description `Disposable SE2 UGC metadata-recovery E2E test. Not a gameplay mod.` and tag `Other`; publish through Mod HUB with the most restricted available visibility. Record the **new ModHUB-assigned Workshop ID** and preserve the true local `.vrgproj`.
+
+This uses the documented SE2 LCD image workflow: https://spaceengineers2.wiki.gg/wiki/Guide_New_LCD_Image . The user's actual installed ModSDK UI remains authoritative if control wording differs.
+
+Do not use earlier bare-CreateItem fixture `3824227768` for this project unless Mod HUB officially binds its original project to that item. Do not modify existing production mods.
+
 ## A. One-time real ModHUB mod creation
 
 Official SE2 guide: [Space Engineers 2 Modding Overview](https://steamcommunity.com/sharedfiles/filedetails/?id=3484180972).
