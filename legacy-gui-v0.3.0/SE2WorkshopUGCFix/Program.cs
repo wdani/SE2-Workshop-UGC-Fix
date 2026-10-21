@@ -130,7 +130,7 @@ internal sealed class FixForm : Form
 
     public FixForm()
     {
-        Text = "SE2 Workshop UGC Metadata Fix   •   v0.4.0-preview.5 (READ-ONLY RECOVERY)";
+        Text = "SE2 Workshop UGC Metadata Fix   •   v0.4.0-preview.6 (READ-ONLY RECOVERY)";
         // Reserve actual vertical space for the grouped actions and security note.
         // The previous 33px toolbar row clipped buttons at normal Windows DPI.
         ClientSize = new System.Drawing.Size(880, Program.FixtureLabEnabled ? 850 : 755);
