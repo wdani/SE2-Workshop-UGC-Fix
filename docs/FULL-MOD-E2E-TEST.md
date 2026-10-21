@@ -81,6 +81,16 @@ Steam limits metadata to `k_cchDeveloperMetadataMax`; sending a >5,000-byte faul
 
 After the final metadata readback equals the baseline, open **ModHUB**, verify it still recognizes the original project ID, launch **Space Engineers 2**, activate the test mod and confirm its observable, harmless effect still works. This distinguishes mere Steam API readback from actual game compatibility.
 
+## Corrected first genuine ModHUB test failure (preview.6)
+
+The first attempted full batch against the published test item `3824260687` in preview.5 stopped **during scenario preparation**, with `Unexpected scenario classification oversized-other-rejection`. No Steam submit had occurred because all five synthetic scenario classifications are checked before any backup/write transport is started.
+
+Root cause: the initial `UniversalRecovery.Diagnose` labelled *any* oversized JSON carrying a nonempty BaseMetadata.Description as `OversizedDescription`, even when an unrelated 5200-byte field alone caused the overflow. This was hidden by the earlier fake unit test's empty ModHUB description.
+
+Fixed in preview.6: diagnosis evaluates a copy with internal description cleared, and labels `OversizedDescription` only if that could solve the byte-limit problem; the final exact-byte one-field patch validator remains authoritative. The real E2E oversized-other fixture now retains its original ModHUB description unmodified and verifies `OversizedOther`. Added a regression test using a genuinely nonempty description, plus explicit `PRECHECK FAILED — NO STEAM METADATA UPDATE WAS SENT` messages for future preparation errors.
+
+**Do not create or publish another mod.** Reuse the same live ModHUB test item and original project from the failed preview.5 attempt after the new preview.6 VM tests/publish pass. This change is not yet VM-validated.
+
 ## E. Scope limitation
 
 A historical damaged mod can differ from this isolated test mod in its age, schema, dependencies or missing files. The batch establishes a strong E2E baseline but does not prove universal compatibility with *all* mod versions. No existing production mod should be used for these deliberate failure injections.
