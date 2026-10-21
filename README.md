@@ -121,3 +121,8 @@ In one user-confirmed run, the suite saves the original metadata and project, th
 Full instructions: [One-pass real ModHUB E2E test](docs/FULL-MOD-E2E-TEST.md).
 
 **Status:** committed to Draft PR and pending VM/offline tests + native Windows smoke. Not a stable/public release or proof of broad game compatibility.
+
+
+### First real full-suite attempt (preview.6 fix)
+
+The initial live E2E attempt on the dedicated published ModHUB test item `3824260687` exposed a safe, pre-submit classifier defect: an unrelated oversized field was mistaken for an embedded-description overflow when the original published mod already had a description. No Steam metadata update occurred in that aborted attempt. The shared diagnosis and E2E sample tests are now corrected in preview.6; this version still needs a fresh VM test/build. [Incident and combined retest procedure](docs/FULL-MOD-E2E-TEST.md).
