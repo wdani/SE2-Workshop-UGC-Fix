@@ -80,6 +80,13 @@ checks = [
      "SteamReadProbe.Run(id)" in gui and
      '_current = null;' in gui and
      "_probe.Enabled = !active;" in gui),
+    ("Fixture creator requires a durable one-shot ledger",
+     "FileMode.CreateNew" in creator and "TestFixturePolicy.MayCreate" in creator),
+    ("Fixture creation has exact opt-in in default GUI",
+     'FixtureLabEnabled = args.Length == 1' in gui and
+     '"--fixture-lab"' in gui),
+    ("Fixture creation confirmation is exact",
+     "string.Equals(typed, Confirmation, StringComparison.Ordinal)" in fixture),
     ("Original oversized one-field repair still present", 'JsonNode.DeepEquals(expected, edited)' in legacy),
     ("Template refuses unreviewed keys", 'CheckKnownTemplateKeys(template);' in core and
      'Unreviewed metadata key:' in core),
