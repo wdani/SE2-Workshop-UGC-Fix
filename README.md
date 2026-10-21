@@ -2,7 +2,7 @@
 
 A community-maintained diagnostic and recovery tool for **Space Engineers 2 Steam Workshop developer metadata**.
 
-> **Development status: pre-release.** This repository currently includes an **offline recovery-planning core and synthetic regression tests**. The original Windows GUI v0.3 is being audited for migration. **The new missing-metadata restore flow is not enabled or validated as a public release.**
+> **Development status: pre-release.** The original Windows GUI v0.3.0 source has been imported under `legacy-gui-v0.3.0/`. A new v0.4.0-dev **read-only** missing-metadata preview wizard is being integrated with the existing oversized-description fix. **The new missing-metadata APPLY flow is not enabled or validated as a public release.**
 
 ## Why this exists
 
@@ -44,13 +44,23 @@ Pure offline test harness (.NET 9, synthetic data, **no Steam access**):
 
 ```bash
 dotnet run --project tests/RecoverySafetyTests/RecoverySafetyTests.csproj
+dotnet run --project legacy-gui-v0.3.0/tests/MetadataSafetyTests/MetadataSafetyTests.csproj
+python3 scripts/verify-recovery-safety.py
 ```
+
+On a developer VM with Docker but without .NET installed:
+
+```bash
+bash scripts/run-offline-tests-docker.sh
+```
+
+This runs the unit tests inside the official .NET 9 SDK container; it does **not** initialize Steam or modify any Workshop item. For a Windows compile test, build `legacy-gui-v0.3.0/SE2WorkshopUGCFix/SE2WorkshopUGCFix.csproj` with .NET 9 on Windows.
 
 Code: [src/SE2WorkshopUGCFix.Recovery/UniversalRecovery.cs](src/SE2WorkshopUGCFix.Recovery/UniversalRecovery.cs).
 
 Design and pending live integration: [docs/RECOVERY-SAFETY.md](docs/RECOVERY-SAFETY.md).
 
-**Compilation/CI status:** The migrated recovery core has not yet passed .NET build/Windows runtime verification. Do not distribute it as a working Steam restore utility.
+**Compilation/CI status:** The new integrated GUI and recovery core have not yet passed .NET build/Windows runtime verification. Do not distribute this development branch as a working Steam restore utility.
 
 ## History
 
