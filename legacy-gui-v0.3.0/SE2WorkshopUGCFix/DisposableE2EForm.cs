@@ -13,6 +13,8 @@ internal sealed class DisposableE2EForm : Form
     private readonly TextBox _path = new() { Dock = DockStyle.Fill };
     private readonly TextBox _confirmation = new() { Dock = DockStyle.Fill };
     private readonly Button _run = new() { Text = "RUN FULL DISPOSABLE MOD TEST", Dock = DockStyle.Fill, Enabled = false };
+    private readonly Button _copy = new() { Text = "COPY FULL E2E SAFE REPORT", Dock = DockStyle.Fill, Enabled = false };
+    private string? _reportPath;
     private readonly TextBox _log = new() {
         Dock = DockStyle.Fill, Multiline = true, ReadOnly = true,
         ScrollBars = ScrollBars.Both
@@ -29,12 +31,13 @@ internal sealed class DisposableE2EForm : Form
         Font = new Font("Segoe UI", 10F);
         var panel = new TableLayoutPanel {
             Dock = DockStyle.Fill, Padding = new Padding(18),
-            ColumnCount = 1, RowCount = 8
+            ColumnCount = 1, RowCount = 9
         };
         panel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         foreach (int n in new[] { 52, 106, 34, 46, 46, 42, 60 })
             panel.RowStyles.Add(new RowStyle(SizeType.Absolute, n));
         panel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
         Controls.Add(panel);
         panel.Controls.Add(new Label {
             Dock = DockStyle.Fill, Font = new Font("Segoe UI", 14F, FontStyle.Bold),
@@ -71,6 +74,13 @@ internal sealed class DisposableE2EForm : Form
         panel.Controls.Add(_confirmation, 0, 5);
         panel.Controls.Add(_run, 0, 6);
         panel.Controls.Add(_log, 0, 7);
+        panel.Controls.Add(_copy, 0, 8);
+        _copy.Click += (_, _) => {
+            if (_reportPath is not null && File.Exists(_reportPath)) {
+                Clipboard.SetText(File.ReadAllText(_reportPath));
+                _log.AppendText("Safe consolidated report copied to clipboard." + Environment.NewLine);
+            }
+        };
         void UpdateAvailability() => _run.Enabled = !_busy &&
             File.Exists(_path.Text) &&
             _confirmation.Text == "RUN FULL E2E " + _id;
@@ -100,6 +110,8 @@ internal sealed class DisposableE2EForm : Form
                         if (IsHandleCreated) BeginInvoke(new Action(() =>
                             _log.AppendText(stage + Environment.NewLine)));
                     }));
+                _reportPath = result.SummaryFile;
+                _copy.Enabled = File.Exists(result.SummaryFile);
                 _log.AppendText("RESULT: " + (result.Complete ? "PASS" : "PARTIAL / STOP") +
                     Environment.NewLine + "Original restored: " + result.OriginalRestored +
                     Environment.NewLine + "Safe report: " + result.SummaryFile +
