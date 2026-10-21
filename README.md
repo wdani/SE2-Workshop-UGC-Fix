@@ -99,3 +99,12 @@ The Windows GUI has an explicit **READ-ONLY UGC PROBE** button beside the status
 The Steamworks documentation does not definitively specify missing-value behavior for all client versions. Compare a known healthy owned item against a **disposable** owner-controlled item only. No existing production mod should be deliberately damaged as a test fixture.
 
 Follow [Windows smoke and read-only probe instructions](docs/WINDOWS-SMOKE.md). This new diagnostic source has not yet passed the latest .NET/Windows runtime tests.
+
+
+### Disposable Workshop fixture lab (developer-only, preview.4)
+
+A separate `RUN-FIXTURE-LAB.cmd` in the local Windows test ZIP enables a **user-confirmed, one-attempt** `SteamUGC.CreateItem` call for a brand-new, empty SE2 test item. It never invokes the metadata/content upload or changes existing Workshop items; it does affect the user's Steam account by creating a new entry. The default `RUN-APP.cmd` does not expose this feature.
+
+Creation is guarded by an exact typed confirmation plus a final dialog, and a durable local attempt/receipt prevents automatic retries after ambiguous results. Visibility cannot be guaranteed private; no existing production item should be used as a fixture. See [disposable-item testing](docs/DISPOSABLE-EMPTY-METADATA-TEST.md).
+
+**New creator implementation has not yet passed the next VM build and Windows smoke.**
