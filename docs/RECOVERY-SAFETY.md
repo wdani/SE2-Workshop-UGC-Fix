@@ -40,3 +40,17 @@ Local ModHUB metadata with zero/null IDs can be used as **secondary data only**;
 - Validate with a disposable, personally owned Workshop test item under **explicit** human authorization. Never test on somebody else's production Workshop entry.
 
 See also [Security](../SECURITY.md).
+
+## Race-safe offline session (development branch)
+
+`RecoveryReadOnlySession.Prepare` is a **pure no-Steam/no-I/O coordinator** called by the GUI's live read-only preview service. It checks an initial fresh result, verifies original ownership and item identity, produces a candidate from one of the supported sources, then **re-reads the original item**, and **re-reads the working reference** when used. Any changed metadata, owner, app, item ID, cached read, or query failure aborts without returning a proposal.
+
+The real Steam adapter (`SteamFix.ReadRemote`) must independently reject API errors, cached query results, unexpected app/item IDs and invalid ownership before the session receives a successful snapshot.
+
+Steamworks documents `GetQueryUGCMetadata` returning a boolean success code (false for invalid handle/out-of-range); it does **not document a separate guarantee for a particular client wrapper's absent/empty metadata behavior**. The 0-byte live condition still needs explicit verification with a disposable creator-owned Workshop item. A failed call must **never** be reinterpreted as valid 0-byte metadata.
+
+Reference: https://partner.steamgames.com/doc/api/ISteamUGC#GetQueryUGCMetadata
+
+The offline test harness uses a fake reader and covers: confirmed 0-byte success, failed query, cached response, null output, wrong owner/app/item, original changed between reads, reference changed between reads, original backup, original+comparison, no-comparison fallback, and malformed remote JSON.
+
+**These safeguards apply to candidate PREVIEW only**, not an authorization to upload anything. Any future actual Steam apply must re-run the checks directly before submitting.
