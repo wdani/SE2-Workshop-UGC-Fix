@@ -97,8 +97,8 @@ internal sealed class DisposableE2EForm : Form
             try {
                 var result = await Task.Run(() =>
                     DisposableE2ERunService.Run(_id, _path.Text, stage => {
-                        if (IsHandleCreated) BeginInvoke(() =>
-                            _log.AppendText(stage + Environment.NewLine));
+                        if (IsHandleCreated) BeginInvoke(new Action(() =>
+                            _log.AppendText(stage + Environment.NewLine)));
                     }));
                 _log.AppendText("RESULT: " + (result.Complete ? "PASS" : "PARTIAL / STOP") +
                     Environment.NewLine + "Original restored: " + result.OriginalRestored +
