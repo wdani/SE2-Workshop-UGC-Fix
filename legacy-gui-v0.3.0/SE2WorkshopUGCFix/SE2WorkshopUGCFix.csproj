@@ -12,7 +12,7 @@
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <PublishReadyToRun>false</PublishReadyToRun>
     <AssemblyName>SE2-Workshop-UGC-Fix</AssemblyName>
-    <Version>0.4.0-preview.2</Version>
+    <Version>0.4.0-preview.3</Version>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Steamworks.NET.AnyCPU" Version="2026.165.2" />
