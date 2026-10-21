@@ -75,6 +75,12 @@ internal static class DisposableModScenarios
         hugeDescription["$Value"]!["FullMetadata"]!["BaseMetadata"]!["Description"] =
             new string('X', 5200);
         var hugeOther = JsonNode.Parse(liveDeveloperMetadata)!;
+        // Isolate "oversized for OTHER reasons" from the live ModHUB
+        // description. A real published mod normally has a description,
+        // which would otherwise make Diagnose classify this as
+        // OversizedDescription even if the extra field caused the overflow.
+        // This is an OFFLINE-only scenario: do not modify the live metadata.
+        hugeOther["$Value"]!["FullMetadata"]!["BaseMetadata"]!["Description"] = "";
         hugeOther["ExtraOversizedField"] = new string('X', 5200);
         var scenarios = new [] {
             new DisposableScenario("malformed-json", "{", MetadataCondition.Malformed, true),
@@ -87,8 +93,11 @@ internal static class DisposableModScenarios
                 hugeOther.ToJsonString(), MetadataCondition.OversizedOther, false)
         };
         foreach (var scenario in scenarios) {
-            if (UniversalRecovery.Diagnose(scenario.Raw, workshopId).Condition != scenario.Expected)
-                throw new InvalidOperationException("Unexpected scenario classification " + scenario.Name);
+            var actual = UniversalRecovery.Diagnose(scenario.Raw, workshopId);
+            if (actual.Condition != scenario.Expected)
+                throw new InvalidOperationException(
+                    "Scenario " + scenario.Name + ": expected " + scenario.Expected +
+                    " but got " + actual.Condition + " (" + actual.Bytes + " UTF-8 bytes).");
             if (scenario.MayWriteToDisposableItem &&
                 Encoding.UTF8.GetByteCount(scenario.Raw) >= UniversalRecovery.SteamLimitBytes)
                 throw new InvalidOperationException("A writeable scenario exceeds Steam's byte limit.");
