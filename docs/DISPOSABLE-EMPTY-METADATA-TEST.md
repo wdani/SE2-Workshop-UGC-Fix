@@ -20,6 +20,24 @@ On 2026-10-21, owner used GUI v0.4.0-preview.3 `READ-ONLY UGC PROBE` on their ex
 
 This proves a healthy control, **NOT** 0-byte behavior and **NOT** a successful missing-metadata restore.
 
+
+## Explicit single-use fixture creator — Windows preview.4
+
+A developer-only creator has been implemented in the local Windows test build. It is **not part of the default RUN-APP.cmd flow**. Launch `RUN-FIXTURE-LAB.cmd` only when you want to create a brand-new test Workshop item on your Steam account.
+
+1. First run `RUN-UI-SMOKE.cmd`. Stop if it fails. Use the SAME fresh preview.4 package.
+2. Keep Steam signed in, close Space Engineers 2 and ModHUB.
+3. Start `RUN-FIXTURE-LAB.cmd`, then click **CREATE TEST ITEM**.
+4. Read the in-app warning: creating an item is a real Steam account mutation. Steam's default visibility is NOT verified private, and newly created items might not be queryable.
+5. Enter the exact confirmation `CREATE EMPTY SE2 TEST ITEM`; a second warning asks for final Yes/No approval.
+6. The creator reserves one unique local attempt file *before* calling `SteamUGC.CreateItem`. It performs **no** `StartItemUpdate`, `SetItemMetadata`, `SetItemContent`, `SetItemVisibility` or `SubmitItemUpdate`. The saved receipt includes the new Workshop ID if Steam confirms creation.
+7. Close the dialog. The new ID is entered into the main form; click **READ-ONLY UGC PROBE**. Share only the resulting safe report. If Steam returns an error / the created item is not queryable, **STOP**: that is not proof of a missing metadata value.
+8. If the creator returns timeout, failure or no receipt, **DO NOT RETRY**. The attempt is reserved until a deliberate manual review of `%LOCALAPPDATA%\\SE2WorkshopUGCFix\\TestFixture\\`; Steam might already have created the item. This is deliberate duplicate-prevention.
+
+Only ONE attempt per installation is permitted by the development tool. It never deletes created items. It never calls any existing-item update method. Before treating a new item as private, independently inspect its visibility in Steam; the creator does not set visibility.
+
+**This implementation still needs a fresh developer VM build and real Windows smoke test** before the creator is used. Any Steam account state mutation remains dependent on the on-screen user confirmation.
+
 ## Safe source of a truly missing-metadata test item
 
 Prefer an intentionally disposable Workshop item **created by its owner without uploading developer metadata**. Steamworks' official `ISteamUGC.CreateItem` documentation describes creating a new Workshop item with no content attached yet; it does not guarantee how querying an unpublished/new item behaves. The user should first approve the experiment and accept that creating an item, even private, changes their Steam Workshop account.
