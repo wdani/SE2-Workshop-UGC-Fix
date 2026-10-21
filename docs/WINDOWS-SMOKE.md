@@ -1,6 +1,6 @@
 # Windows GUI runtime smoke — controlled developer test
 
-**Goal:** prove the **v0.4.0-preview.2** WinForms interface actually initializes on a Windows x64 PC, beyond the previously successful Linux-hosted cross-compilation.
+**Goal:** prove the **v0.4.0-preview.3** WinForms interface actually initializes on a Windows x64 PC, beyond the previously successful Linux-hosted cross-compilation.
 
 **Never distribute this local preview as a release.** It contains the existing v0.3 oversized-description Steam write feature, but the new missing/corrupt metadata recovery is **read-only preview**. Do not attempt repairs on production Workshop items.
 
@@ -17,7 +17,7 @@ bash scripts/package-windows-smoke-docker.sh
 
 This uses the official .NET 9 SDK Docker image to **publish** a self-contained Windows x64 EXE. The final ZIP is saved only on the VM to:
 
-`artifacts/SE2-Workshop-UGC-Fix-0.4.0-preview.2-win-x64-LOCAL-TEST.zip`
+`artifacts/SE2-Workshop-UGC-Fix-0.4.0-preview.3-win-x64-LOCAL-TEST.zip`
 
 The script prints SHA256. The `artifacts/` directory is ignored by Git; **no Release upload, Steam API initialization or workshop edit is performed on the VM**.
 
