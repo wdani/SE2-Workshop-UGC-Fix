@@ -76,7 +76,7 @@ smoke = (
     "setlocal\r\n"
     "cd /d \"%~dp0\"\r\n"
     "echo Running OFFLINE UI startup check. Steam will NOT be initialized.\r\n"
-    "\"%~dp0SE2-Workshop-UGC-Fix.exe\" --smoke-ui\r\n"
+    "start /wait \"\" \"%~dp0SE2-Workshop-UGC-Fix.exe\" --smoke-ui\r\n"
     "if errorlevel 1 (\r\n"
     "  echo FAIL: Windows UI smoke check did not pass.\r\n"
     ") else (\r\n"
