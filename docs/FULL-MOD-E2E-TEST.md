@@ -53,6 +53,10 @@ Safety gates prior to any update: owns the item, current metadata is healthy, it
 
 One button starts the batch; no intermediate manual approvals between individual scenarios. One final report `e2e-report-SAFE-TO-SHARE.json` shows all outcomes, while the full private source/backups remain local.
 
+The suite window also has **COPY FULL E2E SAFE REPORT**, so the user can paste one combined result rather than looking through separate logs.
+
+**Recovery after interruption:** An `e2e-latest-backup-<ID>.txt` pointer is saved under `%LOCALAPPDATA%\\SE2WorkshopUGCFix` before the first write. If a failed run leaves the disposable item damaged, open the same fixture-lab suite, enter `RESTORE TEST <ID>` and use **EMERGENCY RESTORE FROM TEST BACKUP**. This is an explicit, separate confirmation. The recovery service checks the backed-up original project's real GUID, exact item binding and signed-in Steam owner, then restores **only** when the live metadata exactly matches one of the known faulty payloads produced by this suite. Unknown states are never overwritten. Do not delete the backup before verifying recovery.
+
 ### Steam write safeguards
 
 - The E2E transport only calls `StartItemUpdate`, **`SetItemMetadata`**, and `SubmitItemUpdate` on the *verified test item*. It never updates public title, public description, content, preview, tags or visibility.
