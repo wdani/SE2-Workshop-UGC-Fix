@@ -34,6 +34,17 @@ checks = [
      'Unreviewed metadata key:' in core),
     ("Original identity is enforced", 'ReadOriginalProject(originalVrgproj, itemId)' in core),
     ("Owner is checked in recovery preview", 'remote.Owner != owner' in preview),
+    ("UI footer grouped instead of four cramped buttons",
+     "CreateActionGroup(\"BACKUPS & REPORTS\"" in gui and
+     "CreateActionGroup(\"TOOLS & RECOVERY\"" in gui and
+     "RowStyle(SizeType.Absolute, 148)" in gui),
+    ("Healthy diagnostics show success instead of no-fix warning",
+     'case MetadataCondition.Healthy:' in gui and
+     'HEALTHY — Metadata is valid. No repair necessary.' in gui),
+    ("Recovery preview requires actual owner before enabling",
+     '_current is { OwnerMatches: true }' in gui),
+    ("UI smoke checks footer caption dimensions",
+     'TextRenderer.MeasureText(button.Text, button.Font)' in gui),
     ("Offline UI smoke entrypoint exists", '"--smoke-ui"' in gui and "new RecoveryPreviewForm(12345678UL)" in gui),
     ("UI smoke does not initialize Steam", 
      "SteamAPI.Init()" not in gui[gui.index('if (args.Length == 1 && args[0] == "--smoke-ui")'):gui.index('// AppID is set before SteamAPI.Init')]),
