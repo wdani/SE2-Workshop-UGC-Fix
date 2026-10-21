@@ -1,0 +1,130 @@
+// E2E Steam transport is intentionally *metadata only*. No Workshop title,
+// description, visibility, tags, image, dependencies or file/content changes.
+using Steamworks;
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Text;
+using System.Text.Json;
+using System.Threading;
+
+namespace SE2WorkshopUGCFix;
+
+internal sealed class LiveDisposableMetadataTransport : IDisposableUgcTransport
+{
+    private readonly ulong _id;
+    private readonly ulong _owner;
+    internal LiveDisposableMetadataTransport(ulong id, ulong owner) {
+        _id = id;
+        _owner = owner;
+    }
+
+    public DisposableRemote ReadFresh(ulong itemId)
+    {
+        if (itemId != _id) throw new InvalidOperationException("Different Workshop item requested.");
+        RemoteInfo item = SteamFix.ReadRemote(_id);
+        if (_owner == 0 || item.Owner != _owner ||
+            SteamUser.GetSteamID().m_SteamID != _owner)
+            throw new InvalidOperationException("Original Steam owner changed.");
+        return new(item.Raw, item.Owner);
+    }
+
+    public void SubmitMetadataOnly(ulong itemId, string raw)
+    {
+        if (itemId != _id || _owner == 0 || SteamUser.GetSteamID().m_SteamID != _owner)
+            throw new InvalidOperationException("Steam owner/item mismatch: no submit.");
+        if (Encoding.UTF8.GetByteCount(raw) >= UniversalRecovery.SteamLimitBytes)
+            throw new InvalidOperationException("Developer metadata exceeds Steam byte limit.");
+        // Fresh owner verification before EVERY metadata mutation.
+        ReadFresh(_id);
+        var handle = SteamUGC.StartItemUpdate(new AppId_t(1133870), new PublishedFileId_t(_id));
+        if (handle == UGCUpdateHandle_t.Invalid)
+            throw new InvalidOperationException("StartItemUpdate returned invalid handle.");
+        if (!SteamUGC.SetItemMetadata(handle, raw))
+            throw new InvalidOperationException("SetItemMetadata rejected payload; no submission.");
+
+        // SetItemMetadata is the ONLY setter invoked here.
+        var call = SteamUGC.SubmitItemUpdate(handle,
+            "SE2 UGC E2E disposable test: metadata fault / restoration");
+        if (call == SteamAPICall_t.Invalid)
+            throw new InvalidOperationException("SubmitItemUpdate returned invalid handle; outcome uncertain.");
+        SubmitItemUpdateResult_t? reply = null;
+        bool ioFailed = false;
+        var callback = CallResult<SubmitItemUpdateResult_t>.Create((data, failed) => {
+            reply = data; ioFailed = failed;
+        });
+        callback.Set(call);
+        var watch = Stopwatch.StartNew();
+        while (reply is null && watch.Elapsed < TimeSpan.FromSeconds(120)) {
+            SteamAPI.RunCallbacks();
+            Thread.Sleep(100);
+        }
+        if (reply is null)
+            throw new TimeoutException("Steam update timed out; outcome UNKNOWN. Inspect before any retry.");
+        var outcome = reply.Value;
+        if (ioFailed || outcome.m_eResult != EResult.k_EResultOK ||
+            outcome.m_nPublishedFileId.m_PublishedFileId != _id ||
+            outcome.m_bUserNeedsToAcceptWorkshopLegalAgreement)
+            throw new InvalidOperationException(
+                "Steam did not confirm metadata-only submit. Outcome requires inspection: " +
+                outcome.m_eResult + "; IO-failed=" + ioFailed);
+    }
+}
+
+internal sealed record DisposableE2ERunReceipt(
+    ulong ItemId, bool Complete, bool OriginalRestored, string BackupDirectory, string SummaryFile,
+    DisposableE2EStep[] Steps);
+
+internal static class DisposableE2ERunService
+{
+    internal static DisposableE2ERunReceipt Run(ulong id, string vrgprojPath, Action<string>? stage = null)
+        => SteamFix.WithSteam(() => RunConnected(id, vrgprojPath, stage));
+
+    private static DisposableE2ERunReceipt RunConnected(ulong id, string vrgprojPath, Action<string>? stage)
+    {
+        if (string.IsNullOrWhiteSpace(vrgprojPath) || !File.Exists(vrgprojPath) ||
+            new FileInfo(vrgprojPath).Length > 131072)
+            throw new ArgumentException("Select the real original ModHUB .vrgproj under 128 KiB.");
+        string project = File.ReadAllText(vrgprojPath, new UTF8Encoding(false, true));
+        ulong owner = SteamUser.GetSteamID().m_SteamID;
+        if (owner == 0) throw new InvalidOperationException("Steam login required.");
+        RemoteInfo first = SteamFix.ReadRemote(id);
+        var manifest = DisposableModScenarios.Prepare(id, owner, first.Owner, project, first.Raw);
+
+        string directory = SteamFix.NewBackupFolder(id);
+        string baselineFile = Path.Combine(directory, "e2e-original-PRIVATE.json");
+        File.WriteAllText(baselineFile, manifest.OriginalRaw, new UTF8Encoding(false));
+        if (File.ReadAllText(baselineFile, new UTF8Encoding(false, true)) != manifest.OriginalRaw)
+            throw new InvalidOperationException("Cannot independently read back original backup. No Steam writes.");
+
+        // Save project for exact identity recovery without overwriting the user's source.
+        File.WriteAllText(Path.Combine(directory, "e2e-project-PRIVATE.vrgproj"), project,
+            new UTF8Encoding(false));
+        if (!File.Exists(Path.Combine(directory, "e2e-project-PRIVATE.vrgproj")))
+            throw new InvalidOperationException("Project backup missing.");
+
+        stage?.Invoke("Original metadata and real ModHUB project backed up locally.");
+        var result = DisposableE2EEngine.Run(manifest,
+            new LiveDisposableMetadataTransport(id, owner), stage);
+
+        string report = Path.Combine(directory, "e2e-report-SAFE-TO-SHARE.json");
+        File.WriteAllText(report, JsonSerializer.Serialize(new {
+            mode = "DISPOSABLE_MOD_E2E",
+            appId = 1133870,
+            workshopItem = id,
+            startedFromRealModhubProject = true,
+            dateUtc = DateTimeOffset.UtcNow,
+            originalSha256 = result.OriginalSha256,
+            complete = result.Complete,
+            originalRestored = result.OriginalRestored,
+            steps = result.Steps,
+            steamWritesLimitedToMetadata = true,
+            publicWorkshopDescriptionUpdatedByTool = false,
+            contentUpdatedByTool = false,
+            alert = result.OriginalRestored ? "Original metadata read-back verified." :
+                "STOP. Original state NOT confirmed restored. Preserve private backup and inspect."
+        }, new JsonSerializerOptions { WriteIndented = true }), new UTF8Encoding(false));
+        return new(id, result.Complete, result.OriginalRestored, directory, report,
+            result.Steps.ToArray());
+    }
+}
