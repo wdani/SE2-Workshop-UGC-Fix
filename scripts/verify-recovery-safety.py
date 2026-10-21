@@ -13,6 +13,10 @@ preflight = (root / "src/SE2WorkshopUGCFix.Recovery/RecoveryWritePreflight.cs").
 probe = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/SteamReadProbe.cs").read_text(encoding="utf-8")
 probe_policy = (root / "src/SE2WorkshopUGCFix.Recovery/SteamMetadataProbePolicy.cs").read_text(encoding="utf-8")
 creator = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/TestItemCreator.cs").read_text(encoding="utf-8")
+disposable = (root / "src/SE2WorkshopUGCFix.Recovery/DisposableModScenarios.cs").read_text(encoding="utf-8")
+engine = (root / "src/SE2WorkshopUGCFix.Recovery/DisposableE2EEngine.cs").read_text(encoding="utf-8")
+e2e_runner = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/DisposableE2ERunService.cs").read_text(encoding="utf-8")
+e2e_dialog = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/DisposableE2EForm.cs").read_text(encoding="utf-8")
 fixture = (root / "src/SE2WorkshopUGCFix.Recovery/TestFixturePolicy.cs").read_text(encoding="utf-8")
 project = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/SE2WorkshopUGCFix.csproj").read_text(encoding="utf-8")
 legacy = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/MetadataPatch.cs").read_text(encoding="utf-8")
@@ -87,6 +91,33 @@ checks = [
      '"--fixture-lab"' in gui),
     ("Fixture creation confirmation is exact",
      "string.Equals(typed, Confirmation, StringComparison.Ordinal)" in fixture),
+    ("Real ModHUB E2E refuses production item and fake project",
+     "3810512193UL" in disposable and
+     "RequiredTitlePrefix" in disposable and
+     'originalProjectVrgproj' in disposable and
+     'projectId["Guid"]' in disposable),
+    ("Real E2E stores original and project before first mutation",
+     "e2e-original-PRIVATE.json" in e2e_runner and
+     "e2e-project-PRIVATE.vrgproj" in e2e_runner and
+     "DisposableE2EEngine.Run(" in e2e_runner),
+    ("Real E2E uses only Steam metadata setter and no public Workshop setters",
+     "SteamUGC.SetItemMetadata(" in e2e_runner and
+     not any(x in e2e_runner for x in (
+         "SteamUGC.SetItemContent(", "SteamUGC.SetItemTitle(",
+         "SteamUGC.SetItemDescription(", "SteamUGC.SetItemTags(",
+         "SteamUGC.SetItemVisibility(", "SteamUGC.DeleteItem("))),
+    ("Real E2E reruns the actual recovery and write preflight",
+     "RecoveryReadOnlySession.Prepare(" in engine and
+     "RecoveryWritePreflight.Authorize(" in engine),
+    ("Real E2E checks baseline after every mutation and restricts rollback",
+     'AssertState(scenario.Raw, "fault readback")' in engine and
+     'RestoreKnownInjected(scenario.Raw)' in engine and
+     'AssertState(baseline, "restored readback")' in engine),
+    ("Real E2E requires second explicit user approval and fixture lab",
+     '"RUN FULL E2E " + _id' in e2e_dialog and
+     "MessageBoxDefaultButton.Button2" in e2e_dialog and
+     "Program.FixtureLabEnabled" in gui and
+     "new DisposableE2EForm(selectedId)" in gui),
     ("Original oversized one-field repair still present", 'JsonNode.DeepEquals(expected, edited)' in legacy),
     ("Template refuses unreviewed keys", 'CheckKnownTemplateKeys(template);' in core and
      'Unreviewed metadata key:' in core),
