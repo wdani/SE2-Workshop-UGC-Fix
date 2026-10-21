@@ -54,7 +54,7 @@ internal static class RecoveryPreviewService
             RemoteInfo live = SteamFix.ReadRemote(id);
             return new RecoveryRemoteSnapshot(
                 id, RecoveryReadOnlySession.ExpectedAppId, live.Owner,
-                QuerySucceeded: true, IsCached: false, live.Raw);
+                QuerySucceeded: true, IsCached: false, DeveloperMetadata: live.Raw);
         }, originalBackup, project, local, comparisonId);
 
         if (session.OriginalRaw != initiallyRead.Raw)
