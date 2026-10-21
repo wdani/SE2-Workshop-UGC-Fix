@@ -41,8 +41,8 @@ internal static class Program
                 // Verify the two footer groups and that labels fit their buttons.
                 var actionGroups = Descendants(main).OfType<GroupBox>().ToArray();
                 if (actionGroups.Length != 2 ||
-                    !actionGroups.Any(g => g.Text == "BACKUPS & REPORTS") ||
-                    !actionGroups.Any(g => g.Text == "TOOLS & RECOVERY"))
+                    !actionGroups.Any(g => g.Text == "BACKUPS / REPORTS") ||
+                    !actionGroups.Any(g => g.Text == "TOOLS / RECOVERY"))
                     throw new InvalidOperationException("Footer action groups were not initialized.");
                 foreach (var group in actionGroups) {
                     var buttons = Descendants(group).OfType<Button>().ToArray();
@@ -171,8 +171,8 @@ internal sealed class FixForm : Form
         outputActions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
         outputActions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
         outputActions.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        outputActions.Controls.Add(CreateActionGroup("BACKUPS & REPORTS", _backup, _report), 0, 0);
-        outputActions.Controls.Add(CreateActionGroup("TOOLS & RECOVERY", _preflight, _recover), 1, 0);
+        outputActions.Controls.Add(CreateActionGroup("BACKUPS / REPORTS", _backup, _report), 0, 0);
+        outputActions.Controls.Add(CreateActionGroup("TOOLS / RECOVERY", _preflight, _recover), 1, 0);
         layout.Controls.Add(outputActions, 0, 8);
 
         layout.Controls.Add(new Label {
