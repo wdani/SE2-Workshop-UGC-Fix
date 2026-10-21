@@ -83,3 +83,10 @@ Not yet chosen. Public visibility alone does not grant a software license. Pleas
 ### UI layout update (preview.2)
 
 The Windows GUI now separates backups/reports from prevention/recovery controls into two accessible groups, uses larger action targets, and displays healthy metadata in green rather than an orange no-repair warning. The new UI layout still requires native Windows retesting.
+
+
+## Current development stage
+
+The `RecoveryReadOnlySession` verifies fresh Steam reads before/after building proposals. An independent `RecoveryWritePreflight` now verifies private backups, working-reference freshness, owner, identity and the typed `RESTORE <Workshop ID>` phrase entirely **offline**. This latter guard is **not connected to Steam** and is not an enabled repair feature.
+
+Next qualification gates are: re-run the .NET offline test matrix and Windows GUI cross-compilation, validate a Windows read-only preview on a dedicated owned test Workshop item, and then separately review a metadata-only recovery transport. Do not deliberately corrupt an existing production mod to run these checks.
