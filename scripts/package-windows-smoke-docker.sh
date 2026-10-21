@@ -13,7 +13,7 @@ test "$(git branch --show-current)" = "feat/universal-metadata-recovery" || {
 }
 PROJECT="legacy-gui-v0.3.0/SE2WorkshopUGCFix/SE2WorkshopUGCFix.csproj"
 OUTPUT="$ROOT/artifacts/windows-gui-smoke-publish"
-ARCHIVE="$ROOT/artifacts/SE2-Workshop-UGC-Fix-0.4.0-preview.1-win-x64-LOCAL-TEST.zip"
+ARCHIVE="$ROOT/artifacts/SE2-Workshop-UGC-Fix-0.4.0-preview.2-win-x64-LOCAL-TEST.zip"
 mkdir -p "$ROOT/artifacts"
 rm -rf "$OUTPUT"
 mkdir -p "$OUTPUT"
@@ -58,7 +58,7 @@ directory = Path(sys.argv[1])
 archive = Path(sys.argv[2])
 commit = sys.argv[3]
 readme = (
-    "SE2 Workshop UGC Fix — Windows LOCAL DEVELOPER TEST, v0.4.0-preview.1\r\n"
+    "SE2 Workshop UGC Fix — Windows LOCAL DEVELOPER TEST, v0.4.0-preview.2\r\n"
     "Source Git commit: " + commit + "\r\n\r\n"
     "1. Extract all files.\r\n"
     "2. Run RUN-UI-SMOKE.cmd to check that Windows Forms can initialize.\r\n"
