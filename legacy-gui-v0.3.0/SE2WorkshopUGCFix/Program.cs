@@ -447,7 +447,9 @@ internal sealed class FixForm : Form
         if (!File.Exists(file)) return;
         try {
             Clipboard.SetText(File.ReadAllText(file));
-            Append("Safe summary copied. The PRIVATE original/candidate JSON remains on your computer.");
+            Append(_current is null
+                ? "Read-only probe report copied. No original/candidate metadata JSON was created by this probe."
+                : "Safe scan report copied. PRIVATE metadata backups remain on your computer.");
         }
         catch (Exception ex) { MessageBox.Show(this, ex.Message, "Could not copy report", MessageBoxButtons.OK, MessageBoxIcon.Error); }
     }
