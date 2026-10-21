@@ -351,6 +351,10 @@ sampleProject["$Value"]!["Name"] = "SE2 UGC E2E TEST - Isolation";
 var sampleMetadata = Template(Target, Owner);
 sampleMetadata["$Value"]!["FullMetadata"]!["BaseMetadata"]!["Title"] =
     "SE2 UGC E2E TEST - Isolation";
+// Real ModHUB publications usually contain a nonempty internal description.
+// The earlier empty-only test fixture accidentally hid this classification bug.
+sampleMetadata["$Value"]!["FullMetadata"]!["BaseMetadata"]!["Description"] =
+    "Real published ModHUB description — do not copy this to the synthetic oversized-other fixture.";
 sampleMetadata["$Value"]!["FullMetadata"]!["ProjectID"]!["Guid"] =
     "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
 var manifest = DisposableModScenarios.Prepare(Target, Owner, Owner,
@@ -358,6 +362,12 @@ var manifest = DisposableModScenarios.Prepare(Target, Owner, Owner,
 Expect(manifest.Scenarios.Count == 5 &&
        manifest.Scenarios.Count(c => c.MayWriteToDisposableItem) == 3,
     "single real ModHUB-bound E2E fixture prepares all five failure cases");
+var otherFault = manifest.Scenarios.Single(c => c.Name == "oversized-other-rejection");
+var originalDescription = JsonNode.Parse(manifest.OriginalRaw)!["$Value"]!["FullMetadata"]!["BaseMetadata"]!["Description"]!.GetValue<string>();
+var otherDescription = JsonNode.Parse(otherFault.Raw)!["$Value"]!["FullMetadata"]!["BaseMetadata"]!["Description"]!.GetValue<string>();
+Expect(originalDescription.Length > 0 && otherDescription.Length == 0 &&
+       UniversalRecovery.Diagnose(otherFault.Raw, Target).Condition == MetadataCondition.OversizedOther,
+    "E2E oversized-other isolates a real nonempty ModHUB description without changing saved original");
 var mockAll = new E2EMemorySteam(Target, Owner, manifest.OriginalRaw);
 var batch = DisposableE2EEngine.Run(manifest, mockAll);
 Expect(batch.Complete && batch.OriginalRestored &&
