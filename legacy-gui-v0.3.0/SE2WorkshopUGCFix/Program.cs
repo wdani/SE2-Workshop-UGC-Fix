@@ -96,8 +96,10 @@ internal sealed class FixForm : Form
     public FixForm()
     {
         Text = "SE2 Workshop UGC Metadata Fix   •   v0.4.0-dev (PREVIEW ONLY)";
-        ClientSize = new System.Drawing.Size(780, 635);
-        MinimumSize = new System.Drawing.Size(680, 610);
+        // Reserve actual vertical space for the grouped actions and security note.
+        // The previous 33px toolbar row clipped buttons at normal Windows DPI.
+        ClientSize = new System.Drawing.Size(880, 755);
+        MinimumSize = new System.Drawing.Size(760, 700);
         StartPosition = FormStartPosition.CenterScreen;
         Font = new System.Drawing.Font("Segoe UI", 10F);
         BackColor = System.Drawing.Color.White;
@@ -108,12 +110,12 @@ internal sealed class FixForm : Form
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 56));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 55));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 58));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 56));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 52));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 37));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 58));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 33));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 148));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 46));
         Controls.Add(layout);
 
         var title = new Label { Text = "Workshop metadata recovery", Dock = DockStyle.Fill, Font = new System.Drawing.Font("Segoe UI", 19F, System.Drawing.FontStyle.Bold) };
@@ -144,18 +146,24 @@ internal sealed class FixForm : Form
         var caption = new Label { Text = "Activity / diagnostic log", Dock = DockStyle.Fill, Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold) };
         layout.Controls.Add(caption, 0, 6);
         layout.Controls.Add(_log, 0, 7);
-        var outputActions = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 4, RowCount = 1 };
-        for (int i = 0; i < 4; i++) outputActions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
-        _backup.Margin = new Padding(0, 0, 8, 0);
-        _report.Margin = new Padding(8, 0, 0, 0);
-        outputActions.Controls.Add(_backup, 0, 0);
-        outputActions.Controls.Add(_report, 1, 0);
-        outputActions.Controls.Add(_preflight, 2, 0);
-        outputActions.Controls.Add(_recover, 3, 0);
+        // Two accessible, clearly labelled groups rather than four compressed buttons.
+        var outputActions = new TableLayoutPanel {
+            Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1,
+            Margin = new Padding(0, 7, 0, 4)
+        };
+        outputActions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+        outputActions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+        outputActions.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        outputActions.Controls.Add(CreateActionGroup("BACKUPS & REPORTS", _backup, _report), 0, 0);
+        outputActions.Controls.Add(CreateActionGroup("TOOLS & RECOVERY", _preflight, _recover), 1, 0);
         layout.Controls.Add(outputActions, 0, 8);
+
         layout.Controls.Add(new Label {
-            Text = "No password required. No automatic publish. Only the signed-in Workshop item's owner may repair. Always keep the original backup.",
-            Dock = DockStyle.Fill, ForeColor = System.Drawing.Color.FromArgb(98, 99, 104), Font = new System.Drawing.Font("Segoe UI", 8.5F)
+            Text = "No passwords or automatic publishing. Steam writes require item ownership and explicit confirmation. Keep your backups private.",
+            Dock = DockStyle.Fill, AutoSize = false, TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
+            Padding = new Padding(3, 3, 0, 0), Margin = new Padding(0),
+            ForeColor = System.Drawing.Color.FromArgb(88, 98, 111),
+            Font = new System.Drawing.Font("Segoe UI", 9F)
         }, 0, 9);
         _scan.Click += async (_, _) => await ScanAsync();
         _repair.Click += async (_, _) => await RepairAsync();
@@ -195,6 +203,35 @@ internal sealed class FixForm : Form
         Append("If metadata is invalid JSON, too short, belongs to someone else, or has an unfamiliar structure, it will refuse to update.");
     }
 
+    private static GroupBox CreateActionGroup(string title, Button first, Button second)
+    {
+        var group = new GroupBox {
+            Text = title,
+            Dock = DockStyle.Fill,
+            Padding = new Padding(12, 13, 12, 10),
+            Margin = new Padding(3, 0, 7, 0),
+            ForeColor = System.Drawing.Color.FromArgb(61, 80, 100),
+            Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold)
+        };
+        var buttons = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2, Margin = new Padding(0) };
+        buttons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        buttons.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+        buttons.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+        foreach (var button in new[] { first, second }) {
+            button.Dock = DockStyle.Fill;
+            button.Margin = new Padding(2, 3, 2, 3);
+            button.FlatStyle = FlatStyle.Flat;
+            button.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(184, 196, 210);
+            button.BackColor = System.Drawing.Color.FromArgb(247, 250, 253);
+            button.ForeColor = System.Drawing.Color.FromArgb(37, 77, 117);
+            button.UseVisualStyleBackColor = false;
+            button.Font = new System.Drawing.Font("Segoe UI", 9.5F, System.Drawing.FontStyle.Regular);
+            buttons.Controls.Add(button);
+        }
+        group.Controls.Add(buttons);
+        return group;
+    }
+
     private async Task ScanAsync()
     {
         if (_busy) return;
@@ -217,16 +254,48 @@ internal sealed class FixForm : Form
             _lastBackupPath = info.BackupDirectory;
             _backup.Enabled = Directory.Exists(info.BackupDirectory);
             _report.Enabled = File.Exists(Path.Combine(info.BackupDirectory, "report-SAFE-TO-SHARE.json"));
-            _stats.Text = $"Item {info.ItemId}: {info.Title}\nDeveloper metadata: {info.OriginalBytes:N0} bytes  →  {info.CandidateBytes?.ToString("N0") ?? "N/A"} bytes  |  Description: {info.DescriptionChars?.ToString("N0") ?? "N/A"} chars";
+            var details = info.Diagnosis.Condition == MetadataCondition.Missing
+                ? "Developer metadata: MISSING (0 bytes)"
+                : $"Developer metadata: {info.OriginalBytes:N0} / {UniversalRecovery.SteamLimitBytes:N0} bytes";
+            if (info.CandidateBytes is not null)
+                details += $"  →  {info.CandidateBytes.Value:N0} bytes after patch";
+            details += $"  |  Internal description: {info.DescriptionChars?.ToString("N0") ?? "N/A"} chars";
+            _stats.Text = $"Item {info.ItemId}: {info.Title}\n{details}";
             Append($"Original SHA256: {info.OriginalHash}");
             Append($"Backed up original data: {info.BackupDirectory}");
             Append(info.Reason);
             Append("Detected: " + info.Diagnosis.Condition + " — " + info.Diagnosis.Explanation);
-            _recover.Enabled = info.Diagnosis.Condition is MetadataCondition.Missing or MetadataCondition.Malformed;
-            _status.Text = info.Eligible ? "MATCH: Oversized description patch available." :
-                _recover.Enabled ? "Recovery sources required; PREVIEW ONLY. Steam write disabled for missing/corrupt data." :
-                "NO SAFE REPAIR PROPOSED: see diagnosis.";
-            _status.ForeColor = info.Eligible ? System.Drawing.Color.DarkGreen : System.Drawing.Color.DarkOrange;
+            var mayPreviewRecovery = info.OwnerMatches &&
+                (info.Diagnosis.Condition is MetadataCondition.Missing or MetadataCondition.Malformed);
+            _recover.Enabled = mayPreviewRecovery;
+            if (!info.OwnerMatches) {
+                _status.Text = "READ ONLY — This Workshop item is not owned by the signed-in Steam account.";
+                _status.ForeColor = System.Drawing.Color.DarkOrange;
+            } else {
+                switch (info.Diagnosis.Condition) {
+                    case MetadataCondition.Healthy:
+                        _status.Text = "HEALTHY — Metadata is valid. No repair necessary.";
+                        _status.ForeColor = System.Drawing.Color.DarkGreen;
+                        break;
+                    case MetadataCondition.OversizedDescription when info.Eligible:
+                        _status.Text = "REPAIR AVAILABLE — Oversized internal description detected.";
+                        _status.ForeColor = System.Drawing.Color.DarkOrange;
+                        break;
+                    case MetadataCondition.Missing:
+                    case MetadataCondition.Malformed:
+                        _status.Text = "RECOVERY PREVIEW AVAILABLE — No Steam changes will be made.";
+                        _status.ForeColor = System.Drawing.Color.DarkOrange;
+                        break;
+                    case MetadataCondition.IdentityConflict:
+                        _status.Text = "UNSAFE METADATA IDENTITY — All repairs blocked.";
+                        _status.ForeColor = System.Drawing.Color.DarkRed;
+                        break;
+                    default:
+                        _status.Text = "NO SAFE AUTOMATIC REPAIR — See diagnosis.";
+                        _status.ForeColor = System.Drawing.Color.DarkOrange;
+                        break;
+                }
+            }
         } catch (Exception ex) {
             _status.Text = "CHECK FAILED – nothing was changed on Steam.";
             _status.ForeColor = System.Drawing.Color.DarkRed;
@@ -274,7 +343,8 @@ internal sealed class FixForm : Form
         _busy = active;
         _scan.Enabled = !active;
         _preflight.Enabled = !active;
-        _recover.Enabled = !active && (_current?.Diagnosis.Condition is MetadataCondition.Missing or MetadataCondition.Malformed);
+        _recover.Enabled = !active && _current is { OwnerMatches: true } &&
+            (_current.Diagnosis.Condition is MetadataCondition.Missing or MetadataCondition.Malformed);
         _workshop.Enabled = !active;
         UpdateRepairAvailability();
         if (status is not null) { _status.Text = status; _status.ForeColor = System.Drawing.Color.FromArgb(47, 65, 83); }
@@ -312,7 +382,8 @@ internal sealed class FixForm : Form
 
 internal sealed record ScanInfo(ulong ItemId, string Title, bool Eligible, string Reason, int OriginalBytes,
     int? CandidateBytes, int? DescriptionChars, string OriginalHash, string? CandidateHash,
-    string? CandidateRaw, string OriginalRaw, string BackupDirectory, ulong SteamOwner, MetadataDiagnosis Diagnosis);
+    string? CandidateRaw, string OriginalRaw, string BackupDirectory, ulong SteamOwner,
+    bool OwnerMatches, MetadataDiagnosis Diagnosis);
 
 internal sealed record RemoteInfo(string Raw, ulong Owner);
 
@@ -367,7 +438,7 @@ internal static class SteamFix
 
         var info = new ScanInfo(id, patch.Title, eligible, reason, patch.OriginalBytes,
             patch.CandidateBytes, patch.DescriptionChars,
-            hash, candidateHash, candidate, remote.Raw, dir, remote.Owner, diagnosis);
+            hash, candidateHash, candidate, remote.Raw, dir, remote.Owner, ownerMatches, diagnosis);
         File.WriteAllText(Path.Combine(dir, "report-SAFE-TO-SHARE.json"), JsonSerializer.Serialize(new {
             appId = AppId, workshopItem = id, dateUtc = DateTimeOffset.UtcNow,
             originalBytes = patch.OriginalBytes, originalHash = hash,
