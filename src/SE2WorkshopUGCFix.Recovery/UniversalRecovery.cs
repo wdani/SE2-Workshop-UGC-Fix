@@ -36,11 +36,22 @@ internal static class UniversalRecovery
             if (bytes <= SteamLimitBytes)
                 return new(MetadataCondition.Healthy, bytes, "Valid identity and metadata within Steam limit.");
             var description = root["$Value"]?["FullMetadata"]?["BaseMetadata"]?["Description"]?.GetValue<string>();
-            return !string.IsNullOrWhiteSpace(description)
-                ? new(MetadataCondition.OversizedDescription, bytes,
-                    "Oversized JSON with embedded description. Run the existing one-field patch validator.")
-                : new(MetadataCondition.OversizedOther, bytes,
-                    "Oversized JSON not explained by an embedded description. No automatic rewrite.");
+            // A nonempty description alone DOES NOT prove it caused the
+            // overflow. Real published ModHUB mods usually have a description.
+            // Only classify as a candidate description fix when clearing
+            // that field could actually bring the metadata under Steam's cap.
+            // The legacy exact-byte one-field patch remains the final authority.
+            if (description is { Length: >= 100 }) {
+                var candidate = root.DeepClone();
+                candidate["$Value"]!["FullMetadata"]!["BaseMetadata"]!["Description"] = "";
+                if (Encoding.UTF8.GetByteCount(candidate.ToJsonString()) < SteamLimitBytes)
+                    return new(MetadataCondition.OversizedDescription, bytes,
+                        "Long embedded description appears responsible for overflow. " +
+                        "Run the exact-byte one-field patch validator before any update.");
+            }
+            return new(MetadataCondition.OversizedOther, bytes,
+                "Metadata remains oversized independently of its description, " +
+                "or the description is too short to justify an automatic patch.");
         }
         catch (JsonException) {
             return new(MetadataCondition.Malformed, bytes,
