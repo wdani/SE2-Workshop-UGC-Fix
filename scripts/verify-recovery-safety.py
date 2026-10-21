@@ -10,6 +10,8 @@ preview = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/RecoveryPreviewForm.cs").
 core = (root / "src/SE2WorkshopUGCFix.Recovery/UniversalRecovery.cs").read_text(encoding="utf-8")
 session = (root / "src/SE2WorkshopUGCFix.Recovery/RecoveryReadOnlySession.cs").read_text(encoding="utf-8")
 preflight = (root / "src/SE2WorkshopUGCFix.Recovery/RecoveryWritePreflight.cs").read_text(encoding="utf-8")
+probe = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/SteamReadProbe.cs").read_text(encoding="utf-8")
+probe_policy = (root / "src/SE2WorkshopUGCFix.Recovery/SteamMetadataProbePolicy.cs").read_text(encoding="utf-8")
 project = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/SE2WorkshopUGCFix.csproj").read_text(encoding="utf-8")
 legacy = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/MetadataPatch.cs").read_text(encoding="utf-8")
 
@@ -55,6 +57,25 @@ checks = [
      "RecoveryReadOnlySession.CheckFresh(" in preflight and
      "readFresh(referenceId)" in preflight and "readFresh(preview.ItemId)" in preflight),
     ("Generic fallback stays explicitly non-writable", 'return new(false, RecoverySource.GenericReference' in core),
+    ("Read-only Steam probe NEVER calls an update API",
+     "SteamUGC.StartItemUpdate" not in probe and
+     "SteamUGC.SubmitItemUpdate" not in probe and
+     "SteamUGC.SetItemMetadata(" not in probe and
+     "SteamUGC.DeleteItem(" not in probe),
+    ("Read-only probe distinguishes metadata FALSE from zero bytes",
+     "if (!x.MetadataCallSucceeded)" in probe_policy and
+     "if (byteCount == 0)" in probe_policy),
+    ("Read-only probe never includes raw metadata in shareable report",
+     "rawMetadata = " not in probe and "RawDeveloperMetadata =" not in probe and
+     "metadataSha256 = assessment.MetadataSha256" in probe),
+    ("Read-only probe reports query flags and metadata call result",
+     "getQueryUGCMetadataReturnedTrue = metadataOk" in probe and
+     "responseWasCached = cached" in probe and
+     "returnedItemMatches = returnedId == id" in probe),
+    ("Probe UI never unlocks repair or recovery",
+     "SteamReadProbe.Run(id)" in gui and
+     '_current = null;' in gui and
+     "_probe.Enabled = !active;" in gui),
     ("Original oversized one-field repair still present", 'JsonNode.DeepEquals(expected, edited)' in legacy),
     ("Template refuses unreviewed keys", 'CheckKnownTemplateKeys(template);' in core and
      'Unreviewed metadata key:' in core),
