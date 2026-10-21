@@ -1,4 +1,4 @@
-# Single-pass full SE2 Workshop metadata recovery test (v0.4.0-preview.5)
+# Single-pass full SE2 Workshop metadata recovery test (v0.4.0-preview.6)
 
 ## Why this replaces tiny one-off probes
 
@@ -41,9 +41,9 @@ git pull --ff-only
 bash scripts/run-offline-tests-docker.sh && bash scripts/package-windows-smoke-docker.sh
 ```
 
-The latest version is **v0.4.0-preview.5**, currently awaiting its first VM compile. Never start a new tester build without checking that the tests passed.
+The latest version is **v0.4.0-preview.6**, currently awaiting its first VM compile. Never start a new tester build without checking that the tests passed.
 
-Copy the local `artifacts/SE2-Workshop-UGC-Fix-0.4.0-preview.5-win-x64-LOCAL-TEST.zip` via MobaXterm, extract, and run `RUN-UI-SMOKE.cmd`. Then, with Steam signed in and **SE2 and ModHUB closed**, open `RUN-FIXTURE-LAB.cmd` (the default `RUN-APP.cmd` does not enable test writes).
+Copy the local `artifacts/SE2-Workshop-UGC-Fix-0.4.0-preview.6-win-x64-LOCAL-TEST.zip` via MobaXterm, extract, and run `RUN-UI-SMOKE.cmd`. Then, with Steam signed in and **SE2 and ModHUB closed**, open `RUN-FIXTURE-LAB.cmd` (the default `RUN-APP.cmd` does not enable test writes).
 
 Enter the **new ModHUB-published test mod's Workshop ID**, not the original empty-item ID. Click **RUN FULL MOD E2E**, select its original `.vrgproj` and type the exact phrase shown (`RUN FULL E2E <item_id>`). Accept the final message that explicitly states that the test WILL modify the disposable item's developer metadata repeatedly.
 
