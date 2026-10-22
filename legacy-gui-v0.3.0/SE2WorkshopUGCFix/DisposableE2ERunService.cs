@@ -33,7 +33,7 @@ internal sealed class OwnerOnlyMetadataTransport : IDisposableUgcTransport
     // the disposable batch, with one last byte-exact optimistic concurrency gate.
     internal void SubmitMetadataOnlyIfUnchanged(ulong itemId, string expectedCurrentRaw, string raw)
         => SubmitCore(itemId, raw, expectedCurrentRaw,
-            "Owner-approved SE2 Workshop developer metadata recovery");
+            ""); // Avoid attaching a public change-log message to a recovery.
 
     public void SubmitMetadataOnly(ulong itemId, string raw)
         => SubmitCore(itemId, raw, null,
