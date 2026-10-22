@@ -7,6 +7,7 @@ import sys
 root = Path(__file__).resolve().parents[1]
 gui = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/Program.cs").read_text(encoding="utf-8")
 preview = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/RecoveryPreviewForm.cs").read_text(encoding="utf-8")
+apply = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/RecoveryApplyService.cs").read_text(encoding="utf-8")
 core = (root / "src/SE2WorkshopUGCFix.Recovery/UniversalRecovery.cs").read_text(encoding="utf-8")
 session = (root / "src/SE2WorkshopUGCFix.Recovery/RecoveryReadOnlySession.cs").read_text(encoding="utf-8")
 preflight = (root / "src/SE2WorkshopUGCFix.Recovery/RecoveryWritePreflight.cs").read_text(encoding="utf-8")
@@ -31,6 +32,33 @@ checks = [
     ("UI recovery option disabled until scan", 'new() { Text = "RECOVERY PREVIEW"' in gui and 'Enabled = false' in gui),
     ("UI recovery path is explicitly preview only", 'RecoveryPreviewForm(_current.ItemId)' in gui),
     ("GUI compiles same universal recovery core", 'src/SE2WorkshopUGCFix.Recovery/UniversalRecovery.cs' in project),
+    ("Standard recovery GUI keeps APPLY locked before verified preview",
+     'Text = "RESTORE MY WORKSHOP METADATA (CONFIRM FIRST)"' in preview and
+     'Enabled = false, Height = 42' in preview and
+     'RecoveryApplyService.Apply(selected, typedConfirmation)' in preview and
+     '"RESTORE " + _id' in preview),
+    ("Normal recovery uses the tested owner-only metadata-only Steam writer",
+     'new OwnerOnlyMetadataTransport(' in apply and
+     "SubmitMetadataOnlyIfUnchanged(" in apply and
+     "SetItemMetadata(" in e2e_runner and
+     'SteamUGC.SetItemTitle(' not in apply and
+     'SteamUGC.SetItemDescription(' not in apply and
+     'SteamUGC.SetItemContent(' not in apply),
+    ("Source and candidate integrity checked before recovery APPLY",
+     'RecoveryWritePreflight.Authorize(' in apply and
+     'ProjectSourceSha256' in apply and
+     'LocalSourceSha256' in apply and
+     'source-backup-PRIVATE.json' in apply and
+     'candidate-preview-PRIVATE.json' in apply),
+    ("Recovery APPLY requires exact fresh Steam readback",
+     'writer.ReadFresh(session.ItemId)' in apply and
+     'after.Raw != approved.CandidateJson' in apply and
+     'SteamFix.Hash(after.Raw) != approved.CandidateSha256' in apply),
+    ("Unknown source still blocked, no blind Steam retry",
+     'RecoverySource.OriginalBackup or RecoverySource.WorkingItem' in apply and
+     'RecoverySource.GenericReference' not in apply and
+     'NO UPDATE SENT' in e2e_runner and
+     'StartItemUpdate(' not in apply),
     ("Recovery preview never uses Steam write methods", not any(s in preview for s in
         ("SteamUGC.StartItemUpdate", "SteamUGC.SetItemMetadata",
          "SteamUGC.SubmitItemUpdate", "SteamUGC.DeleteItem"))),
