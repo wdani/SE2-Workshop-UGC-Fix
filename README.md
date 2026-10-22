@@ -98,7 +98,7 @@ The Windows GUI now separates backups/reports from prevention/recovery controls 
 
 The `RecoveryReadOnlySession` verifies fresh Steam reads before/after building proposals. An independent `RecoveryWritePreflight` now verifies private backups, working-reference freshness, owner, identity and the typed `RESTORE <Workshop ID>` phrase entirely **offline**. This latter guard is **not connected to Steam** and is not an enabled repair feature.
 
-Next qualification gates are: re-run the .NET offline test matrix and Windows GUI cross-compilation, validate a Windows read-only preview on a dedicated owned test Workshop item, and then separately review a metadata-only recovery transport. Do not deliberately corrupt an existing production mod to run these checks.
+Next qualification gates for preview.7: run the bundled .NET/static suite and Windows GUI cross-compilation, perform Windows UI smoke/read-only verification, and separately validate the newly wired owner-only APPLY on a pre-authorized disposable item. The existing genuine E2E batch has already validated the Steam transport, but not this exact user-approval flow. Do not deliberately corrupt an existing production mod to run these checks.
 
 
 ### Read-only Steam API diagnostic (preview.3, unreleased)
@@ -107,7 +107,7 @@ The Windows GUI has an explicit **READ-ONLY UGC PROBE** button beside the status
 
 The Steamworks documentation does not definitively specify missing-value behavior for all client versions. Compare a known healthy owned item against a **disposable** owner-controlled item only. No existing production mod should be deliberately damaged as a test fixture.
 
-Follow [Windows smoke and read-only probe instructions](docs/WINDOWS-SMOKE.md). This new diagnostic source has not yet passed the latest .NET/Windows runtime tests.
+Follow [Windows smoke and read-only probe instructions](docs/WINDOWS-SMOKE.md). The prior preview.6 core tests and actual disposable E2E passed; preview.7's newly wired owner-only APPLY still requires a fresh bundled build and Windows test.
 
 
 ### Disposable Workshop fixture lab (developer-only, preview.4)
