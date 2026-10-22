@@ -2,7 +2,7 @@
 
 **Goal:** prove the **v0.4.0-preview.7** WinForms interface actually initializes on a Windows x64 PC, beyond the previously successful Linux-hosted cross-compilation.
 
-**Never distribute this local preview as a release.** It contains the existing v0.3 oversized-description Steam write feature, but the new missing/corrupt metadata recovery is **read-only preview**. Do not attempt repairs on production Workshop items.
+**Never distribute this local preview as a release.** It contains the existing v0.3 oversized-description Steam write feature, and a newly connected owner-approved missing/corrupt metadata APPLY flow that is **NOT YET independently built or live-validated**. Do not attempt repairs on production Workshop items.
 
 ## A. Package the local Windows test ZIP on the dev-worker VM
 
