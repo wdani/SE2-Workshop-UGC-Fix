@@ -13,7 +13,7 @@ test "$(git branch --show-current)" = "feat/universal-metadata-recovery" || {
 }
 PROJECT="legacy-gui-v0.3.0/SE2WorkshopUGCFix/SE2WorkshopUGCFix.csproj"
 OUTPUT="$ROOT/artifacts/windows-gui-smoke-publish"
-ARCHIVE="$ROOT/artifacts/SE2-Workshop-UGC-Fix-0.4.0-preview.6-win-x64-LOCAL-TEST.zip"
+ARCHIVE="$ROOT/artifacts/SE2-Workshop-UGC-Fix-0.4.0-preview.7-win-x64-LOCAL-TEST.zip"
 mkdir -p "$ROOT/artifacts"
 rm -rf "$OUTPUT"
 mkdir -p "$OUTPUT"
@@ -58,15 +58,15 @@ directory = Path(sys.argv[1])
 archive = Path(sys.argv[2])
 commit = sys.argv[3]
 readme = (
-    "SE2 Workshop UGC Fix — Windows LOCAL DEVELOPER TEST, v0.4.0-preview.6\r\n"
+    "SE2 Workshop UGC Fix — Windows LOCAL DEVELOPER TEST, v0.4.0-preview.7\r\n"
     "Source Git commit: " + commit + "\r\n\r\n"
     "1. Extract all files.\r\n"
     "2. Run RUN-UI-SMOKE.cmd to check that Windows Forms can initialize.\r\n"
     "   Smoke mode does NOT initialize Steam or edit any Workshop item.\r\n"
     "3. If smoke passes, RUN-APP.cmd opens the test GUI.\r\n"
     "   With Steam running and SE2/ModHUB closed, use CHECK METADATA on an\r\n"
-    "   item you own. Recovery of missing or corrupt metadata is PREVIEW ONLY.\r\n"
-    "   DO NOT PRESS REPAIR on any production item while testing.\r\n\r\n"
+    "   item you own. Verified owner-only recovery requires explicit RESTORE approval.\r\n"
+    "   Never apply a repair to a production item during smoke testing.\r\n\r\n"
     "This is an UNRELEASED test package, not a public stable release.\r\n"
     "Share no private metadata, Steam credentials or full backup JSON.\r\n"
     "A green UI smoke does NOT confirm Steam API integration or live recovery.\r\n"
@@ -88,7 +88,7 @@ launch = (
     "@echo off\r\n"
     "setlocal\r\n"
     "cd /d \"%~dp0\"\r\n"
-    "echo DEVELOPMENT BUILD. Missing-data recovery is READ-ONLY PREVIEW.\r\n"
+    "echo DEVELOPMENT BUILD. Recovery requires valid sources and explicit owner approval.\r\n"
     "echo No production Workshop edits should be made in this test.\r\n"
     "start \"\" \"%~dp0SE2-Workshop-UGC-Fix.exe\"\r\n"
 )
