@@ -18,7 +18,7 @@ This design document defines conditions for a future creator-authorized Steam re
 
 Local ModHUB metadata with zero/null IDs can be used as **secondary data only**; it cannot replace original Workshop identity.
 
-## Required live Steam gates (NOT implemented in the offline core)
+## Required live Steam gates (implemented in a separate preview.7 GUI transport; UNVALIDATED build)
 
 1. Ensure app `1133870`, signed-in account owns target item, and live details of target are available; do not use public page visibility as owner proof.
 2. Uncached Steam metadata query must **succeed**. Record raw UTF-8 bytes + SHA256 before any mutation.
@@ -53,7 +53,7 @@ Reference: https://partner.steamgames.com/doc/api/ISteamUGC#GetQueryUGCMetadata
 
 The offline test harness uses a fake reader and covers: confirmed 0-byte success, failed query, cached response, null output, wrong owner/app/item, original changed between reads, reference changed between reads, original backup, original+comparison, no-comparison fallback, and malformed remote JSON.
 
-**These safeguards apply to candidate PREVIEW only**, not an authorization to upload anything. Any future actual Steam apply must re-run the checks directly before submitting.
+**The preview itself remains READ ONLY.** Preview.7 additionally wires a separate owner-approved APPLY via `RecoveryApplyService`; it rechecks private sources, owner, unchanged target/reference and typed confirmation. The new path has not yet passed the latest VM build, Windows UI smoke or its own independent live apply test; do not release it for production users.
 
 
 ## Offline-only pre-submission authorization (in development)
