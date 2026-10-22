@@ -32,12 +32,15 @@ internal sealed class OwnerOnlyMetadataTransport : IDisposableUgcTransport
     // Production recovery uses the same proven metadata-only Steam transport as
     // the disposable batch, with one last byte-exact optimistic concurrency gate.
     internal void SubmitMetadataOnlyIfUnchanged(ulong itemId, string expectedCurrentRaw, string raw)
-        => SubmitCore(itemId, raw, expectedCurrentRaw);
+        => SubmitCore(itemId, raw, expectedCurrentRaw,
+            "Owner-approved SE2 Workshop developer metadata recovery");
 
     public void SubmitMetadataOnly(ulong itemId, string raw)
-        => SubmitCore(itemId, raw, null);
+        => SubmitCore(itemId, raw, null,
+            "SE2 UGC E2E disposable test: metadata fault / restoration");
 
-    private void SubmitCore(ulong itemId, string raw, string? expectedCurrentRaw)
+    private void SubmitCore(
+        ulong itemId, string raw, string? expectedCurrentRaw, string changeNote)
     {
         if (itemId != _id || _owner == 0 || SteamUser.GetSteamID().m_SteamID != _owner)
             throw new InvalidOperationException("Steam owner/item mismatch: no submit.");
@@ -56,8 +59,7 @@ internal sealed class OwnerOnlyMetadataTransport : IDisposableUgcTransport
             throw new InvalidOperationException("SetItemMetadata rejected payload; no submission.");
 
         // SetItemMetadata is the ONLY setter invoked here.
-        var call = SteamUGC.SubmitItemUpdate(handle,
-            "SE2 UGC E2E disposable test: metadata fault / restoration");
+        var call = SteamUGC.SubmitItemUpdate(handle, changeNote);
         if (call == SteamAPICall_t.Invalid)
             throw new InvalidOperationException("SubmitItemUpdate returned invalid handle; outcome uncertain.");
         SubmitItemUpdateResult_t? reply = null;
