@@ -4,7 +4,6 @@
 using Steamworks;
 using System;
 using System.IO;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
@@ -30,12 +29,15 @@ internal static class RecoveryApplyService
         if (owner == 0 || owner != session.OwnerId)
             throw new InvalidOperationException("Signed-in Steam owner has changed.");
 
-        string directory = Path.GetFullPath(shownPreview.BackupFolder);
+        string directory = Path.GetFullPath(shownPreview.BackupFolder)
+            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+            + Path.DirectorySeparatorChar;
         string appRoot = Path.GetFullPath(Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "SE2WorkshopUGCFix", "Backups")) + Path.DirectorySeparatorChar;
-        if (!directory.TrimEnd(Path.DirectorySeparatorChar).ConcatPathSeparator()
-                .StartsWith(appRoot, StringComparison.OrdinalIgnoreCase))
+            "SE2WorkshopUGCFix", "Backups"))
+            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+            + Path.DirectorySeparatorChar;
+        if (!directory.StartsWith(appRoot, StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("Private recovery folder is outside the application backups.");
 
         string ReadPrivate(string name) {
@@ -59,16 +61,22 @@ internal static class RecoveryApplyService
         var approved = RecoveryWritePreflight.Authorize(session, owner, ReadFresh,
             original, candidate, reference, typedConfirmation);
 
-        // Validate the source file saved during the preview too: this must
-        // still be an exact same-item backup for OriginalBackup, or a real
-        // original ModHUB project source for WorkingItem.
+        // Source artifacts were written by the read-only preview BEFORE
+        // confirmation. Require their contents to still match that preview,
+        // not merely that a file with the expected name exists.
         if (session.Plan.Source == RecoverySource.OriginalBackup) {
             if (ReadPrivate("source-backup-PRIVATE.json") != approved.CandidateJson)
                 throw new InvalidOperationException("Original historic backup changed since preview.");
         } else {
-            if (!File.Exists(Path.Combine(directory, "original-project-PRIVATE.json")))
-                throw new InvalidOperationException("Original .vrgproj source backup missing.");
+            if (shownPreview.ProjectSourceSha256 is null ||
+                SteamFix.Hash(ReadPrivate("original-project-PRIVATE.json")) !=
+                shownPreview.ProjectSourceSha256)
+                throw new InvalidOperationException("Original .vrgproj changed since preview.");
         }
+        if (shownPreview.LocalSourceSha256 is not null &&
+            SteamFix.Hash(ReadPrivate("original-modhub-metadata-PRIVATE.json")) !=
+            shownPreview.LocalSourceSha256)
+            throw new InvalidOperationException("Original ModHUB metadata changed since preview.");
 
         var writer = new OwnerOnlyMetadataTransport(session.ItemId, session.OwnerId);
         // Only an authorized candidate for the SAME original item can be sent.
@@ -115,6 +123,4 @@ internal static class RecoveryApplyService
             report);
     }
 
-    private static string ConcatPathSeparator(this string path) =>
-        path + Path.DirectorySeparatorChar;
 }
