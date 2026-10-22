@@ -78,6 +78,9 @@ internal static class Program
                 if (!Descendants(recovery).OfType<Button>()
                     .Any(c => c.Text == "BUILD READ-ONLY RECOVERY PREVIEW"))
                     throw new InvalidOperationException("Recovery preview button missing.");
+                if (Descendants(recovery).OfType<Button>()
+                    .Single(c => c.Text.StartsWith("RESTORE MY WORKSHOP METADATA", StringComparison.Ordinal)).Enabled)
+                    throw new InvalidOperationException("Recovery APPLY must start locked until verified preview and typed consent.");
                 recovery.Hide();
                 main.Hide();
                 return 0;
@@ -130,7 +133,7 @@ internal sealed class FixForm : Form
 
     public FixForm()
     {
-        Text = "SE2 Workshop UGC Metadata Fix   •   v0.4.0-preview.6 (READ-ONLY RECOVERY)";
+        Text = "SE2 Workshop UGC Metadata Fix   •   v0.4.0-preview.7 (OWNER-ONLY RECOVERY)";
         // Reserve actual vertical space for the grouped actions and security note.
         // The previous 33px toolbar row clipped buttons at normal Windows DPI.
         ClientSize = new System.Drawing.Size(880, Program.FixtureLabEnabled ? 850 : 755);
@@ -156,7 +159,7 @@ internal sealed class FixForm : Form
         var title = new Label { Text = "Workshop metadata recovery", Dock = DockStyle.Fill, Font = new System.Drawing.Font("Segoe UI", 19F, System.Drawing.FontStyle.Bold) };
         layout.Controls.Add(title, 0, 0);
         layout.Controls.Add(new Label {
-            Text = "For Space Engineers 2 (App 1133870). Detects oversized, empty, malformed, or healthy metadata. Existing-item changes are limited to the proven description patch; missing-data recovery is PREVIEW ONLY.",
+            Text = "For Space Engineers 2 (App 1133870). Detects oversized, empty, malformed, or healthy metadata. Recovery from a verified original backup or owner-matched project/template requires manual confirmation. Unverified sources remain preview-only.",
             Dock = DockStyle.Fill, AutoSize = false, ForeColor = System.Drawing.Color.FromArgb(70, 80, 92)
         }, 0, 1);
         layout.Controls.Add(_workshop, 0, 2);
@@ -415,7 +418,7 @@ internal sealed class FixForm : Form
                         break;
                     case MetadataCondition.Missing:
                     case MetadataCondition.Malformed:
-                        _status.Text = "RECOVERY PREVIEW AVAILABLE — No Steam changes will be made.";
+                        _status.Text = "RECOVERY PREVIEW AVAILABLE — Source verification and approval required before changes.";
                         _status.ForeColor = System.Drawing.Color.DarkOrange;
                         break;
                     case MetadataCondition.IdentityConflict:
