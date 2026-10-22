@@ -2,7 +2,16 @@
 
 A community-maintained diagnostic and recovery tool for **Space Engineers 2 Steam Workshop developer metadata**.
 
-> **Development status: pre-release.** The original Windows GUI v0.3.0 source has been imported under `legacy-gui-v0.3.0/`. A new v0.4.0-preview.2 **read-only** missing-metadata preview wizard is being integrated with the existing oversized-description fix. **The new missing-metadata APPLY flow is not enabled or validated as a public release.**
+> **Development status: UNRELEASED.** Preview.7 connects the existing read-only recovery planner to an **explicit owner-confirmed metadata-only Steam APPLY** using the writer tested during the real disposable ModHUB E2E batch. **The new ordinary-user recovery APPLY has NOT yet passed the full VM/Windows/live validation and must NOT be used on production mods.** No public release is being made.
+
+
+## Compact recovery workflow (preview.7 — NOT RELEASED)
+
+The regular Windows UI has exactly one recovery path: paste an owned Workshop ID and press **CHECK METADATA**. If the developer metadata is empty or malformed, open **RECOVERY PREVIEW** and supply **either** a complete original Steam developer-metadata JSON backup for the *same* Workshop ID, **or** the original `.vrgproj` plus an **other working Workshop item owned by the same creator** (a vetted schema source). Original ModHUB metadata is optional. A `.vrgproj` alone can create an **experimental read-only preview**, but does **not** authorize uploading invented metadata.
+
+A verified source shows the candidate and SHA256. To apply, the creator must type `RESTORE <ORIGINAL_WORKSHOP_ID>`, acknowledge a second warning, and pass fresh same-owner/unchanged-remote checks. Exactly one `SetItemMetadata` update is sent for the owned original Workshop item; an uncached byte-for-byte Steam readback verifies completion. Failed/ambiguous submissions **STOP** with no blind retry. The tool **never edits public Workshop titles/descriptions, mod content, user worlds, local `.vrgproj` IDs, or preview images**. Saved-world compatibility is a separate concern: ModHUB publishing was observed changing the local test project's GUID **before** E2E fault injection; the tool cannot repair old world references automatically.
+
+**Evidence boundary:** the 2026-10-21 full real ModHUB disposable E2E batch on ID `3824260687` passed 3/3 actual Steam corruption/restore cases and 2/2 oversized offline checks, with original developer metadata restored. That batch did **not** itself exercise this newly wired ordinary-user APPLY. A new world with the real LCD test mod subsequently loaded successfully; an older world still referenced the original pre-publication project GUID and could not load. Do not present preview.7 as an independently live-validated consumer recovery release yet.
 
 ## Why this exists
 
