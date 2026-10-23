@@ -21,8 +21,8 @@
                             <StackPanel Orientation="Horizontal">
                                 <Ellipse Width="6" Height="6" Fill="{StaticResource PrimaryBrush}"
                                          VerticalAlignment="Center" Margin="0,0,7,0"
-                                         ToolTip="Local tool mode; Steam ownership is only confirmed after a scan."/>
-                                <TextBlock Text="LOCAL · OWNER CONTROL" FontSize="10" FontWeight="SemiBold"
+                                         ToolTip="Local application indicator, not a Steam connection or ownership status."/>
+                                <TextBlock Text="LOCAL · CONTROLLED" FontSize="10" FontWeight="SemiBold"
                                            Foreground="{StaticResource SecondaryTextBrush}"/>
                             </StackPanel>
                             <TextBlock Text="Steam updates always need approval."
