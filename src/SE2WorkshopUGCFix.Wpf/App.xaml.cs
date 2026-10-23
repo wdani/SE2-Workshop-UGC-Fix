@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Windows;
 
 namespace SE2WorkshopUGCFix.Wpf;
@@ -11,10 +10,11 @@ public partial class App : Application
         base.OnStartup(e);
         if (e.Args.Length == 1 && e.Args[0] == "--smoke-ui")
         {
+            // Closing an unshown window must not terminate the app before assertions finish.
+            ShutdownMode = ShutdownMode.OnExplicitShutdown;
             try
             {
                 // All three views initialize offline: no SteamAPI.Init, no Steam writes.
-                using var scope = new SmokeScope();
                 var main = new MainWindow();
                 var preflight = new PreflightWindow(null, null);
                 var recovery = new RecoveryWindow(12345678UL);
@@ -50,8 +50,4 @@ public partial class App : Application
         window.Show();
     }
 
-    private sealed class SmokeScope : IDisposable
-    {
-        public void Dispose() {}
-    }
 }

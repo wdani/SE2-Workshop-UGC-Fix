@@ -15,6 +15,7 @@ public partial class PreflightWindow : Window
         _template = template;
         _itemId = itemId;
         InitializeComponent();
+        WindowAppearance.ApplyDarkTitleBar(this);
     }
 
     private void Estimate_Click(object sender, RoutedEventArgs e)

@@ -16,6 +16,7 @@ public partial class RecoveryWindow : Window
     {
         _itemId = workshopId;
         InitializeComponent();
+        WindowAppearance.ApplyDarkTitleBar(this);
         RecoveryHeading.Text = "Recover Workshop item " + _itemId;
         ConfirmHint.Text = "ENTER EXACTLY: RESTORE " + _itemId;
     }

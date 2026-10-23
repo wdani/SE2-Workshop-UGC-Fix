@@ -18,6 +18,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        WindowAppearance.ApplyDarkTitleBar(this);
         AddLog("WPF preview loaded. No Steam requests run automatically.");
         AddLog("An update requires a matching Steam owner, verified backup and explicit approval.");
     }
