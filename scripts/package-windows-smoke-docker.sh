@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# Build a PRIVATE, unshipped developer test ZIP. No Steam use, no release upload.
+# Package TWO distinct, UNRELEASED Windows previews from one source tree.
+# USER-CANDIDATE: destructive fixture lab disabled at compile time, no launcher.
+# DEV-LOCAL-TEST: fixture lab deliberately enabled for the owner's testing.
+# Steam is never initialized by this Linux Docker packaging script.
 set -euo pipefail
-
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 command -v docker >/dev/null || { echo "Docker is required" >&2; exit 1; }
@@ -12,112 +14,122 @@ test "$(git branch --show-current)" = "feat/universal-metadata-recovery" || {
   echo "Unexpected branch; STOP" >&2; exit 1;
 }
 PROJECT="legacy-gui-v0.3.0/SE2WorkshopUGCFix/SE2WorkshopUGCFix.csproj"
-OUTPUT="$ROOT/artifacts/windows-gui-smoke-publish"
-ARCHIVE="$ROOT/artifacts/SE2-Workshop-UGC-Fix-0.4.0-preview.9-win-x64-LOCAL-TEST.zip"
+DEV="$ROOT/artifacts/windows-dev-preview"
+USER="$ROOT/artifacts/windows-user-preview"
 mkdir -p "$ROOT/artifacts"
-rm -rf "$OUTPUT"
-mkdir -p "$OUTPUT"
+rm -rf "$DEV" "$USER"
+mkdir -p "$DEV" "$USER"
 
-echo "=== Package Windows self-contained x64 GUI (OFFLINE TEST ONLY) ==="
-echo "Source commit: $(git rev-parse --short HEAD)"
-docker run --rm \
-  --user "$(id -u):$(id -g)" \
-  --volume "$ROOT:/repo" \
-  --workdir /repo \
-  --security-opt no-new-privileges \
-  --cap-drop ALL \
-  -e HOME=/tmp \
-  -e DOTNET_CLI_HOME=/tmp \
-  -e NUGET_PACKAGES=/tmp/.nuget/packages \
-  -e DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1 \
-  -e DOTNET_CLI_TELEMETRY_OPTOUT=1 \
-  mcr.microsoft.com/dotnet/sdk:9.0 \
-  dotnet publish "$PROJECT" \
-    -c Release \
-    -f net9.0-windows \
-    -r win-x64 \
-    -p:EnableWindowsTargeting=true \
-    -p:SelfContained=true \
-    -p:PublishSingleFile=true \
-    -p:UseAppHost=true \
-    -p:PublishReadyToRun=false \
-    -p:DebugType=none \
-    -o /repo/artifacts/windows-gui-smoke-publish
-
-test -s "$OUTPUT/SE2-Workshop-UGC-Fix.exe" || {
-  echo "Windows executable missing after publish; STOP" >&2; exit 1;
+publish_kind() {
+  local enabled="$1" subdir="$2"
+  echo "=== Windows win-x64 .NET9 publish (EnableFixtureLab=$enabled) ==="
+  docker run --rm \
+    --user "$(id -u):$(id -g)" \
+    --volume "$ROOT:/repo" \
+    --workdir /repo \
+    --security-opt no-new-privileges \
+    --cap-drop ALL \
+    -e HOME=/tmp \
+    -e DOTNET_CLI_HOME=/tmp \
+    -e NUGET_PACKAGES=/tmp/.nuget/packages \
+    -e DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1 \
+    -e DOTNET_CLI_TELEMETRY_OPTOUT=1 \
+    mcr.microsoft.com/dotnet/sdk:9.0 \
+    dotnet publish "$PROJECT" \
+      -c Release -f net9.0-windows -r win-x64 \
+      -p:EnableWindowsTargeting=true \
+      -p:SelfContained=true -p:PublishSingleFile=true \
+      -p:UseAppHost=true -p:PublishReadyToRun=false \
+      -p:DebugType=none -p:EnableFixtureLab="$enabled" \
+      -o "/repo/artifacts/$subdir"
 }
 
-python3 - "$OUTPUT" "$ARCHIVE" "$(git rev-parse HEAD)" <<'PY'
+echo "Source commit: $(git rev-parse --short HEAD)"
+publish_kind true windows-dev-preview
+publish_kind false windows-user-preview
+
+test -s "$DEV/SE2-Workshop-UGC-Fix.exe" || { echo "Developer exe missing" >&2; exit 1; }
+test -s "$USER/SE2-Workshop-UGC-Fix.exe" || { echo "User exe missing" >&2; exit 1; }
+# A matching binary would mean the compile-time lab exclusion failed.
+if cmp -s "$DEV/SE2-Workshop-UGC-Fix.exe" "$USER/SE2-Workshop-UGC-Fix.exe"; then
+  echo "SAFE-BUILD FAILURE: user and developer binaries are identical!" >&2
+  exit 1
+fi
+
+python3 - "$DEV" "$USER" "$(git rev-parse HEAD)" <<'PY'
 from pathlib import Path
 import hashlib
+import json
 import sys
 import zipfile
 
-directory = Path(sys.argv[1])
-archive = Path(sys.argv[2])
+dev, user = [Path(x) for x in sys.argv[1:3]]
 commit = sys.argv[3]
-readme = (
-    "SE2 Workshop UGC Fix — Windows LOCAL DEVELOPER TEST, v0.4.0-preview.9\r\n"
-    "Source Git commit: " + commit + "\r\n\r\n"
-    "1. Extract all files.\r\n"
-    "2. Run RUN-UI-SMOKE.cmd to check that Windows Forms can initialize.\r\n"
-    "   Smoke mode does NOT initialize Steam or edit any Workshop item.\r\n"
-    "3. If smoke passes, RUN-APP.cmd opens the test GUI.\r\n"
-    "   With Steam running and SE2/ModHUB closed, use CHECK METADATA on an\r\n"
-    "   item you own. Verified owner-only recovery requires explicit RESTORE approval.\r\n"
-    "   Never apply a repair to a production item during smoke testing.\r\n\r\n"
-    "This is an UNRELEASED test package, not a public stable release.\r\n"
-    "Share no private metadata, Steam credentials or full backup JSON.\r\n"
-    "A green UI smoke does NOT confirm Steam API integration or live recovery.\r\n"
-)
+version = "0.5.0-preview.1"
+archives = [
+    (user, user.parent / f"SE2-Workshop-UGC-Fix-{version}-win-x64-USER-CANDIDATE.zip", False),
+    (dev, dev.parent / f"SE2-Workshop-UGC-Fix-{version}-win-x64-DEV-LOCAL-TEST.zip", True),
+]
 smoke = (
-    "@echo off\r\n"
-    "setlocal\r\n"
-    "cd /d \"%~dp0\"\r\n"
-    "echo Running OFFLINE UI startup check. Steam will NOT be initialized.\r\n"
-    "start /wait \"\" \"%~dp0SE2-Workshop-UGC-Fix.exe\" --smoke-ui\r\n"
-    "if errorlevel 1 (\r\n"
-    "  echo FAIL: Windows UI smoke check did not pass.\r\n"
-    ") else (\r\n"
-    "  echo PASS: Windows GUI forms initialized and safe controls verified.\r\n"
-    ")\r\n"
-    "pause\r\n"
+    '@echo off\r\n'
+    'cd /d "%~dp0"\r\n'
+    'echo Offline UI smoke - Steam is NOT initialized.\r\n'
+    'start /wait "" "%~dp0SE2-Workshop-UGC-Fix.exe" --smoke-ui\r\n'
+    'if errorlevel 1 (echo FAIL: GUI smoke test) else (echo PASS: GUI smoke test)\r\n'
+    'pause\r\n'
 )
-launch = (
-    "@echo off\r\n"
-    "setlocal\r\n"
-    "cd /d \"%~dp0\"\r\n"
-    "echo DEVELOPMENT BUILD. Recovery requires valid sources and explicit owner approval.\r\n"
-    "echo No production Workshop edits should be made in this test.\r\n"
-    "start \"\" \"%~dp0SE2-Workshop-UGC-Fix.exe\"\r\n"
+run = (
+    '@echo off\r\n'
+    'cd /d "%~dp0"\r\n'
+    'echo UNRELEASED PREVIEW - verify Workshop ownership and keep original backups.\r\n'
+    'start "" "%~dp0SE2-Workshop-UGC-Fix.exe"\r\n'
 )
-with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as z:
-    all_files = sorted(x for x in directory.rglob("*") if x.is_file())
-    if not all_files or len(all_files) > 100:
-        raise RuntimeError("Unexpected publish file count")
-    for file in all_files:
-        relative = file.relative_to(directory)
-        if file.is_symlink() or ".." in relative.parts:
-            raise RuntimeError("Unexpected publish file")
-        if file.suffix.lower() in {".pdb", ".xml"}:
-            continue
-        z.write(file, arcname=str(relative).replace("\\", "/"))
-    z.writestr("READ-ME-FIRST.txt", readme)
-    z.writestr("RUN-UI-SMOKE.cmd", smoke)
-    z.writestr("RUN-APP.cmd", launch)
-    z.writestr("RUN-FIXTURE-LAB.cmd",
-        '@echo off\r\n'
-        'setlocal\r\n'
-        'cd /d "%~dp0"\r\n'
-        'echo DEVELOPMENT FIXTURE LAB: only for disposable Workshop mods; includes guarded one-case RESTORE test.\r\n'
-        'echo WARNING: One-case test CHANGES developer metadata of the test item. Do not use production mods.\r\n'
-        'start "" "%~dp0SE2-Workshop-UGC-Fix.exe" --fixture-lab\r\n'
+lab = (
+    '@echo off\r\n'
+    'cd /d "%~dp0"\r\n'
+    'echo INTERNAL LAB - can damage disposable Workshop metadata! NEVER production.\r\n'
+    'start "" "%~dp0SE2-Workshop-UGC-Fix.exe" --fixture-lab\r\n'
+)
+for folder, archive, internal in archives:
+    mode = "DEV-LOCAL-TEST" if internal else "USER-CANDIDATE"
+    readme = (
+        f"SE2 Workshop UGC Fix | {version} | {mode}\r\n"
+        f"Source commit: {commit}\r\n\r\n"
+        "UNRELEASED: Windows UI and normal backup RESTORE must be checked on this exact build.\r\n"
+        "1. Extract ZIP, run RUN-UI-SMOKE.cmd, then RUN-APP.cmd.\r\n"
+        "2. Steam running; game and ModHUB closed for a Steam metadata query.\r\n"
+        "3. Use CHECK METADATA before any action. Explicit owner consent for updates.\r\n"
+        "4. Preserve private metadata backups; do not share them publicly.\r\n"
+        "5. Healthy items must never offer unnecessary repair.\r\n"
+        "6. Working-reference reconstruction is experimental / not broadly validated.\r\n"
+        "This tool does not recover Workshop content or rewrite saved-world GUID references.\r\n"
+        + ("INTERNAL LAB: destructive fixture test controls ARE ENABLED.\r\n"
+           if internal else
+           "USER CANDIDATE: destructive fixture lab is DISABLED at compile time.\r\n")
     )
-
-digest = hashlib.sha256(archive.read_bytes()).hexdigest()
-print("Local test archive:", archive)
-print("Size (bytes):", archive.stat().st_size)
-print("SHA256:", digest)
-print("NOTICE: This archive is UNRELEASED, remains only on dev-worker, and has not run on Windows.")
+    with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as z:
+        files = sorted(x for x in folder.rglob("*") if x.is_file())
+        if not files or len(files) > 100:
+            raise RuntimeError("Unexpected Windows publish file count")
+        for file in files:
+            relative = file.relative_to(folder)
+            if file.is_symlink() or ".." in relative.parts:
+                raise RuntimeError("Unsafe packaged file path")
+            if file.suffix.lower() in {".pdb", ".xml"}:
+                continue
+            z.write(file, arcname=str(relative).replace("\\", "/"))
+        z.writestr("READ-ME-FIRST.txt", readme)
+        z.writestr("RUN-UI-SMOKE.cmd", smoke)
+        z.writestr("RUN-APP.cmd", run)
+        if internal:
+            z.writestr("RUN-FIXTURE-LAB.cmd", lab)
+    with zipfile.ZipFile(archive) as z:
+        names = set(z.namelist())
+        if internal != ("RUN-FIXTURE-LAB.cmd" in names):
+            raise RuntimeError("Fixture lab launcher isolation check failed")
+    print(mode + ": " + str(archive))
+    print("Size (bytes):", archive.stat().st_size)
+    print("SHA256:", hashlib.sha256(archive.read_bytes()).hexdigest())
+    print("Fixture lab launcher:", "INTERNAL ONLY" if internal else "EXCLUDED")
+print("NOTICE: Neither ZIP is a public release. No Steam data was changed.")
 PY
