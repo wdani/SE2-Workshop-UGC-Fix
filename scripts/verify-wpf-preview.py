@@ -19,6 +19,8 @@ project = (wpf / "SE2WorkshopUGCFix.Wpf.csproj").read_text(encoding="utf-8")
 legacy_project = (legacy / "SE2WorkshopUGCFix.csproj").read_text(encoding="utf-8")
 friend = (legacy / "Properties/AssemblyInfo.cs").read_text(encoding="utf-8")
 assert "<UseWPF>true</UseWPF>" in project
+assert "<ImplicitUsings>disable</ImplicitUsings>" in project, (
+    "WinForms implicit global usings cause ambiguous WPF type names")
 assert "<EnableWindowsTargeting>true</EnableWindowsTargeting>" in project
 assert "ProjectReference" in project and "EnableFixtureLab=false" in project
 assert "InternalsVisibleTo" in friend and "SE2WorkshopUGCFix.Wpf" in friend
