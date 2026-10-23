@@ -13,6 +13,10 @@ internal sealed class DisposableE2EForm : Form
     private readonly TextBox _path = new() { Dock = DockStyle.Fill };
     private readonly TextBox _confirmation = new() { Dock = DockStyle.Fill };
     private readonly Button _run = new() { Text = "RUN FULL DISPOSABLE MOD TEST", Dock = DockStyle.Fill, Enabled = false };
+    private readonly Button _single = new() {
+        Text = "PREPARE ONE GUI RESTORE TEST (BACKUP FIRST)",
+        Dock = DockStyle.Fill, Enabled = false
+    };
     private readonly Button _copy = new() { Text = "COPY FULL E2E SAFE REPORT", Dock = DockStyle.Fill, Enabled = false };
     private readonly TextBox _rescuePhrase = new() {
         Dock = DockStyle.Fill, PlaceholderText = "If needed: RESTORE TEST <Workshop-ID>"
@@ -32,16 +36,17 @@ internal sealed class DisposableE2EForm : Form
         _id = workshopId;
         Text = "Full E2E - real disposable SE2 ModHUB mod";
         StartPosition = FormStartPosition.CenterParent;
-        ClientSize = new Size(830, 700);
-        MinimumSize = new Size(730, 630);
+        ClientSize = new Size(830, 785);
+        MinimumSize = new Size(730, 740);
         Font = new Font("Segoe UI", 10F);
         var panel = new TableLayoutPanel {
             Dock = DockStyle.Fill, Padding = new Padding(18),
-            ColumnCount = 1, RowCount = 11
+            ColumnCount = 1, RowCount = 12
         };
         panel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         foreach (int n in new[] { 52, 106, 34, 46, 46, 42, 60 })
             panel.RowStyles.Add(new RowStyle(SizeType.Absolute, n));
+        panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 54));
         panel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
         panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));
@@ -56,8 +61,10 @@ internal sealed class DisposableE2EForm : Form
             Text = "Only a published, intentionally disposable SE2 mod named SE2 UGC E2E TEST* " +
                 "is accepted. This WILL change its developer metadata repeatedly on Steam, " +
                 "then try to restore the exact backup after EACH simulated fault. " +
+                "For the normal RESTORE button, choose PREPARE ONE GUI RESTORE TEST " +
+                "instead: it writes just one known empty state and waits for manual restoration. " +
                 "The public title, description and content are not set by this tool. " +
-                "Steam failures can leave the test item damaged; the original files are saved first."
+                "Steam failures can leave the test item damaged; original files are saved first."
         }, 0, 1);
         panel.Controls.Add(new Label {
             Dock = DockStyle.Fill, Text = "Original .vrgproj belonging to this published ModHUB test mod:"
@@ -81,10 +88,11 @@ internal sealed class DisposableE2EForm : Form
         }, 0, 4);
         panel.Controls.Add(_confirmation, 0, 5);
         panel.Controls.Add(_run, 0, 6);
-        panel.Controls.Add(_log, 0, 7);
-        panel.Controls.Add(_copy, 0, 8);
-        panel.Controls.Add(_rescuePhrase, 0, 9);
-        panel.Controls.Add(_rescue, 0, 10);
+        panel.Controls.Add(_single, 0, 7);
+        panel.Controls.Add(_log, 0, 8);
+        panel.Controls.Add(_copy, 0, 9);
+        panel.Controls.Add(_rescuePhrase, 0, 10);
+        panel.Controls.Add(_rescue, 0, 11);
         _rescuePhrase.TextChanged += (_, _) =>
             _rescue.Enabled = !_busy && _rescuePhrase.Text == "RESTORE TEST " + _id;
         _rescue.Click += async (_, _) => {
@@ -120,9 +128,12 @@ internal sealed class DisposableE2EForm : Form
                 _log.AppendText("Safe consolidated report copied to clipboard." + Environment.NewLine);
             }
         };
-        void UpdateAvailability() => _run.Enabled = !_busy &&
-            File.Exists(_path.Text) &&
-            _confirmation.Text == "RUN FULL E2E " + _id;
+        void UpdateAvailability() {
+            bool projectExists = !_busy && File.Exists(_path.Text);
+            _run.Enabled = projectExists && _confirmation.Text == "RUN FULL E2E " + _id;
+            _single.Enabled = projectExists &&
+                _confirmation.Text == "PREPARE SINGLE RESTORE " + _id;
+        }
         _path.TextChanged += (_, _) => UpdateAvailability();
         _confirmation.TextChanged += (_, _) => UpdateAvailability();
 
@@ -168,6 +179,64 @@ internal sealed class DisposableE2EForm : Form
                     "\nInspect the Workshop test item and the private backup; no blind retry.",
                     "E2E test stopped", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             } finally { _busy = false; }
+        };
+        _single.Click += async (_, _) => {
+            if (_busy || !_single.Enabled ||
+                _confirmation.Text != "PREPARE SINGLE RESTORE " + _id) return;
+            if (MessageBox.Show(this,
+                "This will intentionally set INTERNAL developer metadata to EMPTY on ONLY the " +
+                "published disposable SE2 UGC E2E TEST item " + _id + ".\\n\\n" +
+                "The tool SAVES original metadata and project BEFORE the single Steam update. " +
+                "It will NOT restore automatically: use the NORMAL app's RECOVERY PREVIEW + " +
+                "RESTORE button and select the saved original JSON.\\n\\n" +
+                "If anything fails, use EMERGENCY RESTORE FROM TEST BACKUP here. " +
+                "Do NOT touch production mods or existing worlds.\\n\\n" +
+                "Authorize this ONE real Steam metadata mutation?",
+                "FINAL CONSENT — prepare single disposable restore",
+                MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
+                MessageBoxDefaultButton.Button2) != DialogResult.Yes) return;
+
+            _busy = true;
+            string selectedProject = _path.Text;
+            _run.Enabled = false;
+            _single.Enabled = false;
+            browse.Enabled = false;
+            _path.Enabled = false;
+            _confirmation.Enabled = false;
+            _log.AppendText("Single GUI restore preparation started for disposable item " +
+                _id + Environment.NewLine);
+            try {
+                var item = await Task.Run(() =>
+                    DisposableSingleRestoreSetup.Prepare(_id, selectedProject));
+                _log.AppendText(
+                    "PASS: Exactly one empty developer-metadata state confirmed on Steam." +
+                    Environment.NewLine +
+                    "ORIGINAL BACKUP FOR NORMAL RECOVERY PREVIEW:" + Environment.NewLine +
+                    item.OriginalBackupFile + Environment.NewLine +
+                    "Original SHA256: " + item.OriginalSha256 + Environment.NewLine +
+                    "Close this fixture lab. Open RUN-APP.cmd, CHECK METADATA " + _id +
+                    ", open RECOVERY PREVIEW, choose the original backup above, then approve RESTORE " +
+                    _id + "." + Environment.NewLine +
+                    "If the normal restore fails, do NOT repeat preparation: return here and " +
+                    "use EMERGENCY RESTORE FROM TEST BACKUP." + Environment.NewLine);
+                MessageBox.Show(this,
+                    "Single disposable fault is ready. Original was backed up. " +
+                    "Run the ordinary RESTORE procedure now; never run preparation twice.",
+                    "Prepared: finish via normal GUI", MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+            } catch (Exception ex) {
+                _log.AppendText("PREPARATION STOP / possibly unknown Steam state: " +
+                    ex.Message + Environment.NewLine);
+                MessageBox.Show(this, ex.Message +
+                    "\\n\\nDO NOT retry a Steam mutation blindly. Preserve the original backup.",
+                    "Preparation stopped", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            } finally {
+                _busy = false;
+                browse.Enabled = true;
+                _path.Enabled = true;
+                _confirmation.Enabled = true;
+                UpdateAvailability();
+            }
         };
         FormClosing += (_, e) => { if (_busy) e.Cancel = true; };
     }
