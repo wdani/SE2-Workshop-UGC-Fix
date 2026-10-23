@@ -66,6 +66,18 @@ internal static class Program
                             throw new InvalidOperationException("A footer button is too small for its caption.");
                     }
                 }
+                // Regression: Windows native DPI previously rendered the UGC
+                // probe caption beneath the next information row.
+                var statusBounds = main.Controls[0].RectangleToScreen(
+                    main.Controls[0].ClientRectangle);
+                var probeBounds = probe.RectangleToScreen(probe.ClientRectangle);
+                var statsLabel = Descendants(main).OfType<Label>()
+                    .Single(l => l.Text == "No item inspected yet.");
+                var statsBounds = statsLabel.RectangleToScreen(statsLabel.ClientRectangle);
+                if (probeBounds.Height < 30 || probeBounds.Bottom > statsBounds.Top ||
+                    probeBounds.Top <= statusBounds.Top)
+                    throw new InvalidOperationException(
+                        "Diagnostic probe overlaps the metadata summary at native Windows DPI.");
                 if (Descendants(fixtureDialog).OfType<Button>()
                     .Single(c => c.Text == "CREATE ONE EMPTY TEST ITEM").Enabled)
                     throw new InvalidOperationException("Test-item creation must start locked.");
@@ -124,8 +136,8 @@ internal sealed class FixForm : Form
     private readonly Button _preflight = new() { Text = "DESCRIPTION PREFLIGHT", Height = 36, Dock = DockStyle.Fill };
     private readonly Button _report = new() { Text = "COPY SAFE REPORT", Height = 36, Dock = DockStyle.Fill, Enabled = false };
     private readonly Button _backup = new() { Text = "OPEN BACKUP FOLDER", Height = 36, Dock = DockStyle.Fill, Enabled = false };
-    private readonly Label _status = new() { AutoSize = true, Text = "Ready. Steam must be running; close SE2 and ModHUB." };
-    private readonly Label _stats = new() { AutoSize = true, Text = "No item inspected yet." };
+    private readonly Label _status = new() { AutoSize = false, Text = "Ready. Steam must be running; close SE2 and ModHUB." };
+    private readonly Label _stats = new() { AutoSize = false, Text = "No item inspected yet.", Dock = DockStyle.Fill, TextAlign = System.Drawing.ContentAlignment.MiddleLeft };
     private readonly TextBox _log = new() { Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, Dock = DockStyle.Fill, BackColor = System.Drawing.Color.FromArgb(245, 247, 250), BorderStyle = BorderStyle.FixedSingle };
     private ScanInfo? _current;
     private string? _lastBackupPath;
@@ -133,7 +145,7 @@ internal sealed class FixForm : Form
 
     public FixForm()
     {
-        Text = "SE2 Workshop UGC Metadata Fix   •   v0.4.0-preview.7 (OWNER-ONLY RECOVERY)";
+        Text = "SE2 Workshop UGC Metadata Fix   •   v0.4.0-preview.8 (OWNER-ONLY RECOVERY)";
         // Reserve actual vertical space for the grouped actions and security note.
         // The previous 33px toolbar row clipped buttons at normal Windows DPI.
         ClientSize = new System.Drawing.Size(880, Program.FixtureLabEnabled ? 850 : 755);
@@ -148,7 +160,7 @@ internal sealed class FixForm : Form
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 56));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 55));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 58));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, Program.FixtureLabEnabled ? 132 : 48));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 86));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 58));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
@@ -179,36 +191,58 @@ internal sealed class FixForm : Form
         actions.Controls.Add(_scan, 0, 0);
         actions.Controls.Add(_repair, 1, 0);
         layout.Controls.Add(actions, 0, 3);
-        // Explicit diagnostic can run even when ordinary CHECK METADATA fails.
-        // It never enables repair and does not submit any Steam changes.
-        var statusBar = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1,
-            Padding = new Padding(0), Margin = new Padding(0) };
-        statusBar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 73));
-        statusBar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 27));
-        _status.Dock = DockStyle.Fill;
-        _status.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-        var diagnosticButtons = new TableLayoutPanel {
-            Dock = DockStyle.Fill, ColumnCount = 1,
-            RowCount = Program.FixtureLabEnabled ? 3 : 1,
-            Margin = new Padding(7, 2, 0, 2)
+        // Keep diagnostics in their own layout row. The previous nested 73/27
+        // status/probe table could paint the probe caption beneath the next
+        // auto-sized stats label on native Windows DPI (user Windows smoke).
+        // The status is now a full-width line and tools get a separate toolbar.
+        var statusArea = new TableLayoutPanel {
+            Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2,
+            Padding = new Padding(0), Margin = new Padding(0)
         };
-        diagnosticButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        for (int i = 0; i < diagnosticButtons.RowCount; i++)
-            diagnosticButtons.RowStyles.Add(new RowStyle(SizeType.Percent, 100F / diagnosticButtons.RowCount));
-        _fixture.Visible = Program.FixtureLabEnabled;
-        _fixture.Enabled = Program.FixtureLabEnabled;
-        _e2e.Visible = Program.FixtureLabEnabled;
-        _e2e.Enabled = Program.FixtureLabEnabled;
-        foreach (var action in Program.FixtureLabEnabled ? new[] { _probe, _fixture, _e2e } : new[] { _probe }) {
-            action.Margin = new Padding(0, 2, 0, 2);
+        statusArea.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        statusArea.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
+        statusArea.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        _status.Dock = DockStyle.Fill;
+        _status.Margin = new Padding(3, 0, 0, 0);
+        _status.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+        statusArea.Controls.Add(_status, 0, 0);
+
+        bool fixtureLab = Program.FixtureLabEnabled;
+        var diagnosticButtons = new TableLayoutPanel {
+            Dock = DockStyle.Fill, ColumnCount = fixtureLab ? 3 : 2,
+            RowCount = 1, Padding = new Padding(0), Margin = new Padding(0)
+        };
+        diagnosticButtons.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        if (fixtureLab) {
+            for (int i = 0; i < 3; i++)
+                diagnosticButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F / 3F));
+        } else {
+            diagnosticButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 69));
+            diagnosticButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 31));
+        }
+        _fixture.Visible = fixtureLab;
+        _fixture.Enabled = fixtureLab;
+        _e2e.Visible = fixtureLab;
+        _e2e.Enabled = fixtureLab;
+        var diagnosticActions = fixtureLab
+            ? new[] { _e2e, _fixture, _probe }
+            : new[] { _probe };
+        foreach (var action in diagnosticActions) {
+            action.Margin = new Padding(4, 5, 4, 5);
             action.FlatStyle = FlatStyle.Flat;
             action.ForeColor = System.Drawing.Color.FromArgb(35, 88, 140);
             action.BackColor = System.Drawing.Color.FromArgb(246, 249, 253);
-            diagnosticButtons.Controls.Add(action);
+            action.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
         }
-        statusBar.Controls.Add(_status, 0, 0);
-        statusBar.Controls.Add(diagnosticButtons, 1, 0);
-        layout.Controls.Add(statusBar, 0, 4);
+        if (fixtureLab) {
+            diagnosticButtons.Controls.Add(_e2e, 0, 0);
+            diagnosticButtons.Controls.Add(_fixture, 1, 0);
+            diagnosticButtons.Controls.Add(_probe, 2, 0);
+        } else {
+            diagnosticButtons.Controls.Add(_probe, 1, 0);
+        }
+        statusArea.Controls.Add(diagnosticButtons, 0, 1);
+        layout.Controls.Add(statusArea, 0, 4);
         layout.Controls.Add(_stats, 0, 5);
         var caption = new Label { Text = "Activity / diagnostic log", Dock = DockStyle.Fill, Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold) };
         layout.Controls.Add(caption, 0, 6);
@@ -289,8 +323,8 @@ internal sealed class FixForm : Form
             MessageBox.Show(this, "A Steam request is still running. Wait for the result before closing the app.",
                 "Please wait", MessageBoxButtons.OK, MessageBoxIcon.Information);
         };
-        Append("This version classifies missing and malformed metadata and PREVIEWS recovery. Only the original oversized-description patch can change Steam.");
-        Append("If metadata is invalid JSON, too short, belongs to someone else, or has an unfamiliar structure, it will refuse to update.");
+        Append("This version diagnoses Workshop developer metadata. Owner-only recovery can restore verified backups or project-based proposals after explicit approval.");
+        Append("Unverified sources remain preview-only. Healthy or foreign Workshop items are never rewritten.");
     }
 
     private static GroupBox CreateActionGroup(string title, Button first, Button second)
