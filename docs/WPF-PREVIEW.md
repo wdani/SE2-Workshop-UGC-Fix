@@ -1,8 +1,31 @@
-# WPF preview — 0.6.0-preview.1 (not released)
+# WPF preview — 0.6.0-preview.2 (not released)
 
 The user requested a truly modern desktop UI after reviewing the dark WinForms 0.5 preview.
 This is a new **WPF** front-end with navigation, responsive content, readable cards,
 reduced visual noise, status and owner indicators, and separate recovery/preflight dialogs.
+
+## Compact UI refinement (preview.2)
+
+The owner's first native-Windows screenshot confirmed that WPF runs and the initial
+visual redesign is an improvement, but still too card-heavy and unnecessarily
+scrollable. This preview rebalances it as a concise **desktop utility**:
+
+- A narrower 188-DIP sidebar and 48-DIP top toolbar.
+- Inline item input + two read-only buttons, compact status strip and flat
+  four-value metadata summary; reduced padding, typography and visual noise.
+- Diagnostics starts collapsed and expands independently on demand.
+- Default overview retains wheel/keyboard overflow access for small windows but
+  uses slim, subtle WPF scrollbars when scrolling is actually needed.
+- Windows offline smoke now opens the invisible main view, lays it out and fails
+  if its default-window `OverviewScroller.ScrollableHeight` exceeds 1 DIP.
+  This is an actual *runtime* gate, not a claim based on static XAML inspection.
+- Status accent follows result severity. Steam transport, authorization checks
+  and confirmed recovery algorithms were **not changed**.
+
+**Validation pending for this exact preview.2 source:** rebuild in dev-worker,
+run native `RUN-WPF-SMOKE.cmd`, inspect initial and expanded diagnosis at default
+size and 100%, 125%, 150% scaling. Test smaller windows for graceful overflow;
+do not hide overflow just to suppress a scrollbar.
 
 ## Architecture and safety
 

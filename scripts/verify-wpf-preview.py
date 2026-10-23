@@ -36,6 +36,30 @@ assert "RecoverySource.OriginalBackup or RecoverySource.WorkingItem" in contents
 assert "RESTORE " in contents["RecoveryWindow.xaml.cs"]
 assert "MessageBoxResult.No" in contents["RecoveryWindow.xaml.cs"]
 assert "ResetScan();" in contents["MainWindow.xaml.cs"]
+assert "ToggleLog_Click" in contents["MainWindow.xaml.cs"]
+assert "StatusAccent.Background" in contents["MainWindow.xaml.cs"]
+assert "OverviewScroller.ScrollableHeight > 1.0" in contents["App.xaml.cs"]
+assert "ActivityPanel.Visibility != Visibility.Collapsed" in contents["App.xaml.cs"]
+main = ET.parse(wpf / "MainWindow.xaml").getroot()
+theme = ET.parse(wpf / "UiTheme.xaml").getroot()
+ns = {"w": "http://schemas.microsoft.com/winfx/2006/xaml/presentation"}
+window_width = float(main.attrib["Width"])
+window_height = float(main.attrib["Height"])
+assert window_width <= 1080 and window_height <= 780, "Overview grew instead of becoming compact"
+sidebar = main.find(".//w:Grid/w:Grid.ColumnDefinitions/w:ColumnDefinition", ns)
+assert sidebar is not None and float(sidebar.attrib["Width"]) <= 190
+assert len(main.findall(".//w:ScrollViewer", ns)) == 1, "One overview-only overflow container expected"
+scroller = main.find(".//w:ScrollViewer", ns)
+assert scroller is not None and scroller.attrib.get("VerticalScrollBarVisibility") == "Auto"
+for name in ("OverviewScroller", "ActivityPanel", "StatusAccent", "ActivityLog"):
+    assert name in contents["MainWindow.xaml"], name
+assert 'Visibility="Collapsed"' in contents["MainWindow.xaml"], "Diagnostics should be collapsed"
+assert "SlimScrollThumbStyle" in contents["UiTheme.xaml"]
+assert "PART_Track" in contents["UiTheme.xaml"]
+assert "ScrollBar.PageUpCommand" in contents["UiTheme.xaml"]
+assert "ScrollBar.PageDownCommand" in contents["UiTheme.xaml"]
+assert len(main.findall(".//w:UniformGrid", ns)) == 1, "Use a single compact summary strip"
+
 assert "new RecoveryWindow(12345678UL)" in contents["App.xaml.cs"]
 assert "--smoke-ui" in contents["App.xaml.cs"]
 assert "last-wpf-smoke.txt" in contents["App.xaml.cs"]

@@ -45,6 +45,17 @@ public partial class MainWindow : Window
         StatusCaption.Text = title;
         StatusDetail.Text = detail;
         StatusCaption.Foreground = color ?? (Brush)FindResource("TextBrush");
+        StatusAccent.Background = color ?? (Brush)FindResource("SuccessBrush");
+    }
+
+    private void ToggleLog_Click(object sender, RoutedEventArgs e)
+    {
+        // Detailed diagnostics do not consume space in the default overview.
+        bool opening = ActivityPanel.Visibility != Visibility.Visible;
+        ActivityPanel.Visibility = opening ? Visibility.Visible : Visibility.Collapsed;
+        LogToggleButton.Content = opening
+            ? "Activity and diagnostics  ▴"
+            : "Activity and diagnostics  ▾";
     }
 
     private void ResetScan()

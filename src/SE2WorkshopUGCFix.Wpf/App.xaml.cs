@@ -21,6 +21,20 @@ public partial class App : Application
                 if (main.RepairButton.IsEnabled || main.RecoveryButton.IsEnabled ||
                     recovery.RestoreButton.IsEnabled)
                     throw new InvalidOperationException("Unsafe WPF initial action state.");
+
+                // Real WPF measure/arrange on Windows; the overview must fit
+                // the default window without a vertical scrollbar.
+                main.ShowInTaskbar = false;
+                main.Opacity = 0;
+                main.Show();
+                main.UpdateLayout();
+                if (main.OverviewScroller.ScrollableHeight > 1.0)
+                    throw new InvalidOperationException(
+                        "Compact overview overflowed the normal window height. " +
+                        "ScrollableHeight=" + main.OverviewScroller.ScrollableHeight);
+                if (main.ActivityPanel.Visibility != Visibility.Collapsed)
+                    throw new InvalidOperationException(
+                        "Diagnostics must start collapsed.");
                 main.Close();
                 preflight.Close();
                 recovery.Close();
