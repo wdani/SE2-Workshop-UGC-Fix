@@ -1,0 +1,117 @@
+# Windows UI acceptance — 0.5.0-preview.1 modern interface
+
+The genuine v0.4.0-preview.9 **same-item original-backup RESTORE**, exact Steam metadata readback and post-repair LCD mod load in SE2 have already PASSED. This run is **UI/build validation only**. Do not repeat the destructive E2E batch or modify Workshop metadata to test appearance.
+
+## One bundled build, two isolated packages
+
+On the dev-worker VM:
+
+```bash
+cd /srv/dev-worker/workspaces/se2-workshop-ugc-fix
+git pull --ff-only
+bash scripts/run-offline-tests-docker.sh && bash scripts/package-windows-smoke-docker.sh
+```
+
+Expect two distinct ZIPs in `artifacts/`: `SE2-Workshop-UGC-Fix-0.5.0-preview.1-win-x64-USER-CANDIDATE.zip` and `SE2-Workshop-UGC-Fix-0.5.0-preview.1-win-x64-DEV-LOCAL-TEST.zip`. The USER-CANDIDATE build disables the destructive fixture lab at compile time, contains no `RUN-FIXTURE-LAB.cmd` launcher, and is **not a public release yet**. The separate DEV-LOCAL-TEST build remains internal.
+
+On Windows, extract only the **USER-CANDIDATE** ZIP, run `RUN-UI-SMOKE.cmd`, then `RUN-APP.cmd`. Check the dark main window, the recovery preview and the description estimator for overlap at your Windows display scaling. Use owned disposable Workshop ID `3824260687` to **CHECK METADATA** only. It should be `Healthy`; no ordinary `REPAIR` or `RECOVERY PREVIEW` apply should activate. Do not inject another fault or run `RESTORE`. The result of the original full-backup restore was already proven in the older build.
+
+**Acceptance:** both build ZIPs generated with different EXE SHA256; safe package lacks fixture lab launcher; Windows smoke PASS; main/preview/preflight views legible; healthy Steam diagnosis still returns original checksum. Store no private metadata in public reports.
+
+On failure, `RUN-UI-SMOKE.cmd` prints the locally saved exception report at `%LOCALAPPDATA%\SE2WorkshopUGCFix\Diagnostics\last-ui-smoke.txt`. Review and redact personal Windows paths/usernames before sharing the report. This offline smoke does not connect to Steam; a failure must never trigger a repair attempt.
+
+---
+
+## Historical smoke instructions (archived; preview.9)
+
+
+**Goal:** prove the **v0.4.0-preview.9** WinForms interface actually initializes on a Windows x64 PC, beyond the previously successful Linux-hosted cross-compilation.
+
+**Never distribute this local preview as a release.** It contains the existing v0.3 oversized-description Steam write feature, and a newly connected owner-approved missing/corrupt metadata APPLY flow that is **NOT YET independently built or live-validated**. Do not attempt repairs on production Workshop items.
+
+## A. Package the local Windows test ZIP on the dev-worker VM
+
+```bash
+cd /srv/dev-worker/workspaces/se2-workshop-ugc-fix
+git fetch origin
+git switch feat/universal-metadata-recovery
+git pull --ff-only
+bash scripts/run-offline-tests-docker.sh
+bash scripts/package-windows-smoke-docker.sh
+```
+
+This uses the official .NET 9 SDK Docker image to **publish** a self-contained Windows x64 EXE. The final ZIP is saved only on the VM to:
+
+`artifacts/SE2-Workshop-UGC-Fix-0.4.0-preview.9-win-x64-LOCAL-TEST.zip`
+
+The script prints SHA256. The `artifacts/` directory is ignored by Git; **no Release upload, Steam API initialization or workshop edit is performed on the VM**.
+
+## B. Test on Windows
+
+Copy the ZIP to the Windows PC using MobaXterm SFTP, extract it to a local directory, then run **`RUN-UI-SMOKE.cmd`**. The command waits for the hidden WinForms smoke process to finish and displays one of:
+
+- `PASS: Windows GUI forms initialized and safe controls verified.`
+- `FAIL: Windows UI smoke check did not pass.`
+
+Smoke mode constructs the main and recovery-preview forms, verifies the unscanned REPAIR/RECOVERY buttons remain disabled, and exits. It **never initializes Steam, reads a Workshop item, or submits updates**.
+
+Then, optionally run **`RUN-APP.cmd`**. Check the layout, input fields and recovery labels visually. With Steam running and SE2/ModHUB closed, the creator may use **CHECK METADATA** for a Workshop item they own, which reads its live state and stores a private local backup. **Do not press REPAIR** on a real/production item in this test. For a missing/corrupt item the preview wizard may inspect files and generate a PRIVATE, non-uploaded candidate.
+
+**A passing smoke does not yet validate Steam integration, recovery, native graphics interactions, or safe live write behavior.**
+
+## C. Evidence to collect
+
+Record the commit SHA, test package SHA256, the smoke PASS/FAIL line, Windows version, any UI exception, and optionally a screenshot with **private IDs/paths/Steam details redacted**. Avoid uploading the private backup folder.
+
+## Remaining before any release
+
+1. Pass offline tests and Windows GUI smoke.
+2. Test Steam read-only query/ownership with explicit owner permission.
+3. Design and independently review the missing-metadata write path (still disabled).
+4. Use a disposable creator-owned Workshop test item and verify metadata-only submit + uncached readback.
+5. Only then consider beta release and public documentation.
+
+
+## D. Read-only Steam metadata API probe (preview.3)
+
+**Purpose:** determine whether Steamworks reports an existing owner-controlled Workshop item with no developer metadata as a successful empty string (`GetQueryUGCMetadata == true` and 0 UTF-8 bytes), or as a failed metadata retrieval (`false`). Steamworks documentation describes the boolean return but does not explicitly guarantee which result an absent-value item produces; never equate `false` with 0 bytes.
+
+1. Run the included `RUN-UI-SMOKE.cmd` first after extracting the new preview.3 ZIP; it does not initialize Steam.
+2. Start Steam, sign into the account that **owns** the tested Workshop item, close SE2 and ModHUB, then open `RUN-APP.cmd`.
+3. Paste a known **healthy owner-controlled item**, e.g. Bulk Production x100 `3810512193`. Click **READ-ONLY UGC PROBE** beside the status message.
+4. Confirm the result says **Present** with a nonzero byte count; use **COPY SAFE REPORT** and preserve it privately. The report does not contain raw metadata, owner SteamID or credentials.
+5. Later, when a **disposable owner-controlled item with legitimately absent developer metadata** is available, run exactly the same read-only probe on that item. Do **not** deliberately delete/blank metadata on a production mod or use any write tool for this diagnostic step.
+6. Interpret results:
+   - `ConfirmedEmpty`: details query successful/uncached, `GetQueryUGCMetadata=true`, string length 0. Candidate preview may be investigated, **no upload**.
+   - `MetadataCallFailed`: item details valid but `GetQueryUGCMetadata=false`, **UNKNOWN**, not proven 0-byte metadata.
+   - `QueryFailed`, `CachedQuery`, `UnexpectedItem`, `WrongOwner`, `AmbiguousNull`: STOP and inspect the safe report; do not attempt repair.
+   - `Present`: normal metadata, not the missing-data test case.
+
+Only safe API status flags, the item ID, byte count and SHA256 are logged. **Never upload the PRIVATE JSON backups or run REPAIR on a production item.**
+
+Official Steamworks API reference: https://partner.steamgames.com/doc/api/ISteamUGC#GetQueryUGCMetadata
+
+
+## E. Dedicated test-item creation (preview.4, explicit developer opt-in)
+
+The **default** `RUN-APP.cmd` remains a diagnosis/preview app and does **not** expose Workshop item creation. `RUN-FIXTURE-LAB.cmd` is the only packaged launcher which enables the extra **CREATE TEST ITEM** control. This control creates a **new** Steam account Workshop item, so treat the action as real and user-authorized.
+
+Do not run this procedure unless the owner approves adding one empty test item to their Steam Workshop account. Read the [full disposable-item plan](DISPOSABLE-EMPTY-METADATA-TEST.md) first.
+
+- Build and extract the new preview.4 ZIP; run `RUN-UI-SMOKE.cmd` first.
+- With Steam signed in, SE2/ModHUB closed, run `RUN-FIXTURE-LAB.cmd`. Click **CREATE TEST ITEM** and type `CREATE EMPTY SE2 TEST ITEM`. Confirm the second Yes/No dialog.
+- The tool makes exactly one `CreateItem` call, saves the local attempt before sending it, and never submits content or metadata. It cannot guarantee the item's visibility; never assume it is private.
+- If it succeeds, the new ID fills the item field. Click **READ-ONLY UGC PROBE** and share only **COPY SAFE REPORT**.
+- If the result is not confirmed or Steam returns no details for an uninitialized item, STOP without retrying; the test is inconclusive. A manually created item must not be deliberately damaged.
+
+Steam Workshop legal agreement: https://steamcommunity.com/workshop/workshoplegalagreement/
+
+## F. Full ModHUB test in ONE run (preview.5)
+
+The previous bare disposable Steam CreateItem `3824227768` proved 0-byte read semantics, but lacks real ModHUB project identity and is not a replacement for an actual mod.
+
+For end-to-end recovery use a freshly **ModHUB-created and published** actual `SE2 UGC E2E TEST ...` mod, with one harmless in-game-verifiable change. Then run `RUN-FIXTURE-LAB.cmd`, enter the new mod's Workshop ID, click **RUN FULL MOD E2E**, select its unmodified original `.vrgproj`, type `RUN FULL E2E <ID>`, and give the final approval. The runner performs the full fault+restore batch automatically and provides **COPY FULL E2E SAFE REPORT**. Do not run on existing production mods.
+
+The test modifies **developer metadata on that disposable mod**, unlike the read-only probe. All actual mutations need a valid original backup and fresh Steam ownership check and are automatically restored when state matches the known fault; unknown states stop. On error, use the displayed local backup and **EMERGENCY RESTORE FROM TEST BACKUP** only after inspection.
+
+Detailed workflow and full scenario matrix: [FULL-MOD-E2E-TEST.md](FULL-MOD-E2E-TEST.md).
