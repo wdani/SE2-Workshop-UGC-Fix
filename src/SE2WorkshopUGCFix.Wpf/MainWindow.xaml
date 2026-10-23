@@ -111,11 +111,27 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBox Name="WorkshopInput" Grid.Column="0" Height="39"
-                                         Style="{StaticResource FormFieldStyle}"
-                                         ToolTip="Enter a Steam Workshop ID or Steam Community item URL."
-                                         TextChanged="WorkshopInput_TextChanged"
-                                         AutomationProperties.Name="Workshop ID or URL"/>
+                                <!-- Preserve the real WPF TextBox content host: the generic
+                                     rounded template clipped/misaligned typed text on Windows. -->
+                                <Border Grid.Column="0" Height="39" CornerRadius="8"
+                                        Background="#101A29">
+                                    <Border.Style>
+                                        <Style TargetType="{x:Type Border}">
+                                            <Setter Property="BorderBrush" Value="{StaticResource StrokeBrush}"/>
+                                            <Setter Property="BorderThickness" Value="1"/>
+                                            <Style.Triggers>
+                                                <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                                                    <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <TextBox Name="WorkshopInput"
+                                             Style="{StaticResource WorkshopInputNativeStyle}"
+                                             ToolTip="Enter a Steam Workshop ID or Steam Community item URL."
+                                             TextChanged="WorkshopInput_TextChanged"
+                                             AutomationProperties.Name="Workshop ID or URL"/>
+                                </Border>
                                 <Button Name="CheckButton" Grid.Column="1"
                                         Content="Check metadata" Style="{StaticResource PrimaryButtonStyle}"
                                         Click="CheckButton_Click" Margin="9,0,0,0"/>
