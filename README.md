@@ -2,14 +2,31 @@
 
 A community-maintained diagnostic and recovery tool for **Space Engineers 2 Steam Workshop developer metadata**.
 
-> **Development status: UNRELEASED.** Preview.7 connects the existing read-only recovery planner to an **explicit owner-confirmed metadata-only Steam APPLY** using the writer tested during the real disposable ModHUB E2E batch. **The new ordinary-user recovery APPLY has NOT yet passed the full VM/Windows/live validation and must NOT be used on production mods.** No public release is being made.
+> **Development status: UNRELEASED 0.5.0-preview.1 (Modern UI candidate).** The v0.4.0-preview.9 **ordinary user RESTORE from an exact same-item original backup PASSED real Steam writes, exact 1,611-byte SHA256 readback and a post-restore Space Engineers 2 LCD-mod check on 2026-10-23**. That validated recovery logic is retained. The new dark WinForms UI and compile-time lab isolation have **NOT YET passed their own Windows build/runtime smoke**. No public release or production data test is being made.
 
+
+## 0.5.0-preview.1 — modern Windows interface and safe candidate packaging
+
+The main Workshop diagnosis form, full recovery wizard and description-size preflight use a consistent dependency-free **midnight/navy UI**, softened card surfaces, rounded primary/secondary buttons, prominent readable status labels, sufficient spacing, and high-DPI-aware WinForms geometry. The Steam backend and recovery guards are unchanged. No external theme packages or runtime web services are required.
+
+One offline packaging script now produces **two different Windows x64 ZIPs**, deliberately separated:
+
+- **`SE2-Workshop-UGC-Fix-0.5.0-preview.1-win-x64-USER-CANDIDATE.zip`** — the normal program and offline UI smoke only. Destructive fixture-lab activation is **compiled out**; passing `--fixture-lab` does not enable it. There is no lab launcher.
+- **`SE2-Workshop-UGC-Fix-0.5.0-preview.1-win-x64-DEV-LOCAL-TEST.zip`** — original explicitly opted-in developer lab retained for the creator's own tests, not for public distribution.
+
+The script stops if the compiled binaries are identical, or if the user ZIP contains a lab launcher. **Neither ZIP is a public release.** Both first require one bundled offline Docker build followed by Windows `RUN-UI-SMOKE.cmd` and a visual high-DPI inspection. No additional real Steam fault injection is needed; the underlying backup RESTORE path has already been validated.
+
+**Product scope for first release:** read-only health/owner diagnostics; existing guarded oversized-internal-description patch; confirmed same-item full-original-backup RESTORE; optional source-based *experimental preview* for advanced recovery. A working-reference reconstruction can be authorized under strict owner/source checks, but has **not** undergone its own live restore and should not be marketed as generally proven. Never rewrite game worlds, regenerate project GUIDs, or alter public Workshop content.
+
+---
+
+## Archived development record
 
 ## Windows UI smoke follow-up (preview.9)
 
 Real user screenshots of preview.7 from 2026-10-23 confirmed that Windows x64 launch, owned Workshop ID `3824260687` Steam read, `Healthy` classification (1,611/5,000 developer metadata bytes), and disabled unnecessary repair worked. The displayed SHA256 `E3F3353B0275FDA4330AB00A3A904ABC7A16B00AA2BD702D69FC4B7D38AD0270` matched the original pre-E2E backup exactly. This verifies **read-only health checking**, not the newly wired normal RESTORE APPLY.
 
-The same preview.7 screenshot exposed a UI regression: the `READ-ONLY UGC PROBE` caption was partly covered by the next summary row; the startup activity log incorrectly claimed recovery was preview-only. Preview.8 separates status, diagnostic toolbar and summary into dedicated nonoverlapping rows, disables unwanted auto-size for status/summary, corrects startup messaging and adds a native UI smoke overlap assertion. Steam recovery behavior is unchanged. **Preview.8 still requires its own Windows build/UI smoke.**
+The same preview.7 screenshot exposed a UI regression: the `READ-ONLY UGC PROBE` caption was partly covered by the next summary row; the startup activity log incorrectly claimed recovery was preview-only. Preview.8 separates status, diagnostic toolbar and summary into dedicated nonoverlapping rows, disables unwanted auto-size for status/summary, corrects startup messaging and adds a native UI smoke overlap assertion. Steam recovery behavior is unchanged. **Later confirmed: preview.8 Windows UI launched, with fixed probe/status overlap.**
 
 ## Focused GUI acceptance test (preview.9, NOT RELEASED)
 
@@ -23,7 +40,7 @@ The regular Windows UI has exactly one recovery path: paste an owned Workshop ID
 
 A verified source shows the candidate and SHA256. To apply, the creator must type `RESTORE <ORIGINAL_WORKSHOP_ID>`, acknowledge a second warning, and pass fresh same-owner/unchanged-remote checks. Exactly one `SetItemMetadata` update is sent for the owned original Workshop item; an uncached byte-for-byte Steam readback verifies completion. Failed/ambiguous submissions **STOP** with no blind retry. The tool **never edits public Workshop titles/descriptions, mod content, user worlds, local `.vrgproj` IDs, or preview images**. Saved-world compatibility is a separate concern: ModHUB publishing was observed changing the local test project's GUID **before** E2E fault injection; the tool cannot repair old world references automatically.
 
-**Evidence boundary:** the 2026-10-21 full real ModHUB disposable E2E batch on ID `3824260687` passed 3/3 actual Steam corruption/restore cases and 2/2 oversized offline checks, with original developer metadata restored. That batch did **not** itself exercise this newly wired ordinary-user APPLY. A new world with the real LCD test mod subsequently loaded successfully; an older world still referenced the original pre-publication project GUID and could not load. Do not present preview.9 as an independently live-validated consumer recovery release yet.
+**Evidence as of 2026-10-23:** the genuine disposable E2E batch (3/3 live Steam faults, 2/2 offline oversized checks), the later **ordinary preview.9 OriginalBackup RESTORE through the normal GUI**, its exact SHA256 Steam readback, and the user's subsequent confirmation that the LCD mod functions in SE2 all passed. Other source paths and old-world project GUID references remain outside the proven scope.
 
 ## Why this exists
 
@@ -110,7 +127,7 @@ The Windows GUI now separates backups/reports from prevention/recovery controls 
 
 The `RecoveryReadOnlySession` verifies fresh Steam reads before/after building proposals. An independent `RecoveryWritePreflight` now verifies private backups, working-reference freshness, owner, identity and the typed `RESTORE <Workshop ID>` phrase entirely **offline**. This latter guard is **not connected to Steam** and is not an enabled repair feature.
 
-Next qualification gates for preview.9: run the bundled .NET/static suite and Windows GUI cross-compilation, perform Windows UI smoke/read-only verification, and separately validate the newly wired owner-only APPLY on a pre-authorized disposable item. The existing genuine E2E batch has already validated the Steam transport, but not this exact user-approval flow. Do not deliberately corrupt an existing production mod to run these checks.
+Next qualification gate for 0.5.0-preview.1: build both distinct modern UI variants, pass both native Windows smoke tests, visually check scaling, and confirm normal read-only health diagnostics. Normal exact-backup GUI RESTORE was already live-tested in preview.9; do not deliberately corrupt another item merely to test the new UI.
 
 
 ### Read-only Steam API diagnostic (preview.3, unreleased)
@@ -119,7 +136,7 @@ The Windows GUI has an explicit **READ-ONLY UGC PROBE** button beside the status
 
 The Steamworks documentation does not definitively specify missing-value behavior for all client versions. Compare a known healthy owned item against a **disposable** owner-controlled item only. No existing production mod should be deliberately damaged as a test fixture.
 
-Follow [Windows smoke and read-only probe instructions](docs/WINDOWS-SMOKE.md). The prior preview.6 core tests and actual disposable E2E passed; preview.9's newly wired owner-only APPLY still requires a fresh bundled build and Windows test.
+Follow [Windows smoke and read-only probe instructions](docs/WINDOWS-SMOKE.md). The prior preview.6 core tests and actual disposable E2E passed; preview.9's ordinary exact-backup GUI APPLY subsequently PASSED live, including functional SE2 mod verification.
 
 
 ### Disposable Workshop fixture lab (developer-only, preview.4)
