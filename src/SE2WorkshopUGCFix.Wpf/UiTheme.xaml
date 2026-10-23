@@ -60,6 +60,23 @@
             </Setter.Value>
         </Setter>
     </Style>
+    <!-- Native WPF TextBox (no overridden content host) for IDs and long URLs.
+         Rounding/focus frame is supplied by the containing Border. -->
+    <Style x:Key="WorkshopInputNativeStyle" TargetType="{x:Type TextBox}">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="11,0"/>
+        <Setter Property="FontFamily" Value="Segoe UI"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        <Setter Property="CaretBrush" Value="{StaticResource TextBrush}"/>
+        <Setter Property="SelectionBrush" Value="{StaticResource PrimaryBrush}"/>
+        <Setter Property="SelectionOpacity" Value="0.45"/>
+        <Setter Property="TextWrapping" Value="NoWrap"/>
+        <Setter Property="SpellCheck.IsEnabled" Value="False"/>
+    </Style>
     <Style x:Key="BaseButtonStyle" TargetType="{x:Type Button}">
         <Setter Property="Background" Value="{StaticResource SurfaceRaisedBrush}"/>
         <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
