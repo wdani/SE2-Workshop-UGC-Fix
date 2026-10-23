@@ -13,7 +13,7 @@ test "$(git branch --show-current)" = "feat/universal-metadata-recovery" || {
 }
 PROJECT="legacy-gui-v0.3.0/SE2WorkshopUGCFix/SE2WorkshopUGCFix.csproj"
 OUTPUT="$ROOT/artifacts/windows-gui-smoke-publish"
-ARCHIVE="$ROOT/artifacts/SE2-Workshop-UGC-Fix-0.4.0-preview.8-win-x64-LOCAL-TEST.zip"
+ARCHIVE="$ROOT/artifacts/SE2-Workshop-UGC-Fix-0.4.0-preview.9-win-x64-LOCAL-TEST.zip"
 mkdir -p "$ROOT/artifacts"
 rm -rf "$OUTPUT"
 mkdir -p "$OUTPUT"
@@ -58,7 +58,7 @@ directory = Path(sys.argv[1])
 archive = Path(sys.argv[2])
 commit = sys.argv[3]
 readme = (
-    "SE2 Workshop UGC Fix — Windows LOCAL DEVELOPER TEST, v0.4.0-preview.8\r\n"
+    "SE2 Workshop UGC Fix — Windows LOCAL DEVELOPER TEST, v0.4.0-preview.9\r\n"
     "Source Git commit: " + commit + "\r\n\r\n"
     "1. Extract all files.\r\n"
     "2. Run RUN-UI-SMOKE.cmd to check that Windows Forms can initialize.\r\n"
@@ -110,8 +110,8 @@ with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED, compresslev
         '@echo off\r\n'
         'setlocal\r\n'
         'cd /d "%~dp0"\r\n'
-        'echo DEVELOPMENT FIXTURE LAB: may create ONE new Workshop item after consent.\r\n'
-        'echo Visibility is NOT guaranteed private. Do not edit existing mods.\r\n'
+        'echo DEVELOPMENT FIXTURE LAB: only for disposable Workshop mods; includes guarded one-case RESTORE test.\r\n'
+        'echo WARNING: One-case test CHANGES developer metadata of the test item. Do not use production mods.\r\n'
         'start "" "%~dp0SE2-Workshop-UGC-Fix.exe" --fixture-lab\r\n'
     )
 
