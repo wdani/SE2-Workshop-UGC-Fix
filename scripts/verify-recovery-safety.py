@@ -6,6 +6,9 @@ import sys
 
 root = Path(__file__).resolve().parents[1]
 gui = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/Program.cs").read_text(encoding="utf-8")
+ui_theme = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/ModernUi.cs").read_text(encoding="utf-8")
+preflight_form = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/PreflightForm.cs").read_text(encoding="utf-8")
+packager = (root / "scripts/package-windows-smoke-docker.sh").read_text(encoding="utf-8")
 preview = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/RecoveryPreviewForm.cs").read_text(encoding="utf-8")
 apply = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/RecoveryApplyService.cs").read_text(encoding="utf-8")
 core = (root / "src/SE2WorkshopUGCFix.Recovery/UniversalRecovery.cs").read_text(encoding="utf-8")
@@ -184,6 +187,32 @@ checks = [
      'initiallyRead.Owner != owner' in preview and
      'if (data.OwnerId == 0 || data.OwnerId != expectedOwner)' in session and
      'SteamUser.GetSteamID().m_SteamID' in preview),
+    ("Modern WinForms theme shared by all ordinary forms",
+     'internal static class ModernUi' in ui_theme and
+     'ModernUi.Window(this)' in gui and
+     'ModernUi.Window(this)' in preview and
+     'ModernUi.Window(this)' in preflight_form and
+     'new ModernGroupBox' in gui and
+     'ModernUi.Card(13)' in preview),
+    ("Modern UI native smoke verifies theme without Steam",
+     'using var description = new PreflightForm(null, null);' in gui and
+     'Modern dark design not initialized' in gui and
+     'Modern card-based content layout missing' in gui),
+    ("Consumer binary cannot enable destructive lab by CLI",
+     '#if SE2_INTERNAL_LAB' in gui and
+     'FixtureLabEnabled = false;' in gui and
+     'Consumer build exposed developer-only tools.' in gui and
+     "'$(EnableFixtureLab)' == 'true'" in project and
+     'SE2_INTERNAL_LAB' in project),
+    ("User and developer builds are compiled and packaged independently",
+     'publish_kind true windows-dev-preview' in packager and
+     'publish_kind false windows-user-preview' in packager and
+     'if cmp -s' in packager and
+     'SAFE-BUILD FAILURE' in packager),
+    ("Consumer package excludes fixture launcher and checks isolation",
+     'if internal:' in packager and
+     'z.writestr("RUN-FIXTURE-LAB.cmd", lab)' in packager and
+     'Fixture lab launcher isolation check failed' in packager),
     ("Windows DPI regression: status, UGC probe, and summary use separate rows",
      'statusArea.RowStyles.Add(new RowStyle(SizeType.Absolute, 30))' in gui and
      'statusArea.Controls.Add(_status, 0, 0)' in gui and
