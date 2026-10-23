@@ -148,44 +148,64 @@ internal sealed class RecoveryPreviewForm : Form
         _id = workshopId;
         Text = "Safe Recovery Preview — Workshop item " + workshopId;
         StartPosition = FormStartPosition.CenterParent;
-        MinimumSize = new System.Drawing.Size(730, 670);
-        ClientSize = new System.Drawing.Size(830, 745);
-        Font = new System.Drawing.Font("Segoe UI", 10);
+        MinimumSize = new System.Drawing.Size(810, 760);
+        ClientSize = new System.Drawing.Size(950, 850);
+        ModernUi.Window(this);
         var layout = new TableLayoutPanel {
-            Dock = DockStyle.Fill, Padding = new Padding(16), ColumnCount = 1, RowCount = 10
+            Dock = DockStyle.Fill, Padding = new Padding(20),
+            BackColor = ModernUi.Background, ColumnCount = 1, RowCount = 10
         };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 65));
-        for (int n = 0; n < 4; n++) layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 64));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 54));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 90));
+        for (int n = 0; n < 4; n++) layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 76));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 56));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 58));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 56));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
         Controls.Add(layout);
-        layout.Controls.Add(new Label {
-            Text = "This is a safe read-only proposal. Choose an original full backup OR original project files. " +
-                   "A reference mod is optional; without one the proposal is experimental and NOT uploadable.",
-            Dock = DockStyle.Fill, AutoSize = false
-        }, 0, 0);
+        var header = new TableLayoutPanel {
+            Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2,
+            BackColor = ModernUi.Background, Margin = new Padding(0)
+        };
+        header.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+        header.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        header.Controls.Add(ModernUi.Label(
+            "RECOVERY   /   WORKSHOP " + workshopId, 17F, true), 0, 0);
+        header.Controls.Add(ModernUi.Label(
+            "Choose an exact original backup, or a project plus a verified reference. " +
+            "The preview never writes to Steam; unverified sources cannot be applied.",
+            9.7F, false, ModernUi.Muted), 0, 1);
+        layout.Controls.Add(header, 0, 0);
 
         AddFileField(layout, 1, "Exact original developer metadata backup (highest confidence)", _backupFile, "JSON files|*.json|All files|*.*");
         AddFileField(layout, 2, "Original .vrgproj (required without exact backup)", _vrgproj, "VRage projects|*.vrgproj|All files|*.*");
         AddFileField(layout, 3, "Original ModHUB metadata (optional)", _local, "ModHUB metadata|*.modhub-metadata|All files|*.*");
-        var comparisonPanel = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2 };
-        comparisonPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 23));
+        var comparisonPanel = new TableLayoutPanel {
+            Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2,
+            Margin = new Padding(4, 1, 4, 1)
+        };
+        comparisonPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 26));
         comparisonPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        comparisonPanel.Controls.Add(new Label { Text = "Working reference Workshop item ID (optional)", Dock = DockStyle.Fill }, 0, 0);
-        comparisonPanel.Controls.Add(_comparison, 0, 1);
+        comparisonPanel.Controls.Add(ModernUi.Label(
+            "WORKING REFERENCE WORKSHOP ID  /  OPTIONAL", 9F, true, ModernUi.Muted), 0, 0);
+        comparisonPanel.Controls.Add(ModernUi.InputShell(_comparison), 0, 1);
         layout.Controls.Add(comparisonPanel, 0, 4);
+        ModernUi.Button(_preview, primary: true);
+        _preview.Margin = new Padding(3, 4, 3, 5);
         layout.Controls.Add(_preview, 0, 5);
-        layout.Controls.Add(_result, 0, 6);
-        layout.Controls.Add(_confirmation, 0, 7);
+        ModernUi.Input(_result, multiline: true);
+        _result.BackColor = ModernUi.Surface;
+        var resultCard = ModernUi.Card(13);
+        resultCard.Controls.Add(_result);
+        layout.Controls.Add(resultCard, 0, 6);
+        layout.Controls.Add(ModernUi.InputShell(_confirmation), 0, 7);
+        ModernUi.Button(_apply);
+        _apply.Margin = new Padding(3, 5, 3, 5);
         layout.Controls.Add(_apply, 0, 8);
-        layout.Controls.Add(new Label {
-            Text = "Writes affect INTERNAL developer metadata only. Public description, title and content are not set by this tool.",
-            Dock = DockStyle.Fill, ForeColor = System.Drawing.Color.FromArgb(96, 98, 106)
-        }, 0, 9);
+        layout.Controls.Add(ModernUi.Label(
+            "SECURE APPLY  •  Internal developer metadata only. Public Workshop fields and mod files are not set.",
+            9F, false, ModernUi.Muted), 0, 9);
 
         // Input changes invalidate the entire prior live Steam preview.
         foreach (var source in new[] { _backupFile, _vrgproj, _local, _comparison })
@@ -197,19 +217,25 @@ internal sealed class RecoveryPreviewForm : Form
 
     private static void AddFileField(TableLayoutPanel layout, int row, string name, TextBox textBox, string filter)
     {
-        var outer = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2 };
-        outer.RowStyles.Add(new RowStyle(SizeType.Absolute, 24));
+        var outer = new TableLayoutPanel {
+            Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2,
+            Margin = new Padding(4, 2, 4, 2)
+        };
+        outer.RowStyles.Add(new RowStyle(SizeType.Absolute, 27));
         outer.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        outer.Controls.Add(new Label { Dock = DockStyle.Fill, Text = name }, 0, 0);
+        outer.Controls.Add(ModernUi.Label(
+            name.ToUpperInvariant(), 9F, true, ModernUi.Muted), 0, 0);
         var chooser = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2 };
         chooser.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        chooser.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 105));
-        var browse = new Button { Text = "Browse...", Dock = DockStyle.Fill };
+        chooser.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 118));
+        var browse = new Button { Text = "BROWSE", Dock = DockStyle.Fill };
+        ModernUi.Button(browse);
+        browse.Margin = new Padding(8, 2, 0, 2);
         browse.Click += (_, _) => {
             using var dialog = new OpenFileDialog { Title = name, Filter = filter, CheckFileExists = true };
             if (dialog.ShowDialog() == DialogResult.OK) textBox.Text = dialog.FileName;
         };
-        chooser.Controls.Add(textBox, 0, 0);
+        chooser.Controls.Add(ModernUi.InputShell(textBox, 10), 0, 0);
         chooser.Controls.Add(browse, 1, 0);
         outer.Controls.Add(chooser, 0, 1);
         layout.Controls.Add(outer, 0, row);
