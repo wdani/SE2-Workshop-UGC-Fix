@@ -12,7 +12,11 @@
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <PublishReadyToRun>false</PublishReadyToRun>
     <AssemblyName>SE2-Workshop-UGC-Fix</AssemblyName>
-    <Version>0.4.0-preview.9</Version>
+    <Version>0.5.0-preview.1</Version>
+  </PropertyGroup>
+  <!-- Only the INTERNAL developer test build can open the destructive fixture lab. -->
+  <PropertyGroup Condition="'$(EnableFixtureLab)' == 'true'">
+    <DefineConstants>$(DefineConstants);SE2_INTERNAL_LAB</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Steamworks.NET.AnyCPU" Version="2026.165.2" />
