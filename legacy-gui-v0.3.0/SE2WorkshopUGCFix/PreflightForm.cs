@@ -11,11 +11,11 @@ internal sealed class PreflightForm : Form
     };
     private readonly TextBox _result = new() {
         Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical,
-        Dock = DockStyle.Fill, BackColor = System.Drawing.Color.FromArgb(247, 248, 251)
+        Dock = DockStyle.Fill, BackColor = ModernUi.Surface
     };
     private readonly string? _template;
     private readonly Label _status = new() {
-        AutoSize = true, ForeColor = System.Drawing.Color.FromArgb(60, 75, 100),
+        AutoSize = false, Dock = DockStyle.Fill, ForeColor = ModernUi.Muted,
         Text = "OFFLINE ESTIMATE ONLY — no Steam changes, no uploads."
     };
     private readonly Button _copy = new() { Text = "COPY RESULT", Height = 36, Enabled = false };
@@ -25,47 +25,61 @@ internal sealed class PreflightForm : Form
         _template = template;
         Text = "SE2 Workshop UGC Fix - Description Preflight";
         StartPosition = FormStartPosition.CenterParent;
-        ClientSize = new System.Drawing.Size(730, 600);
-        MinimumSize = new System.Drawing.Size(630, 520);
-        Font = new System.Drawing.Font("Segoe UI", 10);
+        ClientSize = new System.Drawing.Size(890, 750);
+        MinimumSize = new System.Drawing.Size(760, 650);
+        ModernUi.Window(this);
         var layout = new TableLayoutPanel {
-            Dock = DockStyle.Fill, Padding = new Padding(16), ColumnCount = 1, RowCount = 7
+            Dock = DockStyle.Fill, Padding = new Padding(22),
+            BackColor = ModernUi.Background, ColumnCount = 1, RowCount = 7
         };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 43));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 68));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 52));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 64));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 56));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 52));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 44));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 46));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
         Controls.Add(layout);
-        layout.Controls.Add(new Label {
-            Text = "PRE-PUBLISH DESCRIPTION CHECK", Dock = DockStyle.Fill,
-            Font = new System.Drawing.Font("Segoe UI", 17, System.Drawing.FontStyle.Bold)
-        }, 0, 0);
-        layout.Controls.Add(new Label {
-            Text = "A long public description ALONE does not cause the bug. This estimates what the INTERNAL 5,000-byte Steam developer-metadata field might reach IF ModHUB also embeds this description. Scan your item first for a closer estimate.",
-            Dock = DockStyle.Fill, ForeColor = System.Drawing.Color.FromArgb(78, 80, 90)
-        }, 0, 1);
-        layout.Controls.Add(_description, 0, 2);
-        var buttons = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.LeftToRight };
-        var calculate = new Button { Text = "ESTIMATE RISK", AutoSize = true, Height = 35 };
+        layout.Controls.Add(ModernUi.Label(
+            "DESCRIPTION   /   SIZE ESTIMATOR", 18F, true), 0, 0);
+        layout.Controls.Add(ModernUi.Label(
+            "An oversized public description alone is not the bug. Estimate how " +
+            "ModHUB might embed it in Steam's 5,000-byte INTERNAL developer metadata.",
+            10F, false, ModernUi.Muted), 0, 1);
+        ModernUi.Input(_description, multiline: true);
+        var descriptionCard = ModernUi.Card(14);
+        descriptionCard.Controls.Add(_description);
+        layout.Controls.Add(descriptionCard, 0, 2);
+        var buttons = new FlowLayoutPanel {
+            Dock = DockStyle.Fill, FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = false, Padding = new Padding(0, 4, 0, 2)
+        };
+        var calculate = new Button { Text = "ESTIMATE RISK", Width = 192, Height = 40 };
+        ModernUi.Button(calculate, primary: true);
         calculate.Click += (_, _) => RunEstimate();
         _copy.Click += (_, _) => Clipboard.SetText(_result.Text);
-        var clear = new Button { Text = "CLEAR TEXT", AutoSize = true, Height = 35 };
+        var clear = new Button { Text = "CLEAR TEXT", Width = 136, Height = 40 };
+        ModernUi.Button(clear);
+        _copy.Width = 156;
+        _copy.Height = 40;
+        ModernUi.Button(_copy);
         clear.Click += (_, _) => { _description.Clear(); _result.Clear(); _copy.Enabled = false; };
         buttons.Controls.Add(calculate);
         buttons.Controls.Add(_copy);
         buttons.Controls.Add(clear);
         layout.Controls.Add(buttons, 0, 3);
-        layout.Controls.Add(_result, 0, 4);
+        ModernUi.Input(_result, multiline: true);
+        _result.BackColor = ModernUi.Surface;
+        var resultCard = ModernUi.Card(13);
+        resultCard.Controls.Add(_result);
+        layout.Controls.Add(resultCard, 0, 4);
         layout.Controls.Add(_status, 0, 5);
         layout.Controls.Add(new Label {
             Text = itemId is null ? "No Steam item scanned yet — numbers are reference estimates only."
                 : $"Template: last read-only scan of Workshop item {itemId}. No live writes.",
-            Dock = DockStyle.Fill, ForeColor = System.Drawing.Color.Gray,
-            Font = new System.Drawing.Font("Segoe UI", 8.5F)
+            Dock = DockStyle.Fill, ForeColor = ModernUi.Muted,
+            Font = new System.Drawing.Font("Segoe UI", 9F)
         }, 0, 6);
         AcceptButton = calculate;
     }
@@ -88,7 +102,7 @@ internal sealed class PreflightForm : Form
             ? "WARNING: possible oversized internal metadata. Do not risk an important published mod."
             : "Estimated only. Use a disposable mod and check Steam metadata after publishing.";
         _status.ForeColor = result.ProjectedConservative >= MetadataPatch.LimitBytes
-            ? System.Drawing.Color.DarkRed : System.Drawing.Color.DarkGreen;
+            ? ModernUi.Danger : ModernUi.Success;
         _copy.Enabled = true;
     }
 }
