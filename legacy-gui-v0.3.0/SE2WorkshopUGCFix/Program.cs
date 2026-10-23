@@ -144,56 +144,54 @@ internal sealed class FixForm : Form
     private readonly Button _backup = new() { Text = "OPEN BACKUP FOLDER", Height = 36, Dock = DockStyle.Fill, Enabled = false };
     private readonly Label _status = new() { AutoSize = false, Text = "Ready. Steam must be running; close SE2 and ModHUB." };
     private readonly Label _stats = new() { AutoSize = false, Text = "No item inspected yet.", Dock = DockStyle.Fill, TextAlign = System.Drawing.ContentAlignment.MiddleLeft };
-    private readonly TextBox _log = new() { Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, Dock = DockStyle.Fill, BackColor = System.Drawing.Color.FromArgb(245, 247, 250), BorderStyle = BorderStyle.FixedSingle };
+    private readonly TextBox _log = new() { Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, Dock = DockStyle.Fill, BackColor = ModernUi.SurfaceRaised, ForeColor = ModernUi.Text, BorderStyle = BorderStyle.None };
     private ScanInfo? _current;
     private string? _lastBackupPath;
     private bool _busy;
 
     public FixForm()
     {
-        Text = "SE2 Workshop UGC Metadata Fix   •   v0.4.0-preview.9 (OWNER-ONLY RECOVERY)";
+        Text = "SE2 Workshop UGC Metadata Fix   •   v0.5.0-preview.1 (OWNER-ONLY RECOVERY)";
         // Reserve actual vertical space for the grouped actions and security note.
         // The previous 33px toolbar row clipped buttons at normal Windows DPI.
-        ClientSize = new System.Drawing.Size(880, Program.FixtureLabEnabled ? 850 : 755);
-        MinimumSize = new System.Drawing.Size(760, Program.FixtureLabEnabled ? 785 : 700);
+        ClientSize = new System.Drawing.Size(960, Program.FixtureLabEnabled ? 900 : 830);
+        MinimumSize = new System.Drawing.Size(850, Program.FixtureLabEnabled ? 820 : 750);
         StartPosition = FormStartPosition.CenterScreen;
-        Font = new System.Drawing.Font("Segoe UI", 10F);
-        BackColor = System.Drawing.Color.White;
+        ModernUi.Window(this);
 
-        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(20), ColumnCount = 1, RowCount = 10 };
+        var layout = new TableLayoutPanel {
+            Dock = DockStyle.Fill, Padding = new Padding(24),
+            BackColor = ModernUi.Background, ColumnCount = 1, RowCount = 10
+        };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 52));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 56));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 55));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 58));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 86));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 58));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 50));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 54));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 62));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 62));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 92));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 80));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 148));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 46));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
         Controls.Add(layout);
 
-        var title = new Label { Text = "Workshop metadata recovery", Dock = DockStyle.Fill, Font = new System.Drawing.Font("Segoe UI", 19F, System.Drawing.FontStyle.Bold) };
+        var title = ModernUi.Label("SE2   /   WORKSHOP RECOVERY", 20F, true);
+        title.ForeColor = ModernUi.Text;
         layout.Controls.Add(title, 0, 0);
-        layout.Controls.Add(new Label {
-            Text = "For Space Engineers 2 (App 1133870). Detects oversized, empty, malformed, or healthy metadata. Recovery from a verified original backup or owner-matched project/template requires manual confirmation. Unverified sources remain preview-only.",
-            Dock = DockStyle.Fill, AutoSize = false, ForeColor = System.Drawing.Color.FromArgb(70, 80, 92)
-        }, 0, 1);
-        layout.Controls.Add(_workshop, 0, 2);
+        var intro = ModernUi.Label(
+            "STEAM APP 1133870    •    Diagnose, backups and owner-approved metadata recovery. " +
+            "Unverified sources stay read-only.", 9.6F, false, ModernUi.Muted);
+        layout.Controls.Add(intro, 0, 1);
+        layout.Controls.Add(ModernUi.InputShell(_workshop, 13), 0, 2);
 
         var actions = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, Padding = new Padding(0) };
         actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
         actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-        _scan.Margin = new Padding(0, 4, 8, 6);
-        _repair.Margin = new Padding(8, 4, 0, 6);
-        _scan.BackColor = System.Drawing.Color.FromArgb(33, 101, 168);
-        _scan.ForeColor = System.Drawing.Color.White;
-        _scan.FlatStyle = FlatStyle.Flat;
-        _repair.UseVisualStyleBackColor = false;
-        _repair.BackColor = System.Drawing.Color.FromArgb(218, 224, 232);
-        _repair.ForeColor = System.Drawing.Color.FromArgb(88, 95, 103);
-        _repair.FlatStyle = FlatStyle.Flat;
+        _scan.Margin = new Padding(2, 6, 9, 6);
+        _repair.Margin = new Padding(9, 6, 2, 6);
+        ModernUi.Button(_scan, primary: true);
+        ModernUi.Button(_repair);
         actions.Controls.Add(_scan, 0, 0);
         actions.Controls.Add(_repair, 1, 0);
         layout.Controls.Add(actions, 0, 3);
@@ -203,13 +201,16 @@ internal sealed class FixForm : Form
         // The status is now a full-width line and tools get a separate toolbar.
         var statusArea = new TableLayoutPanel {
             Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2,
-            Padding = new Padding(0), Margin = new Padding(0)
+            BackColor = ModernUi.Surface, Padding = new Padding(12, 4, 12, 3),
+            Margin = new Padding(2, 4, 2, 3)
         };
         statusArea.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         statusArea.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
         statusArea.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         _status.Dock = DockStyle.Fill;
-        _status.Margin = new Padding(3, 0, 0, 0);
+        _status.ForeColor = ModernUi.Muted;
+        _status.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+        _status.Margin = new Padding(6, 0, 0, 0);
         _status.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
         statusArea.Controls.Add(_status, 0, 0);
 
@@ -234,10 +235,8 @@ internal sealed class FixForm : Form
             ? new[] { _e2e, _fixture, _probe }
             : new[] { _probe };
         foreach (var action in diagnosticActions) {
-            action.Margin = new Padding(4, 5, 4, 5);
-            action.FlatStyle = FlatStyle.Flat;
-            action.ForeColor = System.Drawing.Color.FromArgb(35, 88, 140);
-            action.BackColor = System.Drawing.Color.FromArgb(246, 249, 253);
+            action.Margin = new Padding(4, 5, 4, 4);
+            ModernUi.Button(action);
             action.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
         }
         if (fixtureLab) {
@@ -249,10 +248,20 @@ internal sealed class FixForm : Form
         }
         statusArea.Controls.Add(diagnosticButtons, 0, 1);
         layout.Controls.Add(statusArea, 0, 4);
-        layout.Controls.Add(_stats, 0, 5);
-        var caption = new Label { Text = "Activity / diagnostic log", Dock = DockStyle.Fill, Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold) };
+        _stats.Font = new System.Drawing.Font("Segoe UI", 10.5F, System.Drawing.FontStyle.Bold);
+        _stats.ForeColor = ModernUi.Text;
+        _stats.Padding = new Padding(6, 0, 0, 0);
+        var summaryCard = ModernUi.Card(13);
+        summaryCard.Controls.Add(_stats);
+        layout.Controls.Add(summaryCard, 0, 5);
+        var caption = ModernUi.Label("ACTIVITY  /  DIAGNOSTICS", 10F, true, ModernUi.Muted);
         layout.Controls.Add(caption, 0, 6);
-        layout.Controls.Add(_log, 0, 7);
+        ModernUi.Input(_log, multiline: true);
+        _log.BackColor = ModernUi.Surface;
+        _log.ReadOnly = true;
+        var logCard = ModernUi.Card(13);
+        logCard.Controls.Add(_log);
+        layout.Controls.Add(logCard, 0, 7);
         // Two accessible, clearly labelled groups rather than four compressed buttons.
         var outputActions = new TableLayoutPanel {
             Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1,
@@ -265,13 +274,9 @@ internal sealed class FixForm : Form
         outputActions.Controls.Add(CreateActionGroup("TOOLS / RECOVERY", _preflight, _recover), 1, 0);
         layout.Controls.Add(outputActions, 0, 8);
 
-        layout.Controls.Add(new Label {
-            Text = "No passwords or automatic publishing. Steam writes require item ownership and explicit confirmation. Keep your backups private.",
-            Dock = DockStyle.Fill, AutoSize = false, TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
-            Padding = new Padding(3, 3, 0, 0), Margin = new Padding(0),
-            ForeColor = System.Drawing.Color.FromArgb(88, 98, 111),
-            Font = new System.Drawing.Font("Segoe UI", 9F)
-        }, 0, 9);
+        layout.Controls.Add(ModernUi.Label(
+            "SECURITY   •   Steam writes require ownership and your explicit approval. Private backups stay on this PC.",
+            9F, false, ModernUi.Muted), 0, 9);
         _scan.Click += async (_, _) => await ScanAsync();
         _probe.Click += async (_, _) => await ProbeAsync();
         _e2e.Click += (_, _) => {
@@ -291,7 +296,7 @@ internal sealed class FixForm : Form
             if (wizard.CreatedItemId is ulong id) {
                 _workshop.Text = id.ToString(System.Globalization.CultureInfo.InvariantCulture);
                 _status.Text = "New test-item ID entered. Use READ-ONLY UGC PROBE; do NOT REPAIR.";
-                _status.ForeColor = System.Drawing.Color.DarkOrange;
+                _status.ForeColor = ModernUi.Warning;
                 Append("Disposable Workshop test item created: " + id +
                     ". No content or metadata uploaded. Visibility not yet verified.");
             }
@@ -318,7 +323,7 @@ internal sealed class FixForm : Form
             _recover.Enabled = false;
             _stats.Text = "No item inspected yet.";
             _status.Text = "Workshop input changed. Run CHECK METADATA before any repair.";
-            _status.ForeColor = System.Drawing.Color.FromArgb(47, 65, 83);
+            _status.ForeColor = ModernUi.Muted;
             UpdateRepairAvailability();
         };
         UpdateRepairAvailability();
@@ -335,13 +340,11 @@ internal sealed class FixForm : Form
 
     private static GroupBox CreateActionGroup(string title, Button first, Button second)
     {
-        var group = new GroupBox {
+        var group = new ModernGroupBox {
             Text = title,
             Dock = DockStyle.Fill,
-            Padding = new Padding(12, 13, 12, 10),
-            Margin = new Padding(3, 0, 7, 0),
-            ForeColor = System.Drawing.Color.FromArgb(61, 80, 100),
-            Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold)
+            Padding = new Padding(12, 26, 12, 10),
+            Margin = new Padding(3, 0, 7, 0)
         };
         var buttons = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2, Margin = new Padding(0) };
         buttons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
@@ -349,13 +352,8 @@ internal sealed class FixForm : Form
         buttons.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
         foreach (var button in new[] { first, second }) {
             button.Dock = DockStyle.Fill;
-            button.Margin = new Padding(2, 3, 2, 3);
-            button.FlatStyle = FlatStyle.Flat;
-            button.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(184, 196, 210);
-            button.BackColor = System.Drawing.Color.FromArgb(247, 250, 253);
-            button.ForeColor = System.Drawing.Color.FromArgb(37, 77, 117);
-            button.UseVisualStyleBackColor = false;
-            button.Font = new System.Drawing.Font("Segoe UI", 9.5F, System.Drawing.FontStyle.Regular);
+            button.Margin = new Padding(2, 4, 2, 4);
+            ModernUi.Button(button);
             buttons.Controls.Add(button);
         }
         group.Controls.Add(buttons);
@@ -392,12 +390,12 @@ internal sealed class FixForm : Form
                 _ => "READ-ONLY PROBE: see diagnostic result; no repair enabled."
             };
             _status.ForeColor = info.Assessment.Status == SteamProbeStatus.Present
-                ? System.Drawing.Color.DarkGreen : System.Drawing.Color.DarkOrange;
+                ? ModernUi.Success : ModernUi.Warning;
             Append(info.Assessment.Explanation);
             Append("Safe report available via COPY SAFE REPORT. No Steam update was sent.");
         } catch (Exception ex) {
             _status.Text = "READ-ONLY PROBE FAILED — Steam data unchanged.";
-            _status.ForeColor = System.Drawing.Color.DarkRed;
+            _status.ForeColor = ModernUi.Danger;
             Append("Probe error: " + ex.Message);
             MessageBox.Show(this, ex.Message, "Read-only Steam diagnostic failed",
                 MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -445,35 +443,35 @@ internal sealed class FixForm : Form
             _recover.Enabled = mayPreviewRecovery;
             if (!info.OwnerMatches) {
                 _status.Text = "READ ONLY — This Workshop item is not owned by the signed-in Steam account.";
-                _status.ForeColor = System.Drawing.Color.DarkOrange;
+                _status.ForeColor = ModernUi.Warning;
             } else {
                 switch (info.Diagnosis.Condition) {
                     case MetadataCondition.Healthy:
                         _status.Text = "HEALTHY — Metadata is valid. No repair necessary.";
-                        _status.ForeColor = System.Drawing.Color.DarkGreen;
+                        _status.ForeColor = ModernUi.Success;
                         break;
                     case MetadataCondition.OversizedDescription when info.Eligible:
                         _status.Text = "REPAIR AVAILABLE — Oversized internal description detected.";
-                        _status.ForeColor = System.Drawing.Color.DarkOrange;
+                        _status.ForeColor = ModernUi.Warning;
                         break;
                     case MetadataCondition.Missing:
                     case MetadataCondition.Malformed:
                         _status.Text = "RECOVERY PREVIEW AVAILABLE — Source verification and approval required before changes.";
-                        _status.ForeColor = System.Drawing.Color.DarkOrange;
+                        _status.ForeColor = ModernUi.Warning;
                         break;
                     case MetadataCondition.IdentityConflict:
                         _status.Text = "UNSAFE METADATA IDENTITY — All repairs blocked.";
-                        _status.ForeColor = System.Drawing.Color.DarkRed;
+                        _status.ForeColor = ModernUi.Danger;
                         break;
                     default:
                         _status.Text = "NO SAFE AUTOMATIC REPAIR — See diagnosis.";
-                        _status.ForeColor = System.Drawing.Color.DarkOrange;
+                        _status.ForeColor = ModernUi.Warning;
                         break;
                 }
             }
         } catch (Exception ex) {
             _status.Text = "CHECK FAILED – nothing was changed on Steam.";
-            _status.ForeColor = System.Drawing.Color.DarkRed;
+            _status.ForeColor = ModernUi.Danger;
             Append("CHECK FAILED: " + ex.Message);
             MessageBox.Show(this, ex.Message, "Steam metadata check failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
         } finally { SetBusy(false); }
@@ -496,13 +494,13 @@ internal sealed class FixForm : Form
             var result = await Task.Run(() => SteamFix.Apply(info));
             Append(result);
             _status.Text = "STEAM UPDATE CONFIRMED. Now restart ModHUB and test the mod in SE2.";
-            _status.ForeColor = System.Drawing.Color.DarkGreen;
+            _status.ForeColor = ModernUi.Success;
             MessageBox.Show(this,
                 "Steam accepted the metadata repair and a fresh read-back matched the candidate.\n\nRestart ModHUB and Space Engineers 2, then test in a disposable world. Do not overwrite existing saves until tested.",
                 "Repair confirmed", MessageBoxButtons.OK, MessageBoxIcon.Information);
         } catch (Exception ex) {
             _status.Text = "UPDATE NOT CONFIRMED – inspect activity / backup before retrying.";
-            _status.ForeColor = System.Drawing.Color.DarkRed;
+            _status.ForeColor = ModernUi.Danger;
             Append("STOP: " + ex.Message);
             try { File.WriteAllText(Path.Combine(info.BackupDirectory, "last-error.txt"), ex.ToString()); }
             catch { /* Preserve original error; do not attempt update again. */ }
@@ -525,7 +523,7 @@ internal sealed class FixForm : Form
             (_current.Diagnosis.Condition is MetadataCondition.Missing or MetadataCondition.Malformed);
         _workshop.Enabled = !active;
         UpdateRepairAvailability();
-        if (status is not null) { _status.Text = status; _status.ForeColor = System.Drawing.Color.FromArgb(47, 65, 83); }
+        if (status is not null) { _status.Text = status; _status.ForeColor = ModernUi.Muted; }
         Cursor = active ? Cursors.WaitCursor : Cursors.Default;
     }
 
@@ -534,8 +532,8 @@ internal sealed class FixForm : Form
         bool ready = !_busy && _current is { Eligible: true };
         _repair.Enabled = ready;
         _repair.Text = ready ? "2   REPAIR MY ITEM" : "2   REPAIR (CHECK FIRST)";
-        _repair.BackColor = ready ? System.Drawing.Color.FromArgb(24, 115, 78) : System.Drawing.Color.FromArgb(218, 224, 232);
-        _repair.ForeColor = ready ? System.Drawing.Color.White : System.Drawing.Color.FromArgb(88, 95, 103);
+        _repair.BackColor = ready ? ModernUi.Success : ModernUi.SurfaceRaised;
+        _repair.ForeColor = ready ? ModernUi.Background : ModernUi.Muted;
     }
 
     private void CopySafeReport()
