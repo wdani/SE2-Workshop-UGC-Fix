@@ -84,7 +84,8 @@ internal sealed class DisposableE2EForm : Form
         panel.Controls.Add(pathRow, 0, 3);
         panel.Controls.Add(new Label {
             Dock = DockStyle.Fill,
-            Text = "Workshop ID " + _id + " — type EXACTLY: RUN FULL E2E " + _id
+            Text = "Workshop " + _id + ": RUN FULL E2E " + _id +
+                "  or  PREPARE SINGLE RESTORE " + _id
         }, 0, 4);
         panel.Controls.Add(_confirmation, 0, 5);
         panel.Controls.Add(_run, 0, 6);
@@ -185,12 +186,12 @@ internal sealed class DisposableE2EForm : Form
                 _confirmation.Text != "PREPARE SINGLE RESTORE " + _id) return;
             if (MessageBox.Show(this,
                 "This will intentionally set INTERNAL developer metadata to EMPTY on ONLY the " +
-                "published disposable SE2 UGC E2E TEST item " + _id + ".\\n\\n" +
+                "published disposable SE2 UGC E2E TEST item " + _id + ".\n\n" +
                 "The tool SAVES original metadata and project BEFORE the single Steam update. " +
                 "It will NOT restore automatically: use the NORMAL app's RECOVERY PREVIEW + " +
-                "RESTORE button and select the saved original JSON.\\n\\n" +
+                "RESTORE button and select the saved original JSON.\n\n" +
                 "If anything fails, use EMERGENCY RESTORE FROM TEST BACKUP here. " +
-                "Do NOT touch production mods or existing worlds.\\n\\n" +
+                "Do NOT touch production mods or existing worlds.\n\n" +
                 "Authorize this ONE real Steam metadata mutation?",
                 "FINAL CONSENT — prepare single disposable restore",
                 MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
@@ -228,7 +229,7 @@ internal sealed class DisposableE2EForm : Form
                 _log.AppendText("PREPARATION STOP / possibly unknown Steam state: " +
                     ex.Message + Environment.NewLine);
                 MessageBox.Show(this, ex.Message +
-                    "\\n\\nDO NOT retry a Steam mutation blindly. Preserve the original backup.",
+                    "\n\nDO NOT retry a Steam mutation blindly. Preserve the original backup.",
                     "Preparation stopped", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             } finally {
                 _busy = false;
