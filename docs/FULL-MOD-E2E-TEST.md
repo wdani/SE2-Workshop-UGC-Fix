@@ -1,4 +1,22 @@
-# Single-pass full SE2 Workshop metadata recovery test (v0.4.0-preview.7)
+# SE2 Workshop Metadata Recovery — completed live tests
+
+## Normal GUI RESTORE — PASSED (2026-10-23, v0.4.0-preview.9)
+
+The owner completed the focused single-case test using the existing genuinely published ModHUB LCD test project, **Workshop item `3824260687`**, without creating a new item or modifying production mods.
+
+Verified from owner-provided screenshots and read-only preview output:
+
+- Fixture lab saved the known original metadata to a private `e2e-original-PRIVATE.json` file *before* intentionally setting the disposable item's developer metadata to **0 bytes**.
+- Standard Windows app `CHECK METADATA` identified the target as **`Missing`**.
+- Ordinary **`RECOVERY PREVIEW`** accepted the exact same-item original backup: **1,611 UTF-8 bytes**, candidate SHA256 **`E3F3353B0275FDA4330AB00A3A904ABC7A16B00AA2BD702D69FC4B7D38AD0270`**; status `REVIEWABLE CANDIDATE`. No reference mod, invented GUID, or synthetic proposal needed.
+- Owner entered the exact item-specific confirmation **`RESTORE 3824260687`** and approved the normal UI restoration, **not** the fixture lab's automatic E2E rollback.
+- The regular GUI displayed **`STEAM METADATA RECOVERED AND VERIFIED`**, source **`OriginalBackup`**, and a dialog **`Restore readback verified: Steam returned the exact recovered developer metadata`**. This confirms the end-user `RecoveryApplyService` path and the app's fresh exact metadata readback were exercised in real Steam.
+
+**Acceptance: PASS for exact same-item backup restore, owner-only confirmation, live Steam metadata-only write and byte-exact Steam readback.** Earlier v0.4.0-preview.8 Windows screenshots also validated healthy detection and the corrected UI layout.
+
+**Remaining qualification:** a fresh ModHUB / game-side check of the disposable LCD image after this final restore was not included in the latest screenshot. This success does **not** establish recovery from an unrelated working-template item, compatibility with every historical metadata schema, or restoration of missing Workshop content / old world GUID links. Generic proposals stay nonwritable. Keep the tool unreleased until final scope and packaging review; **do not repeat destructive fault injection** just to reconfirm this passed acceptance case.
+
+## Archived development and E2E runbook (historical preview.6 / preview.7)
 
 ## Why this replaces tiny one-off probes
 
@@ -108,11 +126,11 @@ Summary flags: `complete=true`, `originalRestored=true`, `startedFromRealModhubP
 
 The batch uses only the **Steam developer-metadata setter**: public Workshop description, preview, content, tags and visibility are not written by the transport. Its final uncached Steam readback exactly matched the original saved metadata. **No independent post-test ModHUB/in-game smoke has yet been documented**.
 
-### Engineering interpretation and next milestone
+### Historical engineering interpretation (before normal GUI RESTORE existed)
 
 The **live Steam transport and backup restoration** succeeded, including an actual empty-metadata state. The app exercised the shared `RecoveryReadOnlySession` and `RecoveryWritePreflight` during the batch for the empty/malformed cases, but the E2E engine then submitted the **original baseline raw JSON** directly via the test transport. It did **not** submit the `RecoveryWriteAuthorization.CandidateJson` as an integrated ordinary-user recovery action.
 
-Therefore the next large development milestone is to connect a **separate, explicitly authorized owner-only recovery apply workflow** in the standard GUI, supporting a known exact-item original backup and, after independent schema scrutiny, an original `.vrgproj` with owner-matched reference. The experimental generic fallback must remain **non-writable**. Apply must verify private file checksums, owner, project identity, original unchanged state, exact typed workshop ID, metadata-only update callback and uncached byte-exact readback; it must stop on ambiguous outcomes without blind retries.
+That historical next milestone was implemented in preview.7–preview.9. **The regular exact-item OriginalBackup APPLY is now live-tested and PASSED, as documented above.** The original `.vrgproj` with owner-matched working reference path remains a distinct, not-yet-live-validated variant. The experimental generic fallback must remain **non-writable**. Apply must verify private file checksums, owner, project identity, original unchanged state, exact typed workshop ID, metadata-only update callback and uncached byte-exact readback; it must stop on ambiguous outcomes without blind retries.
 
 Do **not** describe this prototype test as universal historical recovery or a public release yet. Final qualification still includes the creator verifying the original LCD image again in ModHUB / SE2 after the batch.
 
@@ -120,4 +138,4 @@ Do **not** describe this prototype test as universal historical recovery or a pu
 
 A historical damaged mod can differ from this isolated test mod in its age, schema, dependencies or missing files. The batch establishes a strong E2E baseline but does not prove universal compatibility with *all* mod versions. No existing production mod should be used for these deliberate failure injections.
 
-**Status:** E2E runner source implemented in Draft PR; .NET and Windows runtime tests for this new version are still pending. A backup plus readback is required before any live mutation.
+**Current status (2026-10-23):** The disposable E2E batch, the v0.4.0-preview.9 offline/Windows build, the preview.8 Windows GUI launch, and the preview.9 live **normal original-backup RESTORE** all passed. The tool remains an unreleased Draft PR, with historical-schema/reference-route and final post-restore in-game checks still outside the verified acceptance scope.
