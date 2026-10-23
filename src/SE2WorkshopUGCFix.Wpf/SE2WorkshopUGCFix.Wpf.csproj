@@ -14,7 +14,7 @@
     <PlatformTarget>x64</PlatformTarget>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <AssemblyName>SE2WorkshopUGCFix.Wpf</AssemblyName>
-    <Version>0.6.0-preview.2</Version>
+    <Version>0.6.0-preview.4</Version>
   </PropertyGroup>
   <ItemGroup>
     <!-- Reuse the EXACT tested Steam backend: no copied recovery logic. -->
