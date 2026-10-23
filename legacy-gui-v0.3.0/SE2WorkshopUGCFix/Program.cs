@@ -82,6 +82,11 @@ internal static class Program
                 if (Descendants(fixtureDialog).OfType<Button>()
                     .Single(c => c.Text == "CREATE ONE EMPTY TEST ITEM").Enabled)
                     throw new InvalidOperationException("Test-item creation must start locked.");
+                if (Descendants(suiteDialog).OfType<Button>()
+                    .Single(c => c.Text.StartsWith("PREPARE ONE GUI RESTORE TEST", StringComparison.Ordinal))
+                    .Enabled)
+                    throw new InvalidOperationException(
+                        "Single-fixture preparation must start locked without exact approval.");
                 if (!recovery.Text.Contains("Recovery Preview", StringComparison.Ordinal))
                     throw new InvalidOperationException("Recovery preview form failed to initialize.");
                 recovery.ShowInTaskbar = false;
@@ -146,7 +151,7 @@ internal sealed class FixForm : Form
 
     public FixForm()
     {
-        Text = "SE2 Workshop UGC Metadata Fix   •   v0.4.0-preview.8 (OWNER-ONLY RECOVERY)";
+        Text = "SE2 Workshop UGC Metadata Fix   •   v0.4.0-preview.9 (OWNER-ONLY RECOVERY)";
         // Reserve actual vertical space for the grouped actions and security note.
         // The previous 33px toolbar row clipped buttons at normal Windows DPI.
         ClientSize = new System.Drawing.Size(880, Program.FixtureLabEnabled ? 850 : 755);
