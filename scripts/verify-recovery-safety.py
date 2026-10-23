@@ -62,7 +62,8 @@ checks = [
     ("Unknown source still blocked, no blind Steam retry",
      'RecoverySource.OriginalBackup or RecoverySource.WorkingItem' in apply and
      'RecoverySource.GenericReference' not in apply and
-     'NO UPDATE SENT' in e2e_runner and
+     'NO UPDATE SENT' in transport and
+     'SteamUGC.StartItemUpdate(' in transport and
      'StartItemUpdate(' not in apply),
     ("Recovery preview never uses Steam write methods", not any(s in preview for s in
         ("SteamUGC.StartItemUpdate", "SteamUGC.SetItemMetadata",
