@@ -18,8 +18,13 @@
                     <Border BorderBrush="{StaticResource StrokeBrush}" BorderThickness="0,1,0,0"
                             Padding="7,13,0,0">
                         <StackPanel>
-                            <TextBlock Text="LOCAL · OWNER ONLY" FontSize="10" FontWeight="SemiBold"
-                                       Foreground="{StaticResource SuccessBrush}"/>
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse Width="6" Height="6" Fill="{StaticResource PrimaryBrush}"
+                                         VerticalAlignment="Center" Margin="0,0,7,0"
+                                         ToolTip="Local tool mode; Steam ownership is only confirmed after a scan."/>
+                                <TextBlock Text="LOCAL · OWNER CONTROL" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{StaticResource SecondaryTextBrush}"/>
+                            </StackPanel>
                             <TextBlock Text="Steam updates always need approval."
                                        TextWrapping="Wrap" FontSize="10" Margin="0,5,0,0"
                                        Foreground="{StaticResource SecondaryTextBrush}"/>
@@ -43,8 +48,13 @@
                         </StackPanel>
                     </StackPanel>
                     <TextBlock Text="TOOLS" Style="{StaticResource EyebrowStyle}" Margin="11,0,0,9"/>
-                    <Button Content="⌂   Overview" Style="{StaticResource NavButtonStyle}"
-                            Background="#263650" Click="Overview_Click"/>
+                    <Grid Margin="0,0,0,4">
+                        <Border Background="#263650" CornerRadius="7"/>
+                        <Border Width="3" HorizontalAlignment="Left" Margin="0,8,0,8"
+                                Background="{StaticResource PrimaryBrush}" CornerRadius="2"/>
+                        <Button Content="⌂   Overview" Style="{StaticResource NavButtonStyle}"
+                                Background="Transparent" Margin="5,0,0,0" Click="Overview_Click"/>
+                    </Grid>
                     <Button Content="▤   Description" Style="{StaticResource NavButtonStyle}"
                             Click="OpenPreflight_Click"/>
                     <Button Name="NavRecoveryButton" Content="◇   Recovery" IsEnabled="False"
