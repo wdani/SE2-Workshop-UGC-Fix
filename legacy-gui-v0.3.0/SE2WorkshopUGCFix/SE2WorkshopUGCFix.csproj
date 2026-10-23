@@ -18,14 +18,18 @@
   <PropertyGroup Condition="'$(EnableFixtureLab)' == 'true'">
     <DefineConstants>$(DefineConstants);SE2_INTERNAL_LAB</DefineConstants>
   </PropertyGroup>
+  <!-- Exclude destructive fixture UI and test services from consumer binaries. -->
+  <ItemGroup Condition="'$(EnableFixtureLab)' != 'true'">
+    <Compile Remove="Disposable*.cs;TestItem*.cs" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Steamworks.NET.AnyCPU" Version="2026.165.2" />
     <Compile Include="../../src/SE2WorkshopUGCFix.Recovery/UniversalRecovery.cs" Link="UniversalRecovery.cs" />
     <Compile Include="../../src/SE2WorkshopUGCFix.Recovery/RecoveryReadOnlySession.cs" Link="RecoveryReadOnlySession.cs" />
     <Compile Include="../../src/SE2WorkshopUGCFix.Recovery/RecoveryWritePreflight.cs" Link="RecoveryWritePreflight.cs" />
     <Compile Include="../../src/SE2WorkshopUGCFix.Recovery/SteamMetadataProbePolicy.cs" Link="SteamMetadataProbePolicy.cs" />
-    <Compile Include="../../src/SE2WorkshopUGCFix.Recovery/TestFixturePolicy.cs" Link="TestFixturePolicy.cs" />
-    <Compile Include="../../src/SE2WorkshopUGCFix.Recovery/DisposableModScenarios.cs" Link="DisposableModScenarios.cs" />
-    <Compile Include="../../src/SE2WorkshopUGCFix.Recovery/DisposableE2EEngine.cs" Link="DisposableE2EEngine.cs" />
+    <Compile Include="../../src/SE2WorkshopUGCFix.Recovery/TestFixturePolicy.cs" Link="TestFixturePolicy.cs" Condition="'$(EnableFixtureLab)' == 'true'" />
+    <Compile Include="../../src/SE2WorkshopUGCFix.Recovery/DisposableModScenarios.cs" Link="DisposableModScenarios.cs" Condition="'$(EnableFixtureLab)' == 'true'" />
+    <Compile Include="../../src/SE2WorkshopUGCFix.Recovery/DisposableE2EEngine.cs" Link="DisposableE2EEngine.cs" Condition="'$(EnableFixtureLab)' == 'true'" />
   </ItemGroup>
 </Project>

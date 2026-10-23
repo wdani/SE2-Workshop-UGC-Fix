@@ -20,6 +20,7 @@ creator = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/TestItemCreator.cs").read
 disposable = (root / "src/SE2WorkshopUGCFix.Recovery/DisposableModScenarios.cs").read_text(encoding="utf-8")
 engine = (root / "src/SE2WorkshopUGCFix.Recovery/DisposableE2EEngine.cs").read_text(encoding="utf-8")
 e2e_runner = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/DisposableE2ERunService.cs").read_text(encoding="utf-8")
+transport = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/OwnerOnlyMetadataTransport.cs").read_text(encoding="utf-8")
 e2e_dialog = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/DisposableE2EForm.cs").read_text(encoding="utf-8")
 single_setup = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/DisposableSingleRestoreSetup.cs").read_text(encoding="utf-8")
 fixture = (root / "src/SE2WorkshopUGCFix.Recovery/TestFixturePolicy.cs").read_text(encoding="utf-8")
@@ -44,7 +45,7 @@ checks = [
     ("Normal recovery uses the tested owner-only metadata-only Steam writer",
      'new OwnerOnlyMetadataTransport(' in apply and
      "SubmitMetadataOnlyIfUnchanged(" in apply and
-     "SetItemMetadata(" in e2e_runner and
+     "SetItemMetadata(" in transport and
      'SteamUGC.SetItemTitle(' not in apply and
      'SteamUGC.SetItemDescription(' not in apply and
      'SteamUGC.SetItemContent(' not in apply),
@@ -162,8 +163,8 @@ checks = [
      "e2e-project-PRIVATE.vrgproj" in e2e_runner and
      "DisposableE2EEngine.Run(" in e2e_runner),
     ("Real E2E uses only Steam metadata setter and no public Workshop setters",
-     "SteamUGC.SetItemMetadata(" in e2e_runner and
-     not any(x in e2e_runner for x in (
+     "SteamUGC.SetItemMetadata(" in transport and
+     not any(x in e2e_runner + transport for x in (
          "SteamUGC.SetItemContent(", "SteamUGC.SetItemTitle(",
          "SteamUGC.SetItemDescription(", "SteamUGC.SetItemTags(",
          "SteamUGC.SetItemVisibility(", "SteamUGC.DeleteItem("))),
@@ -198,6 +199,14 @@ checks = [
      'using var description = new PreflightForm(null, null);' in gui and
      'Modern dark design not initialized' in gui and
      'Modern card-based content layout missing' in gui),
+    ("Consumer compile excludes destructive fixture services",
+     '<Compile Remove="Disposable*.cs;TestItem*.cs" />' in project and
+     all('Link="' + name + '.cs" Condition="' in project
+         for name in ("TestFixturePolicy", "DisposableModScenarios", "DisposableE2EEngine")) and
+     "DisposableRemote IDisposableUgcTransport.ReadFresh" in transport and
+     "#if SE2_INTERNAL_LAB" in transport and
+     "SteamUGC.CreateItem(" not in transport and
+     "internal sealed class OwnerOnlyMetadataTransport" not in e2e_runner),
     ("Consumer binary cannot enable destructive lab by CLI",
      '#if SE2_INTERNAL_LAB' in gui and
      'FixtureLabEnabled = false;' in gui and

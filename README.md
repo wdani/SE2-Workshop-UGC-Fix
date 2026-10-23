@@ -11,7 +11,7 @@ The main Workshop diagnosis form, full recovery wizard and description-size pref
 
 One offline packaging script now produces **two different Windows x64 ZIPs**, deliberately separated:
 
-- **`SE2-Workshop-UGC-Fix-0.5.0-preview.1-win-x64-USER-CANDIDATE.zip`** — the normal program and offline UI smoke only. Destructive fixture-lab activation is **compiled out**; passing `--fixture-lab` does not enable it. There is no lab launcher.
+- **`SE2-Workshop-UGC-Fix-0.5.0-preview.1-win-x64-USER-CANDIDATE.zip`** — the normal program and offline UI smoke only. Destructive fixture-lab services and item-creation handlers are **excluded from compilation**; passing `--fixture-lab` does not enable it. There is no lab launcher.
 - **`SE2-Workshop-UGC-Fix-0.5.0-preview.1-win-x64-DEV-LOCAL-TEST.zip`** — original explicitly opted-in developer lab retained for the creator's own tests, not for public distribution.
 
 The script stops if the compiled binaries are identical, or if the user ZIP contains a lab launcher. **Neither ZIP is a public release.** Both first require one bundled offline Docker build followed by Windows `RUN-UI-SMOKE.cmd` and a visual high-DPI inspection. No additional real Steam fault injection is needed; the underlying backup RESTORE path has already been validated.
