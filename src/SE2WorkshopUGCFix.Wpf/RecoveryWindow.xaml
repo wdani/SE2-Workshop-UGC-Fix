@@ -1,0 +1,86 @@
+<Window x:Class="SE2WorkshopUGCFix.Wpf.RecoveryWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Recovery assistant · SE2 Workshop Recovery"
+        Width="960" Height="860" MinWidth="770" MinHeight="690"
+        WindowStartupLocation="CenterOwner" Background="{StaticResource PageBrush}"
+        Foreground="{StaticResource TextBrush}" FontFamily="Segoe UI" UseLayoutRounding="True">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="28,26,28,30">
+            <TextBlock Text="OWNER-ONLY RECOVERY / VERIFY BEFORE WRITING" Style="{StaticResource EyebrowStyle}"
+                       Foreground="{StaticResource WarningBrush}"/>
+            <TextBlock Name="RecoveryHeading" Text="Recover developer metadata" FontSize="27"
+                       FontWeight="SemiBold" Margin="0,7,0,7"/>
+            <TextBlock Text="Use an exact original backup when possible. A generic schema is experimental and cannot be uploaded."
+                       Foreground="{StaticResource SecondaryTextBrush}" TextWrapping="Wrap" FontSize="13" Margin="0,0,0,22"/>
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,14">
+                <StackPanel>
+                    <TextBlock Text="1   Recovery sources" Style="{StaticResource SectionTitleStyle}" Margin="0,0,0,17"/>
+                    <TextBlock Text="ORIGINAL DEVELOPER METADATA BACKUP · RECOMMENDED"
+                               Style="{StaticResource EyebrowStyle}" Margin="0,0,0,7"/>
+                    <Grid Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Name="BackupInput" Grid.Column="0" Style="{StaticResource FormFieldStyle}"
+                                 TextChanged="SourceChanged" ToolTip="Same-item original metadata JSON"/>
+                        <Button Grid.Column="1" Content="Browse…" Style="{StaticResource BaseButtonStyle}" Margin="10,0,0,0"
+                                Tag="backup" Click="Browse_Click"/>
+                    </Grid>
+                    <TextBlock Text="ORIGINAL VRAGE PROJECT · REQUIRED WITHOUT EXACT BACKUP"
+                               Style="{StaticResource EyebrowStyle}" Margin="0,0,0,7"/>
+                    <Grid Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Name="ProjectInput" Grid.Column="0" Style="{StaticResource FormFieldStyle}"
+                                 TextChanged="SourceChanged" ToolTip="Original .vrgproj"/>
+                        <Button Grid.Column="1" Content="Browse…" Style="{StaticResource BaseButtonStyle}" Margin="10,0,0,0"
+                                Tag="project" Click="Browse_Click"/>
+                    </Grid>
+                    <TextBlock Text="ORIGINAL MODHUB METADATA · OPTIONAL"
+                               Style="{StaticResource EyebrowStyle}" Margin="0,0,0,7"/>
+                    <Grid Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Name="ModhubInput" Grid.Column="0" Style="{StaticResource FormFieldStyle}"
+                                 TextChanged="SourceChanged"/>
+                        <Button Grid.Column="1" Content="Browse…" Style="{StaticResource BaseButtonStyle}" Margin="10,0,0,0"
+                                Tag="modhub" Click="Browse_Click"/>
+                    </Grid>
+                    <TextBlock Text="WORKING REFERENCE WORKSHOP ID · OPTIONAL"
+                               Style="{StaticResource EyebrowStyle}" Margin="0,0,0,7"/>
+                    <TextBox Name="ReferenceInput" Style="{StaticResource FormFieldStyle}" TextChanged="SourceChanged"/>
+                    <Button Name="PreviewButton" Content="Build read-only preview →" Style="{StaticResource PrimaryButtonStyle}"
+                            Click="Preview_Click" HorizontalAlignment="Left" Margin="0,18,0,0"/>
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,14">
+                <StackPanel>
+                    <TextBlock Text="2   Review candidate" Style="{StaticResource SectionTitleStyle}" Margin="0,0,0,12"/>
+                    <TextBox Name="PreviewResult" Style="{StaticResource FormFieldStyle}"
+                             Text="A verified read-only proposal will appear here."
+                             IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                             VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto" Height="154"/>
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource CardStyle}" BorderBrush="#6C4756" Background="#261F2C">
+                <StackPanel>
+                    <TextBlock Text="3   Confirm a Steam update" Style="{StaticResource SectionTitleStyle}" Margin="0,0,0,8"/>
+                    <TextBlock Text="Only verified sources unlock a write. You must enter RESTORE followed by the exact original Workshop ID and approve a second warning."
+                               Foreground="{StaticResource SecondaryTextBrush}" TextWrapping="Wrap" FontSize="12"
+                               Margin="0,0,0,14"/>
+                    <TextBlock Name="ConfirmHint" Text="RESTORE &lt;WORKSHOP ID&gt;" Style="{StaticResource EyebrowStyle}" Margin="0,0,0,8"/>
+                    <TextBox Name="ConfirmInput" Style="{StaticResource FormFieldStyle}" TextChanged="ConfirmChanged"/>
+                    <Button Name="RestoreButton" IsEnabled="False" Content="Restore developer metadata"
+                            Style="{StaticResource DangerButtonStyle}" HorizontalAlignment="Left"
+                            Click="Restore_Click" Margin="0,16,0,0"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Window>
