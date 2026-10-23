@@ -18,6 +18,8 @@ On Windows, extract only the **USER-CANDIDATE** ZIP, run `RUN-UI-SMOKE.cmd`, the
 
 **Acceptance:** both build ZIPs generated with different EXE SHA256; safe package lacks fixture lab launcher; Windows smoke PASS; main/preview/preflight views legible; healthy Steam diagnosis still returns original checksum. Store no private metadata in public reports.
 
+On failure, `RUN-UI-SMOKE.cmd` prints the locally saved exception report at `%LOCALAPPDATA%\SE2WorkshopUGCFix\Diagnostics\last-ui-smoke.txt`. Review and redact personal Windows paths/usernames before sharing the report. This offline smoke does not connect to Steam; a failure must never trigger a repair attempt.
+
 ---
 
 ## Historical smoke instructions (archived; preview.9)

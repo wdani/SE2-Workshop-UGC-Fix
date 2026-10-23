@@ -75,7 +75,13 @@ smoke = (
     'cd /d "%~dp0"\r\n'
     'echo Offline UI smoke - Steam is NOT initialized.\r\n'
     'start /wait "" "%~dp0SE2-Workshop-UGC-Fix.exe" --smoke-ui\r\n'
-    'if errorlevel 1 (echo FAIL: GUI smoke test) else (echo PASS: GUI smoke test)\r\n'
+    'if errorlevel 1 (\r\n'
+    '  echo FAIL: Windows GUI smoke test.\r\n'
+    '  if exist "%LOCALAPPDATA%\\SE2WorkshopUGCFix\\Diagnostics\\last-ui-smoke.txt" (\r\n'
+    '    echo Local UI error details:\r\n'
+    '    type "%LOCALAPPDATA%\\SE2WorkshopUGCFix\\Diagnostics\\last-ui-smoke.txt"\r\n'
+    '  )\r\n'
+    ') else (echo PASS: Windows GUI smoke test)\r\n'
     'pause\r\n'
 )
 run = (

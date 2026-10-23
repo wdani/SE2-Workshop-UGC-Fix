@@ -133,9 +133,19 @@ internal static class Program
                 main.Hide();
                 return 0;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // WinExe has no console; the PowerShell/batch caller checks exit code 1.
+                // WinExe has no console. Keep a LOCAL UI-only exception report.
+                // Steam is never initialized in smoke mode.
+                try {
+                    string folder = Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                        "SE2WorkshopUGCFix", "Diagnostics");
+                    Directory.CreateDirectory(folder);
+                    File.WriteAllText(Path.Combine(folder, "last-ui-smoke.txt"),
+                        "Offline UI smoke FAILED " + DateTimeOffset.Now.ToString("O") +
+                        Environment.NewLine + ex);
+                } catch { /* Keep exit code 1 if diagnostics cannot be saved. */ }
                 return 1;
             }
         }
