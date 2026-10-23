@@ -1,8 +1,53 @@
-# WPF preview — 0.6.0-preview.2 (not released)
+# WPF preview — 0.6.0-preview.4 (not released)
 
 The user requested a truly modern desktop UI after reviewing the dark WinForms 0.5 preview.
 This is a new **WPF** front-end with navigation, responsive content, readable cards,
 reduced visual noise, status and owner indicators, and separate recovery/preflight dialogs.
+
+## Hybrid design and native Workshop input (preview.4)
+
+The user visually compared the real Windows screenshots of preview.2 and preview.3:
+**preview.2's three separate inspection, ready/status and metadata cards are preferred.**
+Only preview.3's thin blue active-navigation marker and restrained footer treatment
+are carried forward. The footer dot is **blue** and signals a local manually controlled
+tool, **not** Steam connection or verified item ownership. Owner identity is checked
+separately for each Workshop item.
+
+The user then spotted unpleasant rendering when typing a Workshop ID or full URL.
+For the **single-line WorkshopInput only**, preview.4 stops using the shared
+rounded `FormFieldStyle` custom TextBox content-host template. It instead uses
+WPF's **native TextBox template** for selection, caret, horizontal scrolling and
+vertical text layout, surrounded by an independent rounded, focus-highlighted
+border. Explicit text/selection/caret colors and disabled spellcheck maintain
+dark UI readability. Multiline preflight/recovery text controls retain their
+existing style and are not changed.
+
+The native Windows offline UI smoke enters and selects a long Workshop URL,
+verifies it round-trips unchanged and no write actions unlock, in addition to
+the already-existing default-height/diagnostics checks. It makes **no Steam calls**.
+
+**This preview.4 has not yet been rebuilt or visually validated on Windows**.
+Use the existing `feat/wpf-modern-desktop` GitHub branch; on the VM, preserve
+local uncommitted preview.3 changes before switching back (see below). The
+previous preview.2 ZIP and the user's local preview.3 build may be kept for
+comparison. Do not release or modify live Workshop metadata for UI testing.
+
+### Rebuild from the existing VM workspace
+
+```bash
+cd /srv/dev-worker/workspaces/se2-workshop-ugc-fix
+git stash push -u -m "preserve local preview3 comparison"
+git switch feat/wpf-modern-desktop
+git pull --ff-only
+bash scripts/package-wpf-preview-docker.sh
+```
+
+Expected new ZIP if tests and publish pass:
+`artifacts/SE2-Workshop-UGC-Fix-0.6.0-preview.4-WPF-win-x64-LOCAL-TEST.zip`.
+After extracting on Windows, run `RUN-WPF-SMOKE.cmd` then
+`RUN-WPF-PREVIEW.cmd`. Visually type an ID, paste a full long Workshop URL,
+test cursor position and text selection, and optionally inspect the
+**already healthy owned** LCD mod read-only. No Steam corruption required.
 
 ## Compact UI refinement (preview.2)
 
