@@ -55,6 +55,19 @@ for name in ("OverviewScroller", "ActivityPanel", "StatusAccent", "ActivityLog")
     assert name in contents["MainWindow.xaml"], name
 assert 'Visibility="Collapsed"' in contents["MainWindow.xaml"], "Diagnostics should be collapsed"
 assert "SlimScrollThumbStyle" in contents["UiTheme.xaml"]
+assert 'Name="WorkshopInput"' in contents["MainWindow.xaml"]
+assert 'WorkshopInputNativeStyle' in contents["MainWindow.xaml"]
+assert 'WorkshopInputNativeStyle' in contents["UiTheme.xaml"]
+native_start = contents["UiTheme.xaml"].split('x:Key="WorkshopInputNativeStyle"', 1)[1]
+native_style = native_start.split("</Style>", 1)[0]
+assert "<Setter Property=\"Template\"" not in native_style, "Native input must keep WPF text host"
+assert 'Property="SelectionBrush"' in native_style
+assert 'Property="VerticalContentAlignment" Value="Center"' in native_style
+assert 'Property="TextWrapping" Value="NoWrap"' in native_style
+assert 'Property="SpellCheck.IsEnabled" Value="False"' in native_style
+assert 'Property="IsKeyboardFocusWithin"' in contents["MainWindow.xaml"]
+assert 'Workshop URL text entry/selection failed.' in contents["App.xaml.cs"]
+
 assert "PART_Track" in contents["UiTheme.xaml"]
 assert "ScrollBar.PageUpCommand" in contents["UiTheme.xaml"]
 assert "ScrollBar.PageDownCommand" in contents["UiTheme.xaml"]
