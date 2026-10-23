@@ -164,6 +164,15 @@ checks = [
      'initiallyRead.Owner != owner' in preview and
      'if (data.OwnerId == 0 || data.OwnerId != expectedOwner)' in session and
      'SteamUser.GetSteamID().m_SteamID' in preview),
+    ("Windows DPI regression: status, UGC probe, and summary use separate rows",
+     'statusArea.RowStyles.Add(new RowStyle(SizeType.Absolute, 30))' in gui and
+     'statusArea.Controls.Add(_status, 0, 0)' in gui and
+     'statusArea.Controls.Add(diagnosticButtons, 0, 1)' in gui and
+     'statusBounds.Bottom > probeBounds.Top' in gui and
+     'probeBounds.Bottom > statsBounds.Top' in gui),
+    ("New owner-only recovery wording replaces stale preview-only claim",
+     "Only the original oversized-description patch can change Steam." not in gui and
+     "Owner-only recovery can restore verified backups" in gui),
     ("UI footer grouped instead of four cramped buttons",
      "CreateActionGroup(\"BACKUPS / REPORTS\"" in gui and
      "CreateActionGroup(\"TOOLS / RECOVERY\"" in gui and
