@@ -225,6 +225,7 @@ internal sealed class DisposableE2EForm : Form
                     "Run the ordinary RESTORE procedure now; never run preparation twice.",
                     "Prepared: finish via normal GUI", MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
+                _confirmation.Clear(); // Prevent accidental second preparation.
             } catch (Exception ex) {
                 _log.AppendText("PREPARATION STOP / possibly unknown Steam state: " +
                     ex.Message + Environment.NewLine);
