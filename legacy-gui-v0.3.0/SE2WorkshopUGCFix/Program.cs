@@ -41,10 +41,21 @@ internal static class Program
                 ApplicationConfiguration.Initialize();
                 using var main = new FixForm();
                 using var recovery = new RecoveryPreviewForm(12345678UL);
+                using var description = new PreflightForm(null, null);
 #if SE2_INTERNAL_LAB
                 using var fixtureDialog = new TestItemCreateForm();
                 using var suiteDialog = new DisposableE2EForm(12345678UL);
 #endif
+                if (main.BackColor != ModernUi.Background ||
+                    recovery.BackColor != ModernUi.Background ||
+                    description.BackColor != ModernUi.Background)
+                    throw new InvalidOperationException(
+                        "Modern dark design not initialized on all ordinary Windows forms.");
+                if (!Descendants(main).OfType<ModernCard>().Any() ||
+                    !Descendants(recovery).OfType<ModernCard>().Any() ||
+                    !Descendants(description).OfType<ModernCard>().Any())
+                    throw new InvalidOperationException(
+                        "Modern card-based content layout missing.");
                 main.ShowInTaskbar = false;
                 main.Opacity = 0;
                 main.Show();
