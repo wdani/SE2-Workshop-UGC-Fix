@@ -35,6 +35,22 @@ public partial class App : Application
                 if (main.ActivityPanel.Visibility != Visibility.Collapsed)
                     throw new InvalidOperationException(
                         "Diagnostics must start collapsed.");
+
+                // Exercise the actual native input with a full Workshop URL and
+                // ensure reading/editing never unlocks Steam-write controls.
+                const string exampleUrl =
+                    "https://steamcommunity.com/sharedfiles/filedetails/?id=3824260687";
+                main.WorkshopInput.Text = exampleUrl;
+                main.WorkshopInput.SelectAll();
+                main.WorkshopInput.UpdateLayout();
+                if (main.WorkshopInput.Text != exampleUrl ||
+                    main.WorkshopInput.SelectionLength != exampleUrl.Length)
+                    throw new InvalidOperationException(
+                        "Workshop URL text entry/selection failed.");
+                if (main.RepairButton.IsEnabled || main.RecoveryButton.IsEnabled)
+                    throw new InvalidOperationException(
+                        "Editing a Workshop ID unlocked a write action.");
+                main.WorkshopInput.Clear();
                 main.Close();
                 preflight.Close();
                 recovery.Close();
