@@ -1,4 +1,27 @@
-# Windows GUI runtime smoke — controlled developer test
+# Windows UI acceptance — 0.5.0-preview.1 modern interface
+
+The genuine v0.4.0-preview.9 **same-item original-backup RESTORE**, exact Steam metadata readback and post-repair LCD mod load in SE2 have already PASSED. This run is **UI/build validation only**. Do not repeat the destructive E2E batch or modify Workshop metadata to test appearance.
+
+## One bundled build, two isolated packages
+
+On the dev-worker VM:
+
+```bash
+cd /srv/dev-worker/workspaces/se2-workshop-ugc-fix
+git pull --ff-only
+bash scripts/run-offline-tests-docker.sh && bash scripts/package-windows-smoke-docker.sh
+```
+
+Expect two distinct ZIPs in `artifacts/`: `SE2-Workshop-UGC-Fix-0.5.0-preview.1-win-x64-USER-CANDIDATE.zip` and `SE2-Workshop-UGC-Fix-0.5.0-preview.1-win-x64-DEV-LOCAL-TEST.zip`. The USER-CANDIDATE build disables the destructive fixture lab at compile time, contains no `RUN-FIXTURE-LAB.cmd` launcher, and is **not a public release yet**. The separate DEV-LOCAL-TEST build remains internal.
+
+On Windows, extract only the **USER-CANDIDATE** ZIP, run `RUN-UI-SMOKE.cmd`, then `RUN-APP.cmd`. Check the dark main window, the recovery preview and the description estimator for overlap at your Windows display scaling. Use owned disposable Workshop ID `3824260687` to **CHECK METADATA** only. It should be `Healthy`; no ordinary `REPAIR` or `RECOVERY PREVIEW` apply should activate. Do not inject another fault or run `RESTORE`. The result of the original full-backup restore was already proven in the older build.
+
+**Acceptance:** both build ZIPs generated with different EXE SHA256; safe package lacks fixture lab launcher; Windows smoke PASS; main/preview/preflight views legible; healthy Steam diagnosis still returns original checksum. Store no private metadata in public reports.
+
+---
+
+## Historical smoke instructions (archived; preview.9)
+
 
 **Goal:** prove the **v0.4.0-preview.9** WinForms interface actually initializes on a Windows x64 PC, beyond the previously successful Linux-hosted cross-compilation.
 
