@@ -1,0 +1,57 @@
+using System;
+using System.Linq;
+using System.Windows;
+
+namespace SE2WorkshopUGCFix.Wpf;
+
+public partial class App : Application
+{
+    protected override void OnStartup(StartupEventArgs e)
+    {
+        base.OnStartup(e);
+        if (e.Args.Length == 1 && e.Args[0] == "--smoke-ui")
+        {
+            try
+            {
+                // All three views initialize offline: no SteamAPI.Init, no Steam writes.
+                using var scope = new SmokeScope();
+                var main = new MainWindow();
+                var preflight = new PreflightWindow(null, null);
+                var recovery = new RecoveryWindow(12345678UL);
+                if (main.RepairButton.IsEnabled || main.RecoveryButton.IsEnabled ||
+                    recovery.RestoreButton.IsEnabled)
+                    throw new InvalidOperationException("Unsafe WPF initial action state.");
+                main.Close();
+                preflight.Close();
+                recovery.Close();
+                Shutdown(0);
+            }
+            catch (Exception ex)
+            {
+                try
+                {
+                    var folder = System.IO.Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                        "SE2WorkshopUGCFix", "Diagnostics");
+                    System.IO.Directory.CreateDirectory(folder);
+                    System.IO.File.WriteAllText(System.IO.Path.Combine(folder,"last-wpf-smoke.txt"),
+                        DateTimeOffset.Now.ToString("O") + Environment.NewLine + ex);
+                }
+                catch { /* Exit must still fail if report cannot be persisted. */ }
+                Shutdown(1);
+            }
+            return;
+        }
+        // A live read or change requires the original Steam guards and user action.
+        Environment.SetEnvironmentVariable("SteamAppId", "1133870");
+        Environment.SetEnvironmentVariable("SteamGameId", "1133870");
+        var window = new MainWindow();
+        MainWindow = window;
+        window.Show();
+    }
+
+    private sealed class SmokeScope : IDisposable
+    {
+        public void Dispose() {}
+    }
+}
