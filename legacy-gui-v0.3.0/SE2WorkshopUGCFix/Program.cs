@@ -68,14 +68,15 @@ internal static class Program
                 }
                 // Regression: Windows native DPI previously rendered the UGC
                 // probe caption beneath the next information row.
-                var statusBounds = main.Controls[0].RectangleToScreen(
-                    main.Controls[0].ClientRectangle);
+                var statusLabel = Descendants(main).OfType<Label>()
+                    .Single(l => l.Text.StartsWith("Ready.", StringComparison.Ordinal));
+                var statusBounds = statusLabel.RectangleToScreen(statusLabel.ClientRectangle);
                 var probeBounds = probe.RectangleToScreen(probe.ClientRectangle);
                 var statsLabel = Descendants(main).OfType<Label>()
                     .Single(l => l.Text == "No item inspected yet.");
                 var statsBounds = statsLabel.RectangleToScreen(statsLabel.ClientRectangle);
-                if (probeBounds.Height < 30 || probeBounds.Bottom > statsBounds.Top ||
-                    probeBounds.Top <= statusBounds.Top)
+                if (probeBounds.Height < 30 || statusBounds.Bottom > probeBounds.Top ||
+                    probeBounds.Bottom > statsBounds.Top)
                     throw new InvalidOperationException(
                         "Diagnostic probe overlaps the metadata summary at native Windows DPI.");
                 if (Descendants(fixtureDialog).OfType<Button>()
