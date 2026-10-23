@@ -18,6 +18,7 @@ disposable = (root / "src/SE2WorkshopUGCFix.Recovery/DisposableModScenarios.cs")
 engine = (root / "src/SE2WorkshopUGCFix.Recovery/DisposableE2EEngine.cs").read_text(encoding="utf-8")
 e2e_runner = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/DisposableE2ERunService.cs").read_text(encoding="utf-8")
 e2e_dialog = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/DisposableE2EForm.cs").read_text(encoding="utf-8")
+single_setup = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/DisposableSingleRestoreSetup.cs").read_text(encoding="utf-8")
 fixture = (root / "src/SE2WorkshopUGCFix.Recovery/TestFixturePolicy.cs").read_text(encoding="utf-8")
 project = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/SE2WorkshopUGCFix.csproj").read_text(encoding="utf-8")
 legacy = (root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/MetadataPatch.cs").read_text(encoding="utf-8")
@@ -129,6 +130,25 @@ checks = [
     ("E2E scenario preparation failure explicitly reports no Steam writes",
      "PRECHECK FAILED" in e2e_runner and
      "NO STEAM METADATA UPDATE WAS SENT" in e2e_runner),
+    ("Single-case acceptance uses original strict disposable ModHUB identity",
+     'DisposableModScenarios.Prepare(' in single_setup and
+     'x.Name == "empty-metadata"' in single_setup and
+     'SteamUser.GetSteamID().m_SteamID' in single_setup),
+    ("Single-case acceptance backs up before one Steam metadata mutation",
+     single_setup.index('File.WriteAllText(original,') <
+     single_setup.index('writer.SubmitMetadataOnlyIfUnchanged(') and
+     'e2e-original-PRIVATE.json' in single_setup and
+     'e2e-project-PRIVATE.vrgproj' in single_setup and
+     'e2e-latest-backup-' in single_setup),
+    ("Single-case acceptance verifies injected remote state and leaves ordinary GUI to restore",
+     'writer.ReadFresh(itemId).Raw != one.Raw' in single_setup and
+     'RecoveryApplyService.Apply(' not in single_setup and
+     'DisposableE2EManualRescue.Restore(' not in single_setup),
+    ("Single-case lab action locked behind exact typed approval and two confirmations",
+     '"PREPARE SINGLE RESTORE " + _id' in e2e_dialog and
+     'Text = "PREPARE ONE GUI RESTORE TEST (BACKUP FIRST)"' in e2e_dialog and
+     'MessageBoxButtons.YesNo' in e2e_dialog and
+     'DisposableSingleRestoreSetup.Prepare(_id, selectedProject)' in e2e_dialog),
     ("Real ModHUB E2E refuses production item and fake project",
      "3810512193UL" in disposable and
      "RequiredTitlePrefix" in disposable and
