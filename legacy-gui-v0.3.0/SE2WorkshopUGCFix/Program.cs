@@ -22,19 +22,29 @@ internal static class Program
     private static int Main(string[] args)
     {
         // Deliberate developer opt-in: production/default UI cannot create UGC items.
+#if SE2_INTERNAL_LAB
         FixtureLabEnabled = args.Length == 1 && args[0] == "--fixture-lab";
+#else
+        // The candidate user build cannot enter the destructive fixture lab,
+        // even if someone manually launches the exe with --fixture-lab.
+        FixtureLabEnabled = false;
+#endif
         // The offline UI smoke mode never initializes Steam and cannot submit updates.
         // Exit codes make this executable usable by a Windows test runner.
         if (args.Length == 1 && args[0] == "--smoke-ui")
         {
+#if SE2_INTERNAL_LAB
             FixtureLabEnabled = true; // Validate the lab UI without calling Steam.
+#endif
             try
             {
                 ApplicationConfiguration.Initialize();
                 using var main = new FixForm();
                 using var recovery = new RecoveryPreviewForm(12345678UL);
+#if SE2_INTERNAL_LAB
                 using var fixtureDialog = new TestItemCreateForm();
                 using var suiteDialog = new DisposableE2EForm(12345678UL);
+#endif
                 main.ShowInTaskbar = false;
                 main.Opacity = 0;
                 main.Show();
@@ -44,11 +54,18 @@ internal static class Program
                 var preview = controls.Single(c => c.Text == "RECOVERY PREVIEW");
                 var scan = controls.Single(c => c.Text.Contains("CHECK METADATA", StringComparison.OrdinalIgnoreCase));
                 var probe = controls.Single(c => c.Text == "READ-ONLY UGC PROBE");
+                if (repair.Enabled || preview.Enabled || !scan.Enabled || !probe.Enabled)
+                    throw new InvalidOperationException("Unsafe initial GUI button state.");
+#if SE2_INTERNAL_LAB
                 var fixture = controls.Single(c => c.Text == "CREATE EMPTY ITEM");
                 var e2e = controls.Single(c => c.Text == "RUN FULL MOD E2E");
-                if (repair.Enabled || preview.Enabled || !scan.Enabled || !probe.Enabled ||
-                    !fixture.Enabled || !fixture.Visible || !e2e.Enabled || !e2e.Visible)
-                    throw new InvalidOperationException("Unsafe initial GUI button state.");
+                if (!fixture.Enabled || !fixture.Visible || !e2e.Enabled || !e2e.Visible)
+                    throw new InvalidOperationException("Developer fixture lab controls missing.");
+#else
+                if (controls.Any(c => c.Text == "CREATE EMPTY ITEM" ||
+                    c.Text == "RUN FULL MOD E2E"))
+                    throw new InvalidOperationException("Consumer build exposed developer-only tools.");
+#endif
                 // Verify the two footer groups and that labels fit their buttons.
                 var actionGroups = Descendants(main).OfType<GroupBox>().ToArray();
                 if (actionGroups.Length != 2 ||
@@ -79,6 +96,7 @@ internal static class Program
                     probeBounds.Bottom > statsBounds.Top)
                     throw new InvalidOperationException(
                         "Diagnostic probe overlaps the metadata summary at native Windows DPI.");
+#if SE2_INTERNAL_LAB
                 if (Descendants(fixtureDialog).OfType<Button>()
                     .Single(c => c.Text == "CREATE ONE EMPTY TEST ITEM").Enabled)
                     throw new InvalidOperationException("Test-item creation must start locked.");
@@ -87,6 +105,7 @@ internal static class Program
                     .Enabled)
                     throw new InvalidOperationException(
                         "Single-fixture preparation must start locked without exact approval.");
+#endif
                 if (!recovery.Text.Contains("Recovery Preview", StringComparison.Ordinal))
                     throw new InvalidOperationException("Recovery preview form failed to initialize.");
                 recovery.ShowInTaskbar = false;
@@ -279,6 +298,7 @@ internal sealed class FixForm : Form
             9F, false, ModernUi.Muted), 0, 9);
         _scan.Click += async (_, _) => await ScanAsync();
         _probe.Click += async (_, _) => await ProbeAsync();
+#if SE2_INTERNAL_LAB
         _e2e.Click += (_, _) => {
             if (_busy || !Program.FixtureLabEnabled) return;
             if (!SteamFix.TryGetId(_workshop.Text, out ulong selectedId)) {
@@ -301,6 +321,7 @@ internal sealed class FixForm : Form
                     ". No content or metadata uploaded. Visibility not yet verified.");
             }
         };
+#endif
         _repair.Click += async (_, _) => await RepairAsync();
         _backup.Click += (_, _) => OpenBackup();
         _report.Click += (_, _) => CopySafeReport();
