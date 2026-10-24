@@ -6,7 +6,7 @@ cd "$ROOT"
 test "$(git remote get-url origin)" = "https://github.com/wdani/SE2-Workshop-UGC-Fix.git" || {
   echo "Wrong repo; STOP" >&2; exit 1;
 }
-test "$(git branch --show-current)" = "feat/wpf-modern-desktop" || {
+test "$(git branch --show-current)" = "feat/wpf-net10-lts-qualification" || {
   echo "Use the WPF feature branch; STOP" >&2; exit 1;
 }
 command -v docker >/dev/null || { echo "Docker unavailable; STOP" >&2; exit 1; }
@@ -31,7 +31,7 @@ python3 scripts/verify-recovery-safety.py
 python3 scripts/verify-wpf-preview.py
 
 PROJECT="src/SE2WorkshopUGCFix.Wpf/SE2WorkshopUGCFix.Wpf.csproj"
-DEST="$ROOT/artifacts/wpf-user-preview"
+DEST="$ROOT/artifacts/wpf-user-preview-net10"
 mkdir -p "$ROOT/artifacts"
 rm -rf "$DEST"
 mkdir -p "$DEST"
@@ -46,13 +46,14 @@ docker run --rm \
   -e NUGET_PACKAGES=/tmp/.nuget/packages \
   -e DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1 \
   -e DOTNET_CLI_TELEMETRY_OPTOUT=1 \
-  mcr.microsoft.com/dotnet/sdk:9.0 \
+  mcr.microsoft.com/dotnet/sdk:10.0 \
   bash -euc '
+    dotnet --info
     dotnet run --project tests/RecoverySafetyTests/RecoverySafetyTests.csproj
     dotnet run --project legacy-gui-v0.3.0/tests/MetadataSafetyTests/MetadataSafetyTests.csproj
     dotnet run --project tests/SafeReportGuardTests/SafeReportGuardTests.csproj -c Release
     dotnet publish src/SE2WorkshopUGCFix.Wpf/SE2WorkshopUGCFix.Wpf.csproj \
-      -c Release -f net9.0-windows -r win-x64 \
+      -c Release -f net10.0-windows -r win-x64 \
       -p:EnableWindowsTargeting=true -p:EnableFixtureLab=false \
       -p:SelfContained=true -p:PublishSingleFile=true \
       -p:IncludeNativeLibrariesForSelfExtract=true \
@@ -71,7 +72,17 @@ commit = sys.argv[2]
 exe = dest / "SE2WorkshopUGCFix.Wpf.exe"
 if not exe.is_file() or not exe.stat().st_size:
     raise SystemExit("WPF executable missing, compilation or publish incomplete.")
-archive = dest.parent / "SE2-Workshop-UGC-Fix-0.6.0-preview.9-WPF-win-x64-LOCAL-TEST.zip"
+# Ensure the self-contained publish cannot silently use the previous runtime.
+deps = dest / "SE2WorkshopUGCFix.Wpf.deps.json"
+if not deps.is_file():
+    # PublishSingleFile may embed dependency manifests in the executable;
+    # trust the project's framework/publish flags and native Windows smoke.
+    print("NOTE: deps.json embedded in single-file publish; inspect bundle on Windows.")
+else:
+    if "net10.0-windows" not in deps.read_text(encoding="utf-8"):
+        raise RuntimeError("WPF publish did not target net10.0-windows")
+
+archive = dest.parent / "SE2-Workshop-UGC-Fix-0.6.0-preview.10-WPF-win-x64-LOCAL-TEST.zip"
 smoke = (
     '@echo off\r\n'
     'cd /d "%~dp0"\r\n'
@@ -91,7 +102,7 @@ launcher = ('@echo off\r\n'
             'cd /d "%~dp0"\r\n'
             'start "" "%~dp0SE2WorkshopUGCFix.Wpf.exe"\r\n')
 readme = (
-    f"SE2 Workshop Recovery WPF 0.6.0-preview.9\r\nSource: {commit}\r\n"
+    f"SE2 Workshop Recovery WPF 0.6.0-preview.10\r\nSource: {commit}\r\n"
     "UNRELEASED LOCAL UI TEST. DO NOT DISTRIBUTE.\r\n"
     "SHA256-MANIFEST.txt contains per-file hashes. UNSIGNED: not a digital signature.\r\n"
     "Run RUN-WPF-SMOKE.cmd first; then RUN-WPF-PREVIEW.cmd.\r\n"
@@ -127,7 +138,7 @@ with zipfile.ZipFile(archive, "a") as z:
         raise RuntimeError("Pre-existing build manifest in publish output")
     manifest = [
         f"SOURCE_COMMIT={commit}",
-        "VERSION=0.6.0-preview.9",
+        "VERSION=0.6.0-preview.10",
         "ALGORITHM=SHA256",
         "UNSIGNED_TEST_ARTIFACT=true",
         "",
