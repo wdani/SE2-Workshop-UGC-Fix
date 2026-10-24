@@ -32,6 +32,27 @@ assert "SteamFix.Apply(candidate)" in contents["MainWindow.xaml.cs"]
 assert "RecoveryPreviewService.Prepare(" in contents["RecoveryWindow.xaml.cs"]
 assert "RecoveryApplyService.Apply(selected, typed)" in contents["RecoveryWindow.xaml.cs"]
 assert "DescriptionPreflight.Calculate(" in contents["PreflightWindow.xaml.cs"]
+assert 'TextChanged="DescriptionChanged"' in contents["PreflightWindow.xaml"]
+assert "CopyButton.IsEnabled = false;" in contents["PreflightWindow.xaml.cs"]
+assert "Description changed. Run Estimate size again." in contents["PreflightWindow.xaml.cs"]
+assert "Estimate failed. No Steam write was performed." in contents["PreflightWindow.xaml.cs"]
+assert "Changing recovery sources" not in contents["RecoveryWindow.xaml.cs"], "No stale rollback ambiguity"
+assert "Sources changed. Build a new read-only preview" in contents["RecoveryWindow.xaml.cs"]
+assert "offlineReviewOnly = false" in contents["RecoveryWindow.xaml.cs"]
+assert "if (_busy || _offlineReviewOnly) return;" in contents["RecoveryWindow.xaml.cs"]
+assert "PreviewButton.IsEnabled = false;" in contents["RecoveryWindow.xaml.cs"]
+assert "RestoreButton.IsEnabled = !_offlineReviewOnly && !_busy" in contents["RecoveryWindow.xaml.cs"]
+assert 'e.Args[0] == "--review-recovery-ui"' in contents["App.xaml.cs"]
+assert "new RecoveryWindow(12345678UL, offlineReviewOnly: true)" in contents["App.xaml.cs"]
+assert "Offline description estimator failed." in contents["App.xaml.cs"]
+assert "An outdated description estimate was still copyable." in contents["App.xaml.cs"]
+assert "Offline recovery review exposed actionable controls." in contents["App.xaml.cs"]
+assert "Changing recovery sources failed to invalidate preview." in contents["App.xaml.cs"]
+package_script = (root / "scripts/package-wpf-preview-docker.sh").read_text(encoding="utf-8")
+assert "RUN-WPF-REVIEW-RECOVERY.cmd" in package_script
+assert "--review-recovery-ui" in package_script
+assert "0.6.0-preview.5" in project or "0.6.0-preview.5" in package_script
+
 assert "RecoverySource.OriginalBackup or RecoverySource.WorkingItem" in contents["RecoveryWindow.xaml.cs"]
 assert "RESTORE " in contents["RecoveryWindow.xaml.cs"]
 assert "MessageBoxResult.No" in contents["RecoveryWindow.xaml.cs"]
