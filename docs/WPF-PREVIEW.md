@@ -1,8 +1,36 @@
-# WPF preview — 0.6.0-preview.5 (not released)
+# WPF preview — 0.6.0-preview.6 (not released)
 
 The user requested a truly modern desktop UI after reviewing the dark WinForms 0.5 preview.
 This is a new **WPF** front-end with navigation, responsive content, readable cards,
 reduced visual noise, status and owner indicators, and separate recovery/preflight dialogs.
+
+## Windows dialog visual acceptance and offline-control clarification (preview.6)
+
+On 2026-10-24 the user supplied four native Windows screenshots of preview.5:
+the Description size check with sample input, a calculated result, the Recovery
+Assistant offline UI review at the sources/review stage, and the confirmation
+stage after scrolling.
+
+Observed: the 21-character ASCII description produces 21 UTF-8 bytes,
+23 JSON-encoded bytes, 1477 baseline bytes and an approximately 1500-byte
+total; Copy Result is disabled before estimation and enabled afterwards.
+The preflight dialog is fully displayed. The recovery dialog has readable
+source, review and confirmation sections and uses its vertical scrollbar.
+
+**UI defect identified:** offline-only Recovery review had three apparently
+enabled Browse buttons even though their click handlers refused to open files.
+Preview.6 marks all three buttons as disabled, coordinates their state with
+busy/offline checks, and changes the banner to the explicit
+"OFFLINE VISUAL REVIEW · NO STEAM ACCESS". The native UI smoke and
+static gates now verify all controls, including these three buttons,
+are non-actionable in the offline review mode.
+
+The accepted main dashboard stays unchanged. No Steam metadata writer,
+owner verification or backup restoration code is altered.
+
+**Validation status:** Source-only checks inspected after the changes.
+Preview.6 Docker package and Windows smoke remain pending; do not infer
+that screenshot validation of preview.5 proves the new preview.6 release.
 
 ## Functional dialog hardening (preview.5)
 
