@@ -6,11 +6,14 @@ community-maintained open-source project**. Users should be able to review the
 scripts, source code, Steam API calls, owner and backup checks and reports
 before deciding whether to run the tool, and contribute fixes.
 
-**Important legal distinction:** this document records the owner's **intent**.
-It is **not a software license**. Until the owner selects and adds a
-recognized open-source license, public GitHub visibility alone does not grant
-general rights to redistribute or modify the original project code.
-Do not describe an unlicensed development ZIP as a completed open-source release.
+**License decision confirmed 2026-10-24:** the owner has approved the
+permissive **MIT License**, including use in commercial derivatives.
+The top-level [LICENSE](../LICENSE) grants broad rights to use, copy, modify,
+publish, sublicense and sell the **project-authored code** as long as its
+copyright and license notices are retained. This does **not** automatically
+license Valve's proprietary Steamworks DLL, Microsoft runtime components,
+external artwork or independent third-party material. It also does **not**
+make a local-test ZIP a publicly qualified release.
 
 ## What will be openly inspectable
 
@@ -59,25 +62,26 @@ Compare it to an independently published expected digest from a trusted
 release page. Do **not** treat a checksum placed only inside the same
 untrusted ZIP as independent evidence.
 
-## Open-source license choice still required
+## Open-source license: MIT selected
 
-Two OSI-approved options were discussed:
+The owner explicitly accepts that others may reuse the source, build new
+versions, and even sell derivative tools. The choice is therefore **MIT**,
+not a copyleft requirement that all downstream forks remain open.
 
-- **MIT**: minimal attribution/license-notice conditions, easy community
-  adoption and compatibility with proprietary integrations, but downstream
-  forks may legally distribute closed-source versions.
-- **GPLv3**: distributions of derivatives generally must preserve the
-  applicable source-availability/copyleft terms, but using proprietary
-  native SDK libraries such as Valve Steamworks can introduce additional
-  linking/compatibility and explicit-exception questions. Such an exception
-  cannot be added on behalf of third-party GPL contributors without rights.
+- The original application's MIT terms are in [LICENSE](../LICENSE).
+- Include that copyright and license notice when distributing copies or
+  substantial portions of this project's code.
+- No charge is required to use the original project, and third parties
+  cannot imply official endorsement by Keen, Valve or the original author.
+- MIT legally permits downstream redistribution, including commercial and
+  closed-source derivatives; derivative authors must still comply with their
+  applicable obligations and third-party licenses.
+- Third-party dependencies remain separately licensed, especially
+  proprietary native Steamworks SDK files.
 
-The owner confirmed an open-source community goal **but has not explicitly
-selected MIT versus GPLv3 (or another OSI-approved license)**.
-No `LICENSE` file or blanket redistribution permission should be inserted
-without settling that choice. Any selection applies to the owner's project
-code only, **not** Valve's proprietary binaries, Keen's game assets or
-independent third-party dependencies.
+**The source license is now decided. Publication is not yet approved.**
+Native SDK redistribution, a supported .NET runtime, package notices,
+Windows functional qualification and release provenance still need review.
 
 Relevant references:
 - Open Source Initiative: https://opensource.org/osd
