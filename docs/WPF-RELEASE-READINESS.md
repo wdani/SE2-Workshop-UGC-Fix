@@ -23,9 +23,9 @@ local test ZIP from the feature branch, not as a public installer or GitHub rele
 | Steam readback original restoration | Prior validated WinForms backend on owned test item; exact restored metadata hash and SE2 load | **PASS old backend only** |
 | WPF native restore using a damaged item | No new deliberate Steam faults/writes | **NOT QUALIFIED** |
 | Working-reference reconstructed recovery | Candidate and safety preflight tested offline; no live end-to-end | **NOT QUALIFIED** |
-| Preview.8 compiled safe-report tests (user reported green) | New standalone .NET tests linked to WPF SafeReportGuard.cs | **PENDING dev-worker execution** |
-| Preview.9 Windows smoke / package | Test ZIP/manifest and Windows smoke have not been run | **PENDING** |
-| Public distribution | User go/no-go, packaging/security review, legal/asset/license requirements | **BLOCKED** |
+| Preview.8 compiled safe-report tests | Owner reported green dev-worker package/test output; separate individual log lines not supplied | **PASS (owner reported)** |
+| Preview.9 Windows smoke / package | Owner explicitly reported `smoke test grün` after corrected preview.9 build; full package log/ZIP SHA not separately supplied | **PASS (owner reported)** |
+| Public distribution | Owner license choice, native Steamworks/runtime redistribution notices, authenticated publisher, WPF write-path qualification and explicit go/no-go | **BLOCKED** |
 
 ### 2026-10-24 qualification checkpoint
 
@@ -52,7 +52,13 @@ WPF UI states and addressed them in **preview.9**:
 
 No Steam backend, WPF main layout or previously validated metadata update logic
 was changed. The source safety suite now checks these fail-closed error paths.
-**preview.9 has NOT been built or run under Windows yet.**
+**Preview.9 Windows smoke was subsequently reported green by the owner.** This confirms the offline startup test, not a new live WPF Steam write.
+
+### Licensing and documentation checkpoint (2026-10-24)
+
+The README and SECURITY entrypoints now describe the current **unreleased WPF preview.9** rather than the obsolete WinForms candidate. The guarded live Steam metadata update path is stated explicitly: the main UI defaults to read-only, but an approved recovery can actually write developer metadata. This is not a claim that the WPF-triggered live write is qualified.
+
+The pinned managed `Steamworks.NET.AnyCPU 2026.165.2` NuGet package states **MIT** licensing. The project's *own* license is still unchosen, and Steamworks native binaries/runtime assets require separate release review. See [Third-party dependencies](THIRD-PARTY-DEPENDENCIES.md) for provenance, notice and redistribution gates. No new application license or Valve redistribution entitlement was assumed.
 
 ### Source and build integrity
 
@@ -101,10 +107,7 @@ bash scripts/package-wpf-preview-docker.sh
 
 On successful output:
 `artifacts/SE2-Workshop-UGC-Fix-0.6.0-preview.9-WPF-win-x64-LOCAL-TEST.zip`.
-Record full console test summary, source SHA, ZIP SHA256. On Windows
-run `RUN-WPF-SMOKE.cmd` and verify its success; on the same healthy owned
-item optionally retest **Copy safe report** and **Open backups** without
-editing Steam metadata.
+Earlier: the owner reported green preview.9 native `RUN-WPF-SMOKE.cmd` after the fixed build. Preserve that tested code revision; there is no need to rebuild only for this documentation. If a later release candidate is made, capture the complete console summary, source SHA and outer ZIP SHA256. Only read-only checks on the known healthy test item are needed for further UI review.
 
 Only after the owner explicitly approves the final release candidate, all
 qualified write paths and packaging/legal gates may a release be considered.
