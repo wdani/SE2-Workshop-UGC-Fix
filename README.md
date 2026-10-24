@@ -2,25 +2,54 @@
 
 A community-maintained diagnostic and recovery tool for **Space Engineers 2 Steam Workshop developer metadata**.
 
-> **Development status: UNRELEASED 0.5.0-preview.1 (Modern UI candidate).** The v0.4.0-preview.9 **ordinary user RESTORE from an exact same-item original backup PASSED real Steam writes, exact 1,611-byte SHA256 readback and a post-restore Space Engineers 2 LCD-mod check on 2026-10-23**. That validated recovery logic is retained. The new dark WinForms UI and compile-time lab isolation have **NOT YET passed their own Windows build/runtime smoke**. No public release or production data test is being made.
+> **Current development status (2026-10-24): UNRELEASED WPF `v0.6.0-preview.9`.**
+> Windows native `RUN-WPF-SMOKE.cmd` was reported **PASS by the owner**, following green local build/security tests. The owner also confirmed the main WPF desktop UI, read-only check on their healthy Workshop LCD test item, the description-size checker, the locked offline Recovery dialog, private backup-folder opening, and copying a summary-only safe report. **This is not a public release, not a general recovery guarantee, and not an approval to modify anybody else's Workshop item.**
 
+## Current WPF preview
 
-## 0.5.0-preview.1 — modern Windows interface and safe candidate packaging
+The Windows x64 client has a compact, dark **WPF** interface, retaining the existing guarded Steam metadata backend. It provides:
 
-The main Workshop diagnosis form, full recovery wizard and description-size preflight use a consistent dependency-free **midnight/navy UI**, softened card surfaces, rounded primary/secondary buttons, prominent readable status labels, sufficient spacing, and high-DPI-aware WinForms geometry. The Steam backend and recovery guards are unchanged. No external theme packages or runtime web services are required.
+- **Check metadata:** owner and identity checks, condition, UTF-8 byte size, and a private backup of the original developer-metadata payload when the Steam read succeeds.
+- **API probe:** a separate read-only Steam metadata diagnostic; no repair or restore is unlocked by a probe.
+- **Description check:** a local UTF-8/JSON size estimator; editing input invalidates its previous result.
+- **Open backups** and **Copy safe report:** private backups remain on the local computer. Clipboard exports accept only a validated summary report, not raw metadata.
+- **Recovery assistant:** only for eligible verified-owner missing/malformed metadata. It can prepare an exact-original-backup recovery candidate or experimental source-based preview. Applying an eligible recovery is a **real Steam metadata update** requiring source verification, fresh remote checks, item-specific typed approval, and an additional confirmation. The separate `--review-recovery-ui` launcher is deliberately **offline and locked**.
 
-One offline packaging script now produces **two different Windows x64 ZIPs**, deliberately separated:
+**Evidence boundaries:** The original-backup RESTORE through the earlier WinForms-based ordinary UI was genuinely accepted on a disposable, creator-owned LCD mod on 2026-10-23, with exact Steam readback and successful in-game use. The current WPF UI reuses that backend, but its **live WPF RESTORE action has not independently passed a real-write acceptance test**. Recovery reconstructed from a working reference is not generally validated. Never deliberately corrupt a healthy Workshop item to test UI appearance or diagnostics.
 
-- **`SE2-Workshop-UGC-Fix-0.5.0-preview.1-win-x64-USER-CANDIDATE.zip`** — the normal program and offline UI smoke only. Destructive fixture-lab services and item-creation handlers are **excluded from compilation**; passing `--fixture-lab` does not enable it. There is no lab launcher.
-- **`SE2-Workshop-UGC-Fix-0.5.0-preview.1-win-x64-DEV-LOCAL-TEST.zip`** — original explicitly opted-in developer lab retained for the creator's own tests, not for public distribution.
+### Build and run (developer-only)
 
-The script stops if the compiled binaries are identical, or if the user ZIP contains a lab launcher. **Neither ZIP is a public release.** Both first require one bundled offline Docker build followed by Windows `RUN-UI-SMOKE.cmd` and a visual high-DPI inspection. No additional real Steam fault injection is needed; the underlying backup RESTORE path has already been validated.
+The supported development branch is `feat/wpf-modern-desktop`, reviewed in [Draft PR #3](https://github.com/wdani/SE2-Workshop-UGC-Fix/pull/3). From the registered dev-worker VM:
 
-**Product scope for first release:** read-only health/owner diagnostics; existing guarded oversized-internal-description patch; confirmed same-item full-original-backup RESTORE; optional source-based *experimental preview* for advanced recovery. A working-reference reconstruction can be authorized under strict owner/source checks, but has **not** undergone its own live restore and should not be marketed as generally proven. Never rewrite game worlds, regenerate project GUIDs, or alter public Workshop content.
+```bash
+git switch feat/wpf-modern-desktop
+git pull --ff-only
+bash scripts/package-wpf-preview-docker.sh
+```
+
+The script runs offline/static safeguards, compiled .NET recovery/privacy tests, publishes a self-contained Windows x64 program and creates the **local-test-only** archive:
+
+`artifacts/SE2-Workshop-UGC-Fix-0.6.0-preview.9-WPF-win-x64-LOCAL-TEST.zip`
+
+Extract to a **new folder** on Windows and run `RUN-WPF-SMOKE.cmd`; use `RUN-WPF-PREVIEW.cmd` for the main program or `RUN-WPF-REVIEW-RECOVERY.cmd` for a fully locked offline dialog inspection. The ZIP includes an **unsigned** per-file SHA-256 manifest, which is not a code signature or proof that an untrusted distributor is safe.
+
+See [WPF release readiness](docs/WPF-RELEASE-READINESS.md), [security information](SECURITY.md), and [third-party dependencies](docs/THIRD-PARTY-DEPENDENCIES.md).
+
+### Release and license status
+
+**Not licensed for public redistribution yet.** The repository owner has not chosen a license for this application's code. The MIT license covering the separately obtained Steamworks.NET.AnyCPU wrapper **does not assign a license to this application's original code**. Before any external distribution, the owner must choose a project license and review required third-party notices, native Steamworks components and distribution conditions. The app is not affiliated with or endorsed by Keen Software House, Steam or Valve.
 
 ---
 
-## Archived development record
+## Archived development record — historical releases and experiments
+
+The remaining text below documents earlier WinForms prototypes, specialized disposable-item experiments and past test instructions. Historical version numbers and "not yet validated" remarks describe those earlier stages, **not the current WPF preview.9 status**. Do not run an old fixture-lab or real Steam mutation merely because an archived section describes it.
+
+### Historical 0.5.0-preview.1 WinForms UI and candidate packaging
+
+The earlier 0.5.0-preview.1 WinForms candidate used a darkened WinForms interface and separated normal user builds from explicit developer-only fixture-lab builds. Neither ZIP was a public release. It was later superseded by the WPF implementation described above.
+
+
 
 ## Windows UI smoke follow-up (preview.9)
 
