@@ -1,8 +1,63 @@
-# WPF preview — 0.6.0-preview.6 (not released)
+# WPF preview — 0.6.0-preview.7 (not released)
 
 The user requested a truly modern desktop UI after reviewing the dark WinForms 0.5 preview.
 This is a new **WPF** front-end with navigation, responsive content, readable cards,
 reduced visual noise, status and owner indicators, and separate recovery/preflight dialogs.
+
+## Safe-report clipboard and backup-folder handling (preview.7)
+
+The 2026-10-24 owner screenshot confirmed the preview.6 offline Recovery Assistant
+shows **OFFLINE VISUAL REVIEW · NO STEAM ACCESS**, with all three Browse actions,
+candidate preview, and Restore controls visibly disabled. The offline UI acceptance
+is therefore complete; this does **not** constitute a live Steam restore test.
+
+For preview.7 the main dashboard **layout** remains exactly as approved, but the
+backup/report button implementations have been hardened:
+
+- Opening the private backup folder now reports a missing directory or failed
+  Windows Explorer launch instead of silently doing nothing. A missing directory
+  disables the stale button until a new check is run. No files are deleted or
+  modified.
+- Copying a safe report now checks the exact filename
+  `report-SAFE-TO-SHARE.json`, the on-disk size (64 KiB maximum), the JSON schema,
+  and a strict allowlist of summary-only fields from the two existing backend
+  report types (normal metadata scan or read-only Steam API probe). Unexpected
+  fields, especially private original/candidate metadata, block clipboard copy.
+  A missing file also disables the stale button and shows an error.
+- No raw developer-metadata JSON, private backup paths, or candidates are copied
+  through the report action. Private original backup remains on the user's PC.
+- Offline WPF smoke tests exercise both supported safe-summary schema shapes,
+  reject an injected private `originalRaw` field and refuse a
+  `original-developer-metadata-PRIVATE.json` filename. Regression source gates
+  check the clipboard guard is wired to the actual button.
+- All safety checks run without Steam API access; no Workshop modification,
+  fixture creation, or deliberate corruption is needed.
+
+### Preview.7 manual acceptance on Windows
+
+1. On the dev-worker VM run the existing
+   `bash scripts/package-wpf-preview-docker.sh` from
+   `feat/wpf-modern-desktop`. Expect the
+   `SE2-Workshop-UGC-Fix-0.6.0-preview.7-WPF-win-x64-LOCAL-TEST.zip`
+   artifact **only after all tests/publish pass**.
+2. Extract to a new folder; run `RUN-WPF-SMOKE.cmd` and inspect the exit status.
+3. Open `RUN-WPF-PREVIEW.cmd`, run **Check metadata** on existing healthy
+   owner-controlled item `3824260687`, then click **Open backups**.
+   Windows Explorer should open the private timestamped scan directory,
+   containing the original `...PRIVATE.json` file and
+   `report-SAFE-TO-SHARE.json`.
+4. Click **Copy safe report**, paste into a local Notepad file, and verify
+   it contains basic diagnostic JSON only: workshop ID, byte count, SHA256,
+   ownership check, classification, and repair eligibility. **Do not publish
+   private backup JSON**; no raw metadata is expected in this safe report.
+5. Optionally invoke **API probe** on the same healthy item and confirm
+   **Copy safe report** still works for this alternative report schema.
+6. Visually check error-message clarity only if a file genuinely goes missing.
+   Do **not** delete or rename real private backups just to provoke errors.
+
+**Validation pending:** this preview.7 source is committed on GitHub, but
+its .NET package build and native Windows smoke are not yet confirmed. Keep
+preview.6 as the known-tested fallback and PR #3 in Draft.
 
 ## Windows dialog visual acceptance and offline-control clarification (preview.6)
 
