@@ -1,0 +1,259 @@
+<Window x:Class="SE2WorkshopUGCFix.Wpf.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="SE2 Workshop Recovery" Width="1080" Height="780" MinWidth="860" MinHeight="630"
+        WindowStartupLocation="CenterScreen" Background="{StaticResource PageBrush}"
+        Foreground="{StaticResource TextBrush}" FontFamily="Segoe UI"
+        UseLayoutRounding="True" SnapsToDevicePixels="True">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="188"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <!-- Quiet tool navigation: deliberately slim and free of oversized panels. -->
+        <Border Grid.Column="0" Background="{StaticResource SidebarBrush}"
+                BorderBrush="{StaticResource StrokeBrush}" BorderThickness="0,0,1,0">
+            <DockPanel Margin="16,20,16,16">
+                <StackPanel DockPanel.Dock="Bottom">
+                    <Border BorderBrush="{StaticResource StrokeBrush}" BorderThickness="0,1,0,0"
+                            Padding="7,13,0,0">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse Width="6" Height="6" Fill="{StaticResource PrimaryBrush}"
+                                         VerticalAlignment="Center" Margin="0,0,7,0"
+                                         ToolTip="Local application indicator, not a Steam connection or ownership status."/>
+                                <TextBlock Text="LOCAL · CONTROLLED" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{StaticResource SecondaryTextBrush}"/>
+                            </StackPanel>
+                            <TextBlock Text="Steam updates always need approval."
+                                       TextWrapping="Wrap" FontSize="10" Margin="0,5,0,0"
+                                       Foreground="{StaticResource SecondaryTextBrush}"/>
+                        </StackPanel>
+                    </Border>
+                    <TextBlock Text="v0.6 · WPF preview" FontSize="10" Margin="7,13,0,0"
+                               Foreground="{StaticResource SecondaryTextBrush}"/>
+                </StackPanel>
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="5,2,0,26">
+                        <Border Width="35" Height="35" CornerRadius="9"
+                                Background="{StaticResource PrimaryBrush}">
+                            <TextBlock Text="SE2" FontSize="12" FontWeight="Bold"
+                                       Foreground="#0D1625" VerticalAlignment="Center"
+                                       HorizontalAlignment="Center"/>
+                        </Border>
+                        <StackPanel Margin="10,2,0,0">
+                            <TextBlock Text="Workshop" FontSize="14" FontWeight="SemiBold"/>
+                            <TextBlock Text="RECOVERY" FontSize="9" FontWeight="SemiBold"
+                                       Foreground="{StaticResource SecondaryTextBrush}"/>
+                        </StackPanel>
+                    </StackPanel>
+                    <TextBlock Text="TOOLS" Style="{StaticResource EyebrowStyle}" Margin="11,0,0,9"/>
+                    <Grid Margin="0,0,0,4">
+                        <Border Background="#263650" CornerRadius="7"/>
+                        <Border Width="3" HorizontalAlignment="Left" Margin="0,8,0,8"
+                                Background="{StaticResource PrimaryBrush}" CornerRadius="2"/>
+                        <Button Content="⌂   Overview" Style="{StaticResource NavButtonStyle}"
+                                Background="Transparent" Margin="5,0,0,0" Click="Overview_Click"/>
+                    </Grid>
+                    <Button Content="▤   Description" Style="{StaticResource NavButtonStyle}"
+                            Click="OpenPreflight_Click"/>
+                    <Button Name="NavRecoveryButton" Content="◇   Recovery" IsEnabled="False"
+                            Style="{StaticResource NavButtonStyle}" Click="OpenRecovery_Click"/>
+                    <TextBlock Text="SPACE ENGINEERS 2" Style="{StaticResource EyebrowStyle}"
+                               Margin="11,24,0,6"/>
+                    <TextBlock Text="Steam App 1133870" FontSize="10" Margin="11,0,0,0"
+                               Foreground="{StaticResource SecondaryTextBrush}"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="48"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Border Grid.Row="0" BorderBrush="{StaticResource StrokeBrush}" BorderThickness="0,0,0,1">
+                <Grid Margin="24,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Workshop / Overview" FontSize="11"
+                               Foreground="{StaticResource SecondaryTextBrush}"
+                               VerticalAlignment="Center"/>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Ellipse Width="6" Height="6" Fill="{StaticResource SuccessBrush}"
+                                 VerticalAlignment="Center" Margin="0,0,7,0"/>
+                        <TextBlock Text="Read-only by default" FontSize="11"
+                                   Foreground="{StaticResource SecondaryTextBrush}"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+            <!-- Overflow remains accessible on small windows; no scrollbar at normal startup. -->
+            <ScrollViewer Name="OverviewScroller" Grid.Row="1"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled" CanContentScroll="False">
+                <StackPanel Margin="24,19,24,18">
+                    <StackPanel Margin="0,0,0,16">
+                        <TextBlock Text="Workshop recovery" FontSize="24" FontWeight="SemiBold"/>
+                        <TextBlock Text="Inspect and repair Steam developer metadata safely."
+                                   FontSize="12" Foreground="{StaticResource SecondaryTextBrush}"
+                                   Margin="0,3,0,0"/>
+                    </StackPanel>
+
+                    <Border Style="{StaticResource CardStyle}" Margin="0,0,0,10">
+                        <StackPanel>
+                            <TextBlock Text="Inspect a Workshop item" Style="{StaticResource SectionTitleStyle}"
+                                       Margin="0,0,0,11"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" MinWidth="180"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <!-- Preserve the real WPF TextBox content host: the generic
+                                     rounded template clipped/misaligned typed text on Windows. -->
+                                <Border Grid.Column="0" Height="39" CornerRadius="8"
+                                        Background="#101A29">
+                                    <Border.Style>
+                                        <Style TargetType="{x:Type Border}">
+                                            <Setter Property="BorderBrush" Value="{StaticResource StrokeBrush}"/>
+                                            <Setter Property="BorderThickness" Value="1"/>
+                                            <Style.Triggers>
+                                                <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                                                    <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <TextBox Name="WorkshopInput"
+                                             Style="{StaticResource WorkshopInputNativeStyle}"
+                                             ToolTip="Enter a Steam Workshop ID or Steam Community item URL."
+                                             TextChanged="WorkshopInput_TextChanged"
+                                             AutomationProperties.Name="Workshop ID or URL"/>
+                                </Border>
+                                <Button Name="CheckButton" Grid.Column="1"
+                                        Content="Check metadata" Style="{StaticResource PrimaryButtonStyle}"
+                                        Click="CheckButton_Click" Margin="9,0,0,0"/>
+                                <Button Name="ProbeButton" Grid.Column="2"
+                                        Content="API probe" Style="{StaticResource BaseButtonStyle}"
+                                        ToolTip="Inspect raw Steam API metadata flags without enabling repairs."
+                                        Click="ProbeButton_Click" Margin="8,0,0,0"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource CardStyle}" Padding="13,11"
+                            Background="{StaticResource StatusSurfaceBrush}"
+                            Margin="0,0,0,10">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="3"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Name="StatusAccent" Background="{StaticResource SuccessBrush}"
+                                    CornerRadius="2"/>
+                            <StackPanel Grid.Column="1" Margin="13,0,0,0">
+                                <TextBlock Name="StatusCaption" Text="Ready for inspection"
+                                           FontSize="14" FontWeight="SemiBold"/>
+                                <TextBlock Name="StatusDetail"
+                                           Text="Start Steam, close SE2 and ModHUB, then check an item."
+                                           FontSize="11" Foreground="{StaticResource SecondaryTextBrush}"
+                                           TextWrapping="Wrap" Margin="0,3,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <Border Style="{StaticResource CardStyle}" Margin="0,0,0,10">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Metadata" Style="{StaticResource SectionTitleStyle}"/>
+                                <TextBlock Name="SummaryTitle" Grid.Column="1"
+                                           Text="No item inspected" Margin="14,3,0,0"
+                                           FontSize="11" TextTrimming="CharacterEllipsis"
+                                           Foreground="{StaticResource SecondaryTextBrush}"
+                                           VerticalAlignment="Center"/>
+                            </Grid>
+                            <!-- One low-profile data strip instead of four nested chunky cards. -->
+                            <UniformGrid Columns="4" Margin="0,0,0,11">
+                                <Border BorderBrush="{StaticResource StrokeBrush}" BorderThickness="0,0,1,0"
+                                        Padding="0,3,8,3" Margin="0,0,12,0">
+                                    <StackPanel>
+                                        <TextBlock Text="CONDITION" Style="{StaticResource EyebrowStyle}"/>
+                                        <TextBlock Name="ConditionValue" Text="Not checked" FontSize="13"
+                                                   FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border BorderBrush="{StaticResource StrokeBrush}" BorderThickness="0,0,1,0"
+                                        Padding="0,3,8,3" Margin="0,0,12,0">
+                                    <StackPanel>
+                                        <TextBlock Text="OWNER" Style="{StaticResource EyebrowStyle}"/>
+                                        <TextBlock Name="OwnerValue" Text="Unknown" FontSize="13"
+                                                   FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border BorderBrush="{StaticResource StrokeBrush}" BorderThickness="0,0,1,0"
+                                        Padding="0,3,8,3" Margin="0,0,12,0">
+                                    <StackPanel>
+                                        <TextBlock Text="UTF-8 BYTES" Style="{StaticResource EyebrowStyle}"/>
+                                        <TextBlock Name="BytesValue" Text="— / 5,000" FontSize="13"
+                                                   FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                                <StackPanel Margin="0,3,0,0">
+                                    <TextBlock Text="NEXT ACTION" Style="{StaticResource EyebrowStyle}"/>
+                                    <TextBlock Name="ActionValue" Text="Inspect first" FontSize="13"
+                                               FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </UniformGrid>
+                            <TextBlock Name="SummaryDetail" Text="Check an item to see the diagnosis and recommended action."
+                                       FontSize="11" TextWrapping="Wrap"
+                                       Foreground="{StaticResource SecondaryTextBrush}"
+                                       Margin="0,0,0,12"
+                                       ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+                            <WrapPanel>
+                                <Button Name="RepairButton" Content="Repair description" IsEnabled="False"
+                                        ToolTip="Only an owner-verified, oversized internal description can be repaired."
+                                        Style="{StaticResource DangerButtonStyle}" Click="RepairButton_Click"
+                                        Margin="0,0,8,6"/>
+                                <Button Name="RecoveryButton" Content="Recovery assistant" IsEnabled="False"
+                                        Style="{StaticResource BaseButtonStyle}" Click="OpenRecovery_Click"
+                                        Margin="0,0,8,6"/>
+                                <Button Name="BackupButton" Content="Open backups" IsEnabled="False"
+                                        Style="{StaticResource BaseButtonStyle}" Click="BackupButton_Click"
+                                        Margin="0,0,8,6"/>
+                                <Button Name="ReportButton" Content="Copy safe report" IsEnabled="False"
+                                        Style="{StaticResource BaseButtonStyle}" Click="ReportButton_Click"
+                                        Margin="0,0,0,6"/>
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="{StaticResource SurfaceBrush}"
+                            BorderBrush="{StaticResource StrokeBrush}"
+                            BorderThickness="1" CornerRadius="9" Padding="13,0"
+                            Margin="0,0,0,12">
+                        <StackPanel>
+                            <Button Name="LogToggleButton" Content="Activity and diagnostics  ▾"
+                                    Click="ToggleLog_Click" Style="{StaticResource QuietButtonStyle}"
+                                    HorizontalAlignment="Left" Padding="0,9"/>
+                            <Border Name="ActivityPanel" Visibility="Collapsed" Margin="0,0,0,12">
+                                <TextBox Name="ActivityLog" IsReadOnly="True" AcceptsReturn="True"
+                                         TextWrapping="Wrap" FontFamily="Consolas" FontSize="11"
+                                         Height="134" Style="{StaticResource FormFieldStyle}"
+                                         VerticalScrollBarVisibility="Auto"/>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                    <TextBlock Text="Developer metadata only · Public Workshop content and saved worlds are never modified."
+                               FontSize="10" Foreground="{StaticResource SecondaryTextBrush}"
+                               TextWrapping="Wrap"/>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</Window>
