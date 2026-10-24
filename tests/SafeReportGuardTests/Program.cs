@@ -52,6 +52,11 @@ Block("scan description updated true", scan.Replace("\"workshopDescriptionUpdate
 Block("probe steamUpdatesSubmitted true", probe.Replace("\"steamUpdatesSubmitted\":false", "\"steamUpdatesSubmitted\":true"));
 Block("probe diagnostic type unknown", probe.Replace("STEAM_READ_ONLY_PROBE", "UNKNOWN"));
 Block("nested unexpected report data", probe.Replace("\"explanation\":\"Metadata returned successfully.\"", "\"explanation\":{\"private\":\"metadata\"}"));
+Block("owner flag changed to a string", scan.Replace("\"ownerMatches\":true", "\"ownerMatches\":\"true\""));
+Block("scan classification type changed", scan.Replace("\"classification\":\"Healthy\"", "\"classification\":42"));
+Block("probe metadataBytes type changed", probe.Replace("\"metadataBytes\":1611", "\"metadataBytes\":\"1611\""));
+Block("probe query-success type changed", probe.Replace("\"detailsQuerySucceeded\":true", "\"detailsQuerySucceeded\":{}"));
+Block("scan original bytes type changed", scan.Replace("\"originalBytes\":1611", "\"originalBytes\":\"1611\""));
 Block("array as report", "[]");
 Block("malformed JSON", "{bad");
 Block("too long string", scan.Replace("Metadata is healthy.", new string('X', 4097)));
