@@ -1,0 +1,45 @@
+<Window x:Class="SE2WorkshopUGCFix.Wpf.PreflightWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Description size check · SE2 Workshop Recovery"
+        Width="840" Height="720" MinWidth="660" MinHeight="580"
+        WindowStartupLocation="CenterOwner" Background="{StaticResource PageBrush}"
+        Foreground="{StaticResource TextBrush}" FontFamily="Segoe UI" UseLayoutRounding="True">
+    <Grid Margin="28">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="2*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <StackPanel Grid.Row="0" Margin="0,0,0,18">
+            <TextBlock Text="OFFLINE TOOL / NO STEAM CONNECTION" Style="{StaticResource EyebrowStyle}"
+                       Foreground="{StaticResource SuccessBrush}"/>
+            <TextBlock Text="Description size check" FontSize="28" FontWeight="SemiBold" Margin="0,7,0,7"/>
+            <TextBlock Text="Estimate internal metadata size if ModHUB embeds the public description. This cannot guarantee an upload is safe."
+                       TextWrapping="Wrap" FontSize="13" Foreground="{StaticResource SecondaryTextBrush}"/>
+        </StackPanel>
+        <TextBlock Grid.Row="1" Text="DESCRIPTION TEXT" Style="{StaticResource EyebrowStyle}" Margin="0,0,0,10"/>
+        <TextBox Name="DescriptionInput" Grid.Row="2" Style="{StaticResource FormFieldStyle}"
+                 TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"
+                 VerticalContentAlignment="Top" MinHeight="120" MaxLength="100000"
+                 TextChanged="DescriptionChanged"/>
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,16">
+            <Button Name="EstimateButton" Content="Estimate size →" Click="Estimate_Click"
+                    Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,10,0"/>
+            <Button Name="CopyButton" Content="Copy result" IsEnabled="False" Click="Copy_Click"
+                    Style="{StaticResource BaseButtonStyle}" Margin="0,0,10,0"/>
+            <Button Content="Clear" Click="Clear_Click" Style="{StaticResource BaseButtonStyle}"/>
+        </StackPanel>
+        <Border Grid.Row="4" Style="{StaticResource CardStyle}" Padding="16">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <TextBlock Name="EstimateResult" Text="Your offline estimate will appear here."
+                           FontSize="13" TextWrapping="Wrap"/>
+            </ScrollViewer>
+        </Border>
+        <TextBlock Grid.Row="5" Name="EstimateStatus" Text="This tool does not write to Steam."
+                   Foreground="{StaticResource SecondaryTextBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,14,0,0"/>
+    </Grid>
+</Window>

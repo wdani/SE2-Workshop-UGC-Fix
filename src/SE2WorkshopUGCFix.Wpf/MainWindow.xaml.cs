@@ -1,0 +1,326 @@
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Media;
+using SE2WorkshopUGCFix;
+
+namespace SE2WorkshopUGCFix.Wpf;
+
+public partial class MainWindow : Window
+{
+    private ScanInfo? _current;
+    private string? _safeReportPath;
+    private string? _backupDirectory;
+    private bool _busy;
+
+    public MainWindow()
+    {
+        InitializeComponent();
+        WindowAppearance.ApplyDarkTitleBar(this);
+        AddLog("WPF preview loaded. No Steam requests run automatically.");
+        AddLog("An update requires a matching Steam owner, verified backup and explicit approval.");
+    }
+
+    private void AddLog(string line)
+    {
+        ActivityLog.AppendText($"[{DateTime.Now:HH:mm:ss}] {line}{Environment.NewLine}");
+        ActivityLog.ScrollToEnd();
+    }
+
+    private static void Fail(string title, Exception ex) =>
+        MessageBox.Show(ex.Message, title, MessageBoxButton.OK, MessageBoxImage.Error);
+
+    private bool TryItemId(out ulong id)
+    {
+        if (SteamFix.TryGetId(WorkshopInput.Text, out id)) return true;
+        MessageBox.Show(this, "Enter a valid Workshop ID or Steam Community item URL.",
+            "Invalid Workshop item", MessageBoxButton.OK, MessageBoxImage.Information);
+        return false;
+    }
+
+    private void SetStatus(string title, string detail, Brush? color = null)
+    {
+        StatusCaption.Text = title;
+        StatusDetail.Text = detail;
+        StatusCaption.Foreground = color ?? (Brush)FindResource("TextBrush");
+        StatusAccent.Background = color ?? (Brush)FindResource("SuccessBrush");
+    }
+
+    private void ToggleLog_Click(object sender, RoutedEventArgs e)
+    {
+        // Detailed diagnostics do not consume space in the default overview.
+        bool opening = ActivityPanel.Visibility != Visibility.Visible;
+        ActivityPanel.Visibility = opening ? Visibility.Visible : Visibility.Collapsed;
+        LogToggleButton.Content = opening
+            ? "Activity and diagnostics  ▴"
+            : "Activity and diagnostics  ▾";
+    }
+
+    private void ResetScan()
+    {
+        _current = null;
+        _backupDirectory = null;
+        _safeReportPath = null;
+        RepairButton.IsEnabled = false;
+        RecoveryButton.IsEnabled = false;
+        NavRecoveryButton.IsEnabled = false;
+        BackupButton.IsEnabled = false;
+        ReportButton.IsEnabled = false;
+        ConditionValue.Text = "Not checked";
+        OwnerValue.Text = "Unknown";
+        BytesValue.Text = "— / 5,000";
+        ActionValue.Text = "Inspect first";
+        SummaryTitle.Text = "No item inspected";
+        SummaryDetail.Text = "The result and recommended next step will appear here.";
+    }
+
+    private void WorkshopInput_TextChanged(object sender,
+        System.Windows.Controls.TextChangedEventArgs e)
+    {
+        // New item or changed ID invalidates previously approved suggestions.
+        ResetScan();
+        SetStatus("Ready for inspection", "The item selection changed. Run a new check.");
+    }
+
+    private void SetBusy(bool busy)
+    {
+        _busy = busy;
+        CheckButton.IsEnabled = !busy;
+        ProbeButton.IsEnabled = !busy;
+        WorkshopInput.IsEnabled = !busy;
+        RepairButton.IsEnabled = !busy && _current?.Eligible == true;
+        bool canRecover = !_busy && _current?.OwnerMatches == true &&
+            (_current.Diagnosis.Condition is MetadataCondition.Missing or MetadataCondition.Malformed);
+        RecoveryButton.IsEnabled = canRecover;
+        NavRecoveryButton.IsEnabled = canRecover;
+        BackupButton.IsEnabled = !busy && _backupDirectory is not null && Directory.Exists(_backupDirectory);
+        ReportButton.IsEnabled = !busy && _safeReportPath is not null && File.Exists(_safeReportPath);
+        Cursor = busy ? System.Windows.Input.Cursors.Wait : System.Windows.Input.Cursors.Arrow;
+    }
+
+    private async void CheckButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_busy || !TryItemId(out ulong id)) return;
+        ResetScan();
+        SetBusy(true);
+        SetStatus("Checking Steam metadata", "Fresh metadata query. No changes to Workshop data.");
+        AddLog($"Checking item {id}...");
+        try
+        {
+            var info = await Task.Run(() => SteamFix.Scan(id));
+            _current = info;
+            _backupDirectory = info.BackupDirectory;
+            _safeReportPath = Path.Combine(info.BackupDirectory, "report-SAFE-TO-SHARE.json");
+            ConditionValue.Text = info.Diagnosis.Condition.ToString();
+            OwnerValue.Text = info.OwnerMatches ? "Verified" : "Other owner";
+            BytesValue.Text = $"{info.OriginalBytes:N0} / 5,000";
+            SummaryTitle.Text = $"{info.Title}  ·  {info.ItemId}";
+            SummaryDetail.Text = info.Diagnosis.Explanation + Environment.NewLine + info.Reason;
+            ActionValue.Text = info.Eligible ? "One-field fix" :
+                info.OwnerMatches && info.Diagnosis.Condition is MetadataCondition.Missing or MetadataCondition.Malformed
+                    ? "Recovery preview" : "Read-only";
+            if (!info.OwnerMatches)
+                SetStatus("Not your Workshop item",
+                    "The signed-in Steam account is not the owner. All changes remain blocked.",
+                    (Brush)FindResource("WarningBrush"));
+            else
+                switch (info.Diagnosis.Condition)
+                {
+                    case MetadataCondition.Healthy:
+                        SetStatus("Metadata healthy", "No repair necessary.",
+                            (Brush)FindResource("SuccessBrush"));
+                        break;
+                    case MetadataCondition.OversizedDescription when info.Eligible:
+                        SetStatus("Repair candidate available",
+                            "A strictly limited internal description repair can be reviewed.",
+                            (Brush)FindResource("WarningBrush"));
+                        break;
+                    case MetadataCondition.Missing:
+                    case MetadataCondition.Malformed:
+                        SetStatus("Recovery sources required",
+                            "Preview your original backup or verified sources before considering any update.",
+                            (Brush)FindResource("WarningBrush"));
+                        break;
+                    case MetadataCondition.IdentityConflict:
+                        SetStatus("Identity conflict — blocked",
+                            "Unverified Workshop and project identity. No repair permitted.",
+                            (Brush)FindResource("DangerBrush"));
+                        break;
+                    default:
+                        SetStatus("No safe automated repair", info.Reason,
+                            (Brush)FindResource("WarningBrush"));
+                        break;
+                }
+            AddLog($"SHA256: {info.OriginalHash}");
+            AddLog($"Original metadata backed up privately: {info.BackupDirectory}");
+            AddLog($"Diagnosis: {info.Diagnosis.Condition}. {info.Reason}");
+        }
+        catch (Exception ex)
+        {
+            // A partially assigned ScanInfo must never unlock a write action
+            // when the scan/display flow failed before successful completion.
+            ResetScan();
+            SetStatus("Check failed — nothing changed", ex.Message,
+                (Brush)FindResource("DangerBrush"));
+            AddLog("STOP: " + ex.Message);
+            Fail("Steam metadata check failed", ex);
+        }
+        finally { SetBusy(false); }
+    }
+
+    private async void ProbeButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_busy || !TryItemId(out ulong id)) return;
+        ResetScan(); // A probe cannot unlock a repair.
+        SetBusy(true);
+        SetStatus("Reading Steam API flags", "A read-only query without Steam updates.");
+        try
+        {
+            var info = await Task.Run(() => SteamReadProbe.Run(id));
+            _safeReportPath = info.ReportFile;
+            _backupDirectory = Path.GetDirectoryName(info.ReportFile);
+            ConditionValue.Text = info.Assessment.Status.ToString();
+            BytesValue.Text = info.Assessment.MetadataBytes is int bytes
+                ? $"{bytes:N0} / 5,000" : "Unknown";
+            ActionValue.Text = "Read-only";
+            OwnerValue.Text = "Not verified";
+            SummaryTitle.Text = "Raw Steam API probe · " + id;
+            SummaryDetail.Text = info.Assessment.Explanation;
+            SetStatus("Probe complete — no changes", info.Assessment.Explanation,
+                (Brush)FindResource("SuccessBrush"));
+            AddLog("Read-only probe: " + info.Assessment.Status);
+        }
+        catch (Exception ex)
+        {
+            // Also discard partially produced report paths on probe errors.
+            ResetScan();
+            SetStatus("Probe failed — no changes", ex.Message,
+                (Brush)FindResource("DangerBrush"));
+            AddLog("Probe stopped: " + ex.Message);
+            Fail("Read-only probe failed", ex);
+        }
+        finally { SetBusy(false); }
+    }
+
+    private async void RepairButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_busy || _current is not { Eligible: true } candidate ||
+            !SteamFix.TryGetId(WorkshopInput.Text, out ulong id) || id != candidate.ItemId)
+            return;
+        var msg = "This WILL update internal Steam developer metadata for YOUR Workshop item " +
+            candidate.ItemId + ".\n\nOriginal bytes: " + candidate.OriginalBytes +
+            "\nProposed bytes: " + candidate.CandidateBytes +
+            "\n\nOnly FullMetadata.BaseMetadata.Description will be cleared." +
+            "\nPublic Workshop descriptions, mod files, previews and saves are not updated." +
+            "\n\nA private original backup must exist and identity will be freshly verified." +
+            "\n\nAuthorize one metadata-only Steam submission?";
+        if (MessageBox.Show(this, msg, "Confirm metadata repair", MessageBoxButton.YesNo,
+            MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes) return;
+        SetBusy(true);
+        SetStatus("Submitting guarded repair", "Do not close this window while Steam responds.");
+        try
+        {
+            string result = await Task.Run(() => SteamFix.Apply(candidate));
+            SetStatus("Repair verified", "Steam readback matched the approved candidate.",
+                (Brush)FindResource("SuccessBrush"));
+            AddLog(result);
+            MessageBox.Show(this,
+                "Steam confirmed the exact metadata repair. Restart ModHUB and test the mod in SE2." +
+                "\nDo not overwrite existing saves before verification.",
+                "Readback verified", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            SetStatus("Result not confirmed — STOP",
+                "Do not retry without inspecting the item and private backup.",
+                (Brush)FindResource("DangerBrush"));
+            AddLog("STOP: " + ex.Message);
+            try { File.WriteAllText(Path.Combine(candidate.BackupDirectory,"last-error.txt"),ex.ToString()); }
+            catch { }
+            Fail("Do not retry this Steam submission", ex);
+        }
+        finally
+        {
+            _current = null;
+            SetBusy(false);
+        }
+    }
+
+    private void OpenRecovery_Click(object sender, RoutedEventArgs e)
+    {
+        if (_busy || _current is not { OwnerMatches: true } scanned ||
+            scanned.Diagnosis.Condition is not (MetadataCondition.Missing or MetadataCondition.Malformed))
+            return;
+        try
+        {
+            new RecoveryWindow(scanned.ItemId) { Owner = this }.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            AddLog("Recovery window could not complete: " + ex.Message);
+            Fail("Recovery window stopped", ex);
+        }
+        finally
+        {
+            // A recovery dialog may complete, fail or be canceled. Regardless
+            // of outcome, its opening scan is stale: force a new read first.
+            ResetScan();
+            SetStatus("Run a fresh check",
+                "Recovery closed. Reinspect the current Steam state.");
+        }
+    }
+
+    private void OpenPreflight_Click(object sender, RoutedEventArgs e)
+    {
+        if (_busy) return;
+        new PreflightWindow(_current?.OriginalRaw, _current?.ItemId) { Owner = this }.ShowDialog();
+    }
+
+    private void Overview_Click(object sender, RoutedEventArgs e) => Activate();
+
+    private void BackupButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_busy || _backupDirectory is null) return;
+        try
+        {
+            if (!Directory.Exists(_backupDirectory))
+                throw new DirectoryNotFoundException(
+                    "The private backup folder is missing. Run a fresh metadata check.");
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = _backupDirectory,
+                UseShellExecute = true
+            });
+            AddLog("Opened the private backup folder in Windows Explorer.");
+        }
+        catch (Exception ex)
+        {
+            if (!Directory.Exists(_backupDirectory)) BackupButton.IsEnabled = false;
+            AddLog("Could not open backup folder: " + ex.Message);
+            Fail("Could not open backup folder", ex);
+        }
+    }
+
+    private void ReportButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_busy || _safeReportPath is null) return;
+        try
+        {
+            // Private original/candidate metadata files must never reach the clipboard.
+            string safeReport = SafeReportGuard.ReadValidated(_safeReportPath);
+            Clipboard.SetText(safeReport);
+            AddLog("Safe summary report copied. Private metadata backups were not copied.");
+        }
+        catch (Exception ex)
+        {
+            // A malformed or unexpectedly changed report must not be
+            // repeatedly offered as safe to share without a fresh scan.
+            if (ex is InvalidDataException || !File.Exists(_safeReportPath))
+                ReportButton.IsEnabled = false;
+            AddLog("Safe report not copied: " + ex.Message);
+            Fail("Could not copy safe report", ex);
+        }
+    }
+}
