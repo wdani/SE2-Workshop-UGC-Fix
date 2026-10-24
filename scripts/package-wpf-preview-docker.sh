@@ -57,7 +57,7 @@ commit = sys.argv[2]
 exe = dest / "SE2WorkshopUGCFix.Wpf.exe"
 if not exe.is_file() or not exe.stat().st_size:
     raise SystemExit("WPF executable missing, compilation or publish incomplete.")
-archive = dest.parent / "SE2-Workshop-UGC-Fix-0.6.0-preview.4-WPF-win-x64-LOCAL-TEST.zip"
+archive = dest.parent / "SE2-Workshop-UGC-Fix-0.6.0-preview.5-WPF-win-x64-LOCAL-TEST.zip"
 smoke = (
     '@echo off\r\n'
     'cd /d "%~dp0"\r\n'
@@ -77,9 +77,10 @@ launcher = ('@echo off\r\n'
             'cd /d "%~dp0"\r\n'
             'start "" "%~dp0SE2WorkshopUGCFix.Wpf.exe"\r\n')
 readme = (
-    f"SE2 Workshop Recovery WPF 0.6.0-preview.4\r\nSource: {commit}\r\n"
+    f"SE2 Workshop Recovery WPF 0.6.0-preview.5\r\nSource: {commit}\r\n"
     "UNRELEASED LOCAL UI TEST. DO NOT DISTRIBUTE.\r\n"
     "Run RUN-WPF-SMOKE.cmd first; then RUN-WPF-PREVIEW.cmd.\r\n"
+    "RUN-WPF-REVIEW-RECOVERY.cmd opens a LOCKED OFFLINE UI-only dialog.\r\n"
     "No Steam fault injection. Test CHECK METADATA only on your own known healthy item.\r\n"
     "Recovery controls may WRITE to Steam only after explicit owner approval.\r\n"
     "The WinForms version remains the validated fallback.\r\n"
@@ -97,6 +98,10 @@ with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as z:
     z.writestr("READ-ME-FIRST.txt", readme)
     z.writestr("RUN-WPF-SMOKE.cmd", smoke)
     z.writestr("RUN-WPF-PREVIEW.cmd", launcher)
+    z.writestr("RUN-WPF-REVIEW-RECOVERY.cmd",
+        '@echo off\r\n'
+        'cd /d "%~dp0"\r\n'
+        'start "" "%~dp0SE2WorkshopUGCFix.Wpf.exe" --review-recovery-ui\r\n')
 with zipfile.ZipFile(archive) as z:
     names = set(z.namelist())
     if "SE2WorkshopUGCFix.Wpf.exe" not in names:
