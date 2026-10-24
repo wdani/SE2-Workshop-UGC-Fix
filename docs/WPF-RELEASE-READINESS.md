@@ -25,7 +25,9 @@ local test ZIP from the feature branch, not as a public installer or GitHub rele
 | Working-reference reconstructed recovery | Candidate and safety preflight tested offline; no live end-to-end | **NOT QUALIFIED** |
 | Preview.8 compiled safe-report tests | Owner reported green dev-worker package/test output; separate individual log lines not supplied | **PASS (owner reported)** |
 | Preview.9 Windows smoke / package | Owner explicitly reported `smoke test grün` after corrected preview.9 build; full package log/ZIP SHA not separately supplied | **PASS (owner reported)** |
-| Public distribution | Owner license choice, native Steamworks/runtime redistribution notices, authenticated publisher, WPF write-path qualification and explicit go/no-go | **BLOCKED** |
+| Native Steamworks redistribution | Tagged wrapper NuGet build includes win-x64 `steam_api64.dll`; Valve agreement section 1.1(b) is conditional and owner entitlement/source provenance unverified | **BLOCKED** |
+| .NET 10 LTS release migration | Current preview.9 targets .NET 9, support ends **2026-11-10**; separate .NET 10 build/compatibility tests required | **BLOCKED** |
+| Public distribution | Owner license choice, Valve native component entitlement, runtime notices, authenticated publisher, WPF write-path qualification and explicit go/no-go | **BLOCKED** |
 
 ### 2026-10-24 qualification checkpoint
 
@@ -59,6 +61,41 @@ was changed. The source safety suite now checks these fail-closed error paths.
 The README and SECURITY entrypoints now describe the current **unreleased WPF preview.9** rather than the obsolete WinForms candidate. The guarded live Steam metadata update path is stated explicitly: the main UI defaults to read-only, but an approved recovery can actually write developer metadata. This is not a claim that the WPF-triggered live write is qualified.
 
 The pinned managed `Steamworks.NET.AnyCPU 2026.165.2` NuGet package states **MIT** licensing. The project's *own* license is still unchosen, and Steamworks native binaries/runtime assets require separate release review. See [Third-party dependencies](THIRD-PARTY-DEPENDENCIES.md) for provenance, notice and redistribution gates. No new application license or Valve redistribution entitlement was assumed.
+
+### Public release blockers ranked by urgency (2026-10-24)
+
+1. **Runtime migration — HIGH PRIORITY:** current `net9.0-windows`
+   self-contained app bundles .NET 9. Microsoft's official support ends
+   **10 November 2026** (less than three weeks from this audit).
+   For public shipping, plan a **separate .NET 10 LTS candidate** rather than
+   retarget the proven preview.9 in place. Retest .NET C# safety suites,
+   Windows GUI smoke/real healthy item reads, ZIP manifest and runtime patch
+   version. .NET 10 receives support until November 2028.
+2. **Valve native binaries — PUBLIC RELEASE BLOCKED:** exact version tag
+   `2026.165.2` of the AnyCPU wrapper packs `steam_api64.dll` under
+   `runtimes/win-x64/native`. Its managed MIT license does not grant
+   redistribution of Valve proprietary SDK files. Valve's
+   [Steamworks SDK Access Agreement](https://partner.steamgames.com/documentation/sdk_access_agreement/)
+   clause 1.1(b) permits licensees to redistribute approved
+   `redistributable_bin` object-code files alongside their licensee software,
+   subject to agreement conditions. **Owner access/acceptance and provenance
+   are unknown.** Inspect the *actual* ZIP and native asset hashes before any
+   public distribution. Do not treat availability on NuGet as authorisation.
+3. **Application license and notices — OWNER DECISION REQUIRED:** choose the
+   original project's license or documented proprietary terms. Preserve
+   third-party MIT notices and runtime license files; do not add a `LICENSE`
+   to the repo without the owner's choice.
+4. **Distribution integrity:** local ZIP includes unsigned hashes, not
+   Authenticode signing. Choose an authenticated origin and appropriate
+   checksum/version/rollback strategy; the app is currently an internal test.
+5. **Function claims:** a live **WPF-triggered** RESTORE and reconstruction
+   from a different reference item remain unqualified. Retain safeguards;
+   make no general recovery success promise and do not intentionally damage
+   a working test item merely for a screenshot.
+
+See [third-party dependency evidence](THIRD-PARTY-DEPENDENCIES.md) and
+Microsoft's [.NET support policy](https://dotnet.microsoft.com/en-us/platform/support/policy).
+No item above permits a public release by itself.
 
 ### Source and build integrity
 
