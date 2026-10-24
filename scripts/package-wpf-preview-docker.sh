@@ -93,6 +93,7 @@ launcher = ('@echo off\r\n'
 readme = (
     f"SE2 Workshop Recovery WPF 0.6.0-preview.8\r\nSource: {commit}\r\n"
     "UNRELEASED LOCAL UI TEST. DO NOT DISTRIBUTE.\r\n"
+    "SHA256-MANIFEST.txt contains per-file hashes. UNSIGNED: not a digital signature.\r\n"
     "Run RUN-WPF-SMOKE.cmd first; then RUN-WPF-PREVIEW.cmd.\r\n"
     "RUN-WPF-REVIEW-RECOVERY.cmd opens a LOCKED OFFLINE UI-only dialog.\r\n"
     "No Steam fault injection. Test CHECK METADATA only on your own known healthy item.\r\n"
