@@ -28,6 +28,22 @@ assert '<Compile Remove="Disposable*.cs;TestItem*.cs" />' in legacy_project
 assert "Condition=\"'$(EnableFixtureLab)' == 'true'\"" in legacy_project
 assert "SteamFix.Scan(id)" in contents["MainWindow.xaml.cs"]
 assert "SteamReadProbe.Run(id)" in contents["MainWindow.xaml.cs"]
+assert "SafeReportGuard.ReadValidated(_safeReportPath)" in contents["MainWindow.xaml.cs"]
+assert "Clipboard.SetText(safeReport)" in contents["MainWindow.xaml.cs"]
+assert "Clipboard.SetText(File.ReadAllText(" not in contents["MainWindow.xaml.cs"]
+assert "DirectoryNotFoundException(" in contents["MainWindow.xaml.cs"]
+assert "Safe report not copied:" in contents["MainWindow.xaml.cs"]
+guard = contents["SafeReportGuard.cs"]
+assert 'report-SAFE-TO-SHARE.json' in guard
+assert "HashSet<string> ScanFields" in guard
+assert "HashSet<string> ProbeFields" in guard
+assert "contentUpdated" in guard and "steamUpdatesSubmitted" in guard
+assert "JsonValueKind.Object" in guard and "JsonValueKind.Array" in guard
+assert "MaximumReportBytes" in guard
+assert "Only report-SAFE-TO-SHARE.json may be copied." in guard
+assert "Clipboard guard allowed private original metadata." in contents["App.xaml.cs"]
+assert "Clipboard guard allowed a private backup filename." in contents["App.xaml.cs"]
+
 assert "SteamFix.Apply(candidate)" in contents["MainWindow.xaml.cs"]
 assert "RecoveryPreviewService.Prepare(" in contents["RecoveryWindow.xaml.cs"]
 assert "RecoveryApplyService.Apply(selected, typed)" in contents["RecoveryWindow.xaml.cs"]
@@ -60,7 +76,7 @@ assert "Changing recovery sources failed to invalidate preview." in contents["Ap
 package_script = (root / "scripts/package-wpf-preview-docker.sh").read_text(encoding="utf-8")
 assert "RUN-WPF-REVIEW-RECOVERY.cmd" in package_script
 assert "--review-recovery-ui" in package_script
-assert "0.6.0-preview.6" in project and "0.6.0-preview.6" in package_script
+assert "0.6.0-preview.7" in project and "0.6.0-preview.7" in package_script
 
 assert "RecoverySource.OriginalBackup or RecoverySource.WorkingItem" in contents["RecoveryWindow.xaml.cs"]
 assert "RESTORE " in contents["RecoveryWindow.xaml.cs"]
