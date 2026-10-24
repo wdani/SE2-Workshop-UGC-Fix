@@ -71,6 +71,29 @@ source, Steam, Space Engineers 2 data/assets or the Steam API DLL.
 A newer package version may exist, but upgrading is a separate dependency,
 compatibility and security review—not a documentation-only change.
 
+## Verified license compatibility and source-notice preparation
+
+Valve's official [open-source Steamworks guidance](https://partner.steamgames.com/doc/sdk/uploading/distributing_opensource)
+explicitly names **MIT** as generally compatible with its SDK, which supports
+the author's license selection for the project's source code. This is **not**
+an individual SDK usage or binary redistribution permission.
+
+The exact MIT text from the pinned
+[`Steamworks.NET.AnyCPU` tag `2026.165.2`](https://github.com/Akarinnnnn/Steamworks.NET.AnyCPU/blob/2026.165.2/LICENSE.txt)
+was copied to [`licenses/Steamworks.NET.AnyCPU-MIT.txt`](../licenses/Steamworks.NET.AnyCPU-MIT.txt).
+It names copyright © 2013–2026 Riley Labrecque. It is an upstream
+third-party notice, not the license governing Valve's native DLL.
+**A source notice existing in GitHub is not proof that the tested
+preview.10 ZIP already carries the required notices.**
+
+The [read-only release asset audit](RELEASE-ASSET-AUDIT.md) and its
+`scripts/audit-release-assets.py` helper explicitly distinguish:
+NuGet package native file, a visible ZIP native file, and a native file
+potentially embedded inside the self-contained .NET single-file executable.
+None of these observations alone establishes the right to redistribute an
+actual binary ZIP. Microsoft additionally requires
+[licensing/third-party notices for .NET binary distributions](https://github.com/dotnet/runtime/blob/main/docs/project/licensing-assets.md).
+
 ## Project ownership and use of game data
 
 - The owner selected the permissive **MIT License** for the project's
