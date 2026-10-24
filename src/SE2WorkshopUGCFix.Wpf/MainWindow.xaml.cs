@@ -159,6 +159,9 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
+            // A partially assigned ScanInfo must never unlock a write action
+            // when the scan/display flow failed before successful completion.
+            ResetScan();
             SetStatus("Check failed — nothing changed", ex.Message,
                 (Brush)FindResource("DangerBrush"));
             AddLog("STOP: " + ex.Message);
@@ -191,6 +194,8 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
+            // Also discard partially produced report paths on probe errors.
+            ResetScan();
             SetStatus("Probe failed — no changes", ex.Message,
                 (Brush)FindResource("DangerBrush"));
             AddLog("Probe stopped: " + ex.Message);
@@ -248,10 +253,23 @@ public partial class MainWindow : Window
         if (_busy || _current is not { OwnerMatches: true } scanned ||
             scanned.Diagnosis.Condition is not (MetadataCondition.Missing or MetadataCondition.Malformed))
             return;
-        new RecoveryWindow(scanned.ItemId) { Owner = this }.ShowDialog();
-        // Invalidate any snapshot when returning from a write-capable dialog.
-        ResetScan();
-        SetStatus("Run a fresh check", "Recovery closed. Reinspect the current Steam state.");
+        try
+        {
+            new RecoveryWindow(scanned.ItemId) { Owner = this }.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            AddLog("Recovery window could not complete: " + ex.Message);
+            Fail("Recovery window stopped", ex);
+        }
+        finally
+        {
+            // A recovery dialog may complete, fail or be canceled. Regardless
+            // of outcome, its opening scan is stale: force a new read first.
+            ResetScan();
+            SetStatus("Run a fresh check",
+                "Recovery closed. Reinspect the current Steam state.");
+        }
     }
 
     private void OpenPreflight_Click(object sender, RoutedEventArgs e)
