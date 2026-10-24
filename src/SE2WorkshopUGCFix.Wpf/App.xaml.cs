@@ -57,6 +57,32 @@ public partial class App : Application
                         "Changing recovery sources failed to invalidate preview.");
                 review.Close();
 
+                // Offline clipboard safety: known summary-only scan/probe schemas
+                // are permitted, private/full metadata fields always fail closed.
+                SafeReportGuard.ValidateForCopy(
+                    """{"appId":1133870,"workshopItem":3824260687,"contentUpdated":false,"workshopDescriptionUpdated":false,"classification":"Healthy"}""");
+                SafeReportGuard.ValidateForCopy(
+                    """{"diagnosticType":"STEAM_READ_ONLY_PROBE","appIdExpected":1133870,"requestedWorkshopItem":3824260687,"steamUpdatesSubmitted":false,"classification":"Present"}""");
+                bool privateRejected = false;
+                try
+                {
+                    SafeReportGuard.ValidateForCopy(
+                        """{"appId":1133870,"workshopItem":3824260687,"contentUpdated":false,"workshopDescriptionUpdated":false,"originalRaw":"PRIVATE METADATA"}""");
+                }
+                catch (System.IO.InvalidDataException) { privateRejected = true; }
+                if (!privateRejected)
+                    throw new InvalidOperationException(
+                        "Clipboard guard allowed private original metadata.");
+                bool wrongNameRejected = false;
+                try
+                {
+                    SafeReportGuard.ReadValidated("original-developer-metadata-PRIVATE.json");
+                }
+                catch (System.IO.InvalidDataException) { wrongNameRejected = true; }
+                if (!wrongNameRejected)
+                    throw new InvalidOperationException(
+                        "Clipboard guard allowed a private backup filename.");
+
                 // Real WPF measure/arrange on Windows; the overview must fit
                 // the default window without a vertical scrollbar.
                 main.ShowInTaskbar = false;
