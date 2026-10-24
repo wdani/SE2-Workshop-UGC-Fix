@@ -58,7 +58,7 @@ docker run --rm \
       -p:SelfContained=true -p:PublishSingleFile=true \
       -p:IncludeNativeLibrariesForSelfExtract=true \
       -p:UseAppHost=true -p:PublishReadyToRun=false \
-      -p:DebugType=none -o /repo/artifacts/wpf-user-preview
+      -p:DebugType=none -o /repo/artifacts/wpf-user-preview-net10
   '
 
 python3 - "$DEST" "$(git rev-parse HEAD)" <<'PY'
