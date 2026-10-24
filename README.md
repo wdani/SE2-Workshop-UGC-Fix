@@ -35,6 +35,22 @@ Extract to a **new folder** on Windows and run `RUN-WPF-SMOKE.cmd`; use `RUN-WPF
 
 See [WPF release readiness](docs/WPF-RELEASE-READINESS.md), [security information](SECURITY.md), and [third-party dependencies](docs/THIRD-PARTY-DEPENDENCIES.md).
 
+### Community open-source direction and transparency
+
+The project owner confirmed that **the program is intended to be free and
+fully open source for the Space Engineers community**. Anyone should be able
+to inspect the source, scripts, Steam API calls and safety checks before
+running a download, and contribute improvements. See the
+[open-source transparency and verifiable-build plan](docs/OPEN-SOURCE-TRANSPARENCY.md).
+Private Workshop metadata and user backups will never be published as part
+of the source.
+
+**Source visibility is not binary authentication.** A trustworthy public
+release must link source commit, packaged dependencies, build instructions
+and independently published checksums. In particular, proprietary Valve
+Steamworks runtime DLLs remain separately licensed. No public binary has
+been released or signed.
+
 ### Release and license status
 
 **Not licensed for public redistribution yet.** The repository owner has not chosen a license for this application's code. The MIT license covering the separately obtained Steamworks.NET.AnyCPU wrapper **does not assign a license to this application's original code**. Before any external distribution, the owner must choose a project license and review required third-party notices, native Steamworks components and distribution conditions. The app is not affiliated with or endorsed by Keen Software House, Steam or Valve.
