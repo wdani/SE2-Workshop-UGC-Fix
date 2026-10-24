@@ -1,9 +1,11 @@
 # Third-party dependencies and redistribution review
 
 **Status: preliminary inventory for UNRELEASED `0.6.0-preview.9` (2026-10-24).**
-This document does **not** choose a license for the SE2 Workshop UGC Fix
-application or authorize public distribution. Check the actual publish
-output, package metadata and notices again for each release candidate.
+The owner selected **MIT for the project's own authored code** on
+2026-10-24: see [LICENSE](../LICENSE). This **does not** authorize
+redistribution of proprietary Valve binaries or automatically qualify
+a public executable release. Inspect actual output, package metadata,
+third-party permissions and notices for each release candidate.
 
 ## Direct external dependencies
 
@@ -71,9 +73,10 @@ compatibility and security review—not a documentation-only change.
 
 ## Project ownership and use of game data
 
-- The repository owner has **not yet selected a license** for the application's
-  original source. **No top-level `LICENSE` is currently present**.
-  Public source visibility does not by itself grant reuse rights.
+- The owner selected the permissive **MIT License** for the project's
+  original source on 2026-10-24, allowing free/open and commercial reuse.
+  See the top-level [LICENSE](../LICENSE); preserve its required notice.
+  This license does not supersede independent Valve or other third-party rights.
 - This independent utility is **not affiliated with or endorsed by Keen
   Software House, Valve or Steam**.
 - No permission to redistribute original Keen game artwork, icons, UI assets,
@@ -84,9 +87,10 @@ compatibility and security review—not a documentation-only change.
 
 ## Release blocking actions
 
-1. **Owner choice required:** select and explicitly approve the project's own
-   source/binary license, or another documented public distribution agreement;
-   do not guess or add a `LICENSE` on the owner's behalf.
+1. **Project source license resolved:** MIT was explicitly chosen by the
+   owner and the [LICENSE](../LICENSE) file has been added. Include the
+   appropriate project copyright/permission notice with distributions.
+   **Do not** infer any Valve DLL redistribution permission from this decision.
 2. **Preserve MIT notices:** inspect the actual NuGet package's embedded
    license/metadata and ship the proper copyright and MIT license text
    attributable to the deployed Steamworks.NET/AnyCPU components. If extra
