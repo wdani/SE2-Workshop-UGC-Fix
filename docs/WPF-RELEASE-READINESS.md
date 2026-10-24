@@ -27,7 +27,8 @@ local test ZIP from the feature branch, not as a public installer or GitHub rele
 | Preview.9 Windows smoke / package | Owner explicitly reported `smoke test grün` after corrected preview.9 build; full package log/ZIP SHA not separately supplied | **PASS (owner reported)** |
 | Native Steamworks redistribution | Tagged wrapper NuGet build includes win-x64 `steam_api64.dll`; Valve agreement section 1.1(b) is conditional and owner entitlement/source provenance unverified | **BLOCKED** |
 | .NET 10 LTS release migration | Current preview.9 targets .NET 9, support ends **2026-11-10**; separate .NET 10 build/compatibility tests required | **BLOCKED** |
-| Public distribution | Owner license choice, Valve native component entitlement, runtime notices, authenticated publisher, WPF write-path qualification and explicit go/no-go | **BLOCKED** |
+| Project open-source license | Owner approved **MIT** on 2026-10-24; top-level `LICENSE` added | **RESOLVED (source only)** |
+| Public distribution | Valve native component entitlement, runtime notices, authenticated publisher, .NET 10 migration, WPF write-path qualification and explicit go/no-go | **BLOCKED** |
 
 ### 2026-10-24 qualification checkpoint
 
@@ -60,7 +61,7 @@ was changed. The source safety suite now checks these fail-closed error paths.
 
 The README and SECURITY entrypoints now describe the current **unreleased WPF preview.9** rather than the obsolete WinForms candidate. The guarded live Steam metadata update path is stated explicitly: the main UI defaults to read-only, but an approved recovery can actually write developer metadata. This is not a claim that the WPF-triggered live write is qualified.
 
-The pinned managed `Steamworks.NET.AnyCPU 2026.165.2` NuGet package states **MIT** licensing. The project's *own* license is still unchosen, and Steamworks native binaries/runtime assets require separate release review. See [Third-party dependencies](THIRD-PARTY-DEPENDENCIES.md) for provenance, notice and redistribution gates. No new application license or Valve redistribution entitlement was assumed.
+The pinned managed `Steamworks.NET.AnyCPU 2026.165.2` NuGet package states **MIT** licensing. **The owner selected MIT for the project's own authored code on 2026-10-24, and the top-level [LICENSE](../LICENSE) now records that decision.** Native Valve Steamworks binaries/runtime assets still require separate release review. See [Third-party dependencies](THIRD-PARTY-DEPENDENCIES.md) for provenance, notice and redistribution gates. The project's MIT license does **not** imply Valve redistribution entitlement.
 
 ### Public release blockers ranked by urgency (2026-10-24)
 
@@ -81,10 +82,11 @@ The pinned managed `Steamworks.NET.AnyCPU 2026.165.2` NuGet package states **MIT
    subject to agreement conditions. **Owner access/acceptance and provenance
    are unknown.** Inspect the *actual* ZIP and native asset hashes before any
    public distribution. Do not treat availability on NuGet as authorisation.
-3. **Application license and notices — OWNER DECISION REQUIRED:** choose the
-   original project's license or documented proprietary terms. Preserve
-   third-party MIT notices and runtime license files; do not add a `LICENSE`
-   to the repo without the owner's choice.
+3. **Application license — RESOLVED; third-party notices — STILL OPEN:**
+   the owner selected [MIT](../LICENSE) for project-authored code, including
+   commercial derivatives. Preserve project and third-party MIT notices and
+   runtime license files in any distributed artefact; independently clear Valve
+   SDK redistribution terms.
 4. **Distribution integrity:** local ZIP includes unsigned hashes, not
    Authenticode signing. Choose an authenticated origin and appropriate
    checksum/version/rollback strategy; the app is currently an internal test.
