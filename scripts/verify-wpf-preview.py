@@ -132,7 +132,12 @@ for target in (
 assert 'feat/wpf-net10-lts-qualification' in package_script
 assert 'mcr.microsoft.com/dotnet/sdk:10.0' in package_script
 assert '-f net10.0-windows -r win-x64' in package_script
-assert 'wpf-user-preview-net10' in package_script
+# Verify the actual dotnet publish output path matches the directory
+# that packaging scans. This regression previously passed static gates
+# while leaving the executable in the preview.9 output folder.
+assert 'DEST="$ROOT/artifacts/wpf-user-preview-net10"' in package_script
+assert '-o /repo/artifacts/wpf-user-preview-net10' in package_script
+assert '-o /repo/artifacts/wpf-user-preview\n' not in package_script
 assert 'mcr.microsoft.com/dotnet/sdk:9.0' not in package_script
 
 assert "RUN-WPF-REVIEW-RECOVERY.cmd" in package_script
