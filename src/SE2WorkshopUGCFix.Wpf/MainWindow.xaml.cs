@@ -264,19 +264,42 @@ public partial class MainWindow : Window
 
     private void BackupButton_Click(object sender, RoutedEventArgs e)
     {
-        if (_backupDirectory is null || !Directory.Exists(_backupDirectory)) return;
-        try { Process.Start(new ProcessStartInfo { FileName = _backupDirectory, UseShellExecute = true }); }
-        catch (Exception ex) { Fail("Could not open backup folder", ex); }
+        if (_busy || _backupDirectory is null) return;
+        try
+        {
+            if (!Directory.Exists(_backupDirectory))
+                throw new DirectoryNotFoundException(
+                    "The private backup folder is missing. Run a fresh metadata check.");
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = _backupDirectory,
+                UseShellExecute = true
+            });
+            AddLog("Opened the private backup folder in Windows Explorer.");
+        }
+        catch (Exception ex)
+        {
+            if (!Directory.Exists(_backupDirectory)) BackupButton.IsEnabled = false;
+            AddLog("Could not open backup folder: " + ex.Message);
+            Fail("Could not open backup folder", ex);
+        }
     }
 
     private void ReportButton_Click(object sender, RoutedEventArgs e)
     {
-        if (_safeReportPath is null || !File.Exists(_safeReportPath)) return;
+        if (_busy || _safeReportPath is null) return;
         try
         {
-            Clipboard.SetText(File.ReadAllText(_safeReportPath));
-            AddLog("Safe report copied. Private original and candidate JSON were not copied.");
+            // Private original/candidate metadata files must never reach the clipboard.
+            string safeReport = SafeReportGuard.ReadValidated(_safeReportPath);
+            Clipboard.SetText(safeReport);
+            AddLog("Safe summary report copied. Private metadata backups were not copied.");
         }
-        catch (Exception ex) { Fail("Could not copy safe report", ex); }
+        catch (Exception ex)
+        {
+            if (!File.Exists(_safeReportPath)) ReportButton.IsEnabled = false;
+            AddLog("Safe report not copied: " + ex.Message);
+            Fail("Could not copy safe report", ex);
+        }
     }
 }
