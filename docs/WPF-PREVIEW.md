@@ -1,8 +1,34 @@
-# WPF preview — 0.6.0-preview.8 (not released)
+# WPF preview — 0.6.0-preview.9 (not released)
 
 The user requested a truly modern desktop UI after reviewing the dark WinForms 0.5 preview.
 This is a new **WPF** front-end with navigation, responsive content, readable cards,
 reduced visual noise, status and owner indicators, and separate recovery/preflight dialogs.
+
+## Internal preview.9 — fail-closed negative-path review
+
+The owner reported **all green** following preview.8 dev-worker compilation
+and package tests on 2026-10-24. This is a user-reported build/test PASS,
+not separately evidenced Windows smoke or public release approval.
+
+Preview.9 is deliberately a **safety-only** increment after code audit:
+
+- A partially completed owner-only metadata check or read-only probe can no
+  longer leave stale repair/restore/report UI state if a later UI exception
+  interrupts the operation.
+- Exiting a live Recovery dialog, even if it throws, invalidates the opening
+  scan and requires a new read. An error during generation of the recovery
+  proposal invalidates the proposed candidate and typed confirmation.
+- An invalid safe-report JSON is refused for clipboard copy and its button
+  is disabled until the next successful scan.
+- WPF static regression checks assert these failure-state transitions. No
+  public Steam content, tested repair backend, or approved dashboard layout
+  was modified.
+
+**preview.9 is not yet built or tested under Windows.** Use the existing
+dev-worker packaging script; the new archive is
+`SE2-Workshop-UGC-Fix-0.6.0-preview.9-WPF-win-x64-LOCAL-TEST.zip`.
+Test `RUN-WPF-SMOKE.cmd` offline; normal read-only scan on the already
+healthy owned test item is optional. No deliberate Steam damage or writes.
 
 ## Internal preview.8 — security and packaging qualification
 
