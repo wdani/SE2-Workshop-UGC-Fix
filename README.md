@@ -53,7 +53,7 @@ been released or signed.
 
 ### Release and license status
 
-**Not licensed for public redistribution yet.** The repository owner has not chosen a license for this application's code. The MIT license covering the separately obtained Steamworks.NET.AnyCPU wrapper **does not assign a license to this application's original code**. Before any external distribution, the owner must choose a project license and review required third-party notices, native Steamworks components and distribution conditions. The app is not affiliated with or endorsed by Keen Software House, Steam or Valve.
+**Project source: [MIT License](LICENSE), approved by the owner on 2026-10-24.** Everyone may inspect, use, modify, redistribute and even sell copies of the project-authored code, provided the required copyright and MIT license notices are retained. The project remains **free to download from its official source and community-focused**. **This is not a public executable release.** Third-party components (including Valve's proprietary native Steamworks DLL) keep their own license/distribution conditions, which still require checking before any binary publication. The app is not affiliated with or endorsed by Keen Software House, Steam or Valve.
 
 ---
 
@@ -159,9 +159,9 @@ Design and pending live integration: [docs/RECOVERY-SAFETY.md](docs/RECOVERY-SAF
 
 This code was initially developed in [Space-Engineers-Modding draft PR #10](https://github.com/wdani/Space-Engineers-Modding/pull/10) and is being relocated to a dedicated public repository. See [#8](https://github.com/wdani/Space-Engineers-Modding/issues/8) for incident history.
 
-## License
+## Historical license note (superseded 2026-10-24)
 
-Not yet chosen. Public visibility alone does not grant a software license. Please do not redistribute or relicense until the repository owner chooses a license.
+The repository originally had no project license. **This archived statement is superseded**: the owner has since selected [MIT](LICENSE) for the project-authored code. This does not extend MIT to Valve native Steamworks DLLs or any other separately licensed component.
 
 ### UI layout update (preview.2)
 
