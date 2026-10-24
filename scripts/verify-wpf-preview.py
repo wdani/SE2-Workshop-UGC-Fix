@@ -107,7 +107,7 @@ assert 'SOURCE_COMMIT={commit}' in package_script
 assert 'UNSIGNED_TEST_ARTIFACT=true' in package_script
 # Derive the candidate version from the csproj. A single version bump must
 # not leave a stale literal asserting the previous build's version.
-candidate = re.search(r"<Version>(0\\.6\\.0-preview\\.\\d+)</Version>", project)
+candidate = re.search(r"<Version>(0\.6\.0-preview\.\d+)</Version>", project)
 assert candidate is not None, "Missing WPF preview package version"
 candidate_version = candidate.group(1)
 assert f"SE2-Workshop-UGC-Fix-{candidate_version}-WPF-win-x64-LOCAL-TEST.zip" in package_script
