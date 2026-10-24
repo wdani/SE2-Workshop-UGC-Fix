@@ -18,6 +18,18 @@ public partial class PreflightWindow : Window
         WindowAppearance.ApplyDarkTitleBar(this);
     }
 
+    private void DescriptionChanged(object sender,
+        System.Windows.Controls.TextChangedEventArgs e)
+    {
+        // Never allow a copied estimate to describe an older input value.
+        if (CopyButton is null || EstimateResult is null || EstimateStatus is null)
+            return;
+        CopyButton.IsEnabled = false;
+        EstimateResult.Text = "Description changed. Run Estimate size again.";
+        EstimateStatus.Text = "Estimate is out of date. No Steam write was performed.";
+        EstimateStatus.Foreground = (Brush)FindResource("SecondaryTextBrush");
+    }
+
     private void Estimate_Click(object sender, RoutedEventArgs e)
     {
         try
@@ -41,6 +53,8 @@ public partial class PreflightWindow : Window
         catch (Exception ex)
         {
             EstimateResult.Text = "Could not produce a reliable estimate: " + ex.Message;
+            EstimateStatus.Text = "Estimate failed. No Steam write was performed.";
+            EstimateStatus.Foreground = (Brush)FindResource("DangerBrush");
             CopyButton.IsEnabled = false;
         }
     }
@@ -55,6 +69,7 @@ public partial class PreflightWindow : Window
         DescriptionInput.Clear();
         EstimateResult.Text = "Your offline estimate will appear here.";
         EstimateStatus.Text = "This tool does not write to Steam.";
+        EstimateStatus.Foreground = (Brush)FindResource("SecondaryTextBrush");
         CopyButton.IsEnabled = false;
     }
 }
