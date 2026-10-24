@@ -4,7 +4,7 @@ Status: **NOT RELEASED / NOT QUALIFIED**. This document is the feature-PR
 qualification checklist, not a claim that the Steam write path has been
 independently qualified under WPF.
 
-## Current candidate: 0.6.0-preview.8 (internal, Windows x64)
+## Current candidate: 0.6.0-preview.9 (internal, Windows x64)
 
 This candidate uses the owner-approved preview.4 UI layout and the
 unchanged WinForms Steam backend. It is intentionally built as a self-contained
@@ -23,9 +23,36 @@ local test ZIP from the feature branch, not as a public installer or GitHub rele
 | Steam readback original restoration | Prior validated WinForms backend on owned test item; exact restored metadata hash and SE2 load | **PASS old backend only** |
 | WPF native restore using a damaged item | No new deliberate Steam faults/writes | **NOT QUALIFIED** |
 | Working-reference reconstructed recovery | Candidate and safety preflight tested offline; no live end-to-end | **NOT QUALIFIED** |
-| Preview.8 compiled safe-report tests | New standalone .NET tests linked to WPF SafeReportGuard.cs | **PENDING dev-worker execution** |
-| Preview.8 Windows smoke / package | Test ZIP/manifest and Windows smoke have not been run | **PENDING** |
+| Preview.8 compiled safe-report tests (user reported green) | New standalone .NET tests linked to WPF SafeReportGuard.cs | **PENDING dev-worker execution** |
+| Preview.9 Windows smoke / package | Test ZIP/manifest and Windows smoke have not been run | **PENDING** |
 | Public distribution | User go/no-go, packaging/security review, legal/asset/license requirements | **BLOCKED** |
+
+### 2026-10-24 qualification checkpoint
+
+The owner reported **"alles grün"** following the preview.8
+build/test instructions. Record the preview.8 dev-worker safety test and
+packaging result as **owner-reported PASS**. Individual console lines, final
+outer ZIP SHA256, native Windows `RUN-WPF-SMOKE.cmd` exit result, and independent
+public-release acceptance were **not separately provided**, so those claims
+must not be inferred.
+
+The subsequent negative-path review identified three potential fail-open
+WPF UI states and addressed them in **preview.9**:
+
+1. If the owner-only `Check metadata` flow fails *after* partially assigning
+   scan details, immediately discard the scan snapshot, buttons and report paths
+   before displaying an error. A failed check cannot re-enable repair.
+2. A failed read-only Steam probe similarly discards all partial report/backup
+   pointers rather than enabling stale report actions.
+3. On any Recovery dialog exit (including a thrown exception), invalidate the
+   previous scan and require a fresh check. A Recovery preview exception now
+   also invalidates its proposal and typed confirmation before enabling UI.
+4. Copying a malformed private/safe report disables the rejected clipboard
+   button until a fresh scan; it does not silently retry or leak its contents.
+
+No Steam backend, WPF main layout or previously validated metadata update logic
+was changed. The source safety suite now checks these fail-closed error paths.
+**preview.9 has NOT been built or run under Windows yet.**
 
 ### Source and build integrity
 
@@ -73,7 +100,7 @@ bash scripts/package-wpf-preview-docker.sh
 ```
 
 On successful output:
-`artifacts/SE2-Workshop-UGC-Fix-0.6.0-preview.8-WPF-win-x64-LOCAL-TEST.zip`.
+`artifacts/SE2-Workshop-UGC-Fix-0.6.0-preview.9-WPF-win-x64-LOCAL-TEST.zip`.
 Record full console test summary, source SHA, ZIP SHA256. On Windows
 run `RUN-WPF-SMOKE.cmd` and verify its success; on the same healthy owned
 item optionally retest **Copy safe report** and **Open backups** without
