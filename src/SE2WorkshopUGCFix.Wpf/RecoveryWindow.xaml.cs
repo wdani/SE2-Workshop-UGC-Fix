@@ -24,11 +24,17 @@ public partial class RecoveryWindow : Window
         if (_offlineReviewOnly)
         {
             Title = "Recovery assistant · offline UI review";
+            RecoveryModeEyebrow.Text = "OFFLINE VISUAL REVIEW · NO STEAM ACCESS";
+            RecoveryModeEyebrow.Foreground =
+                (System.Windows.Media.Brush)FindResource("SuccessBrush");
             RecoveryHeading.Text = "Recovery assistant · UI review";
             ConfirmHint.Text = "LOCKED · preview-only demonstration";
             PreviewResult.Text = "OFFLINE UI REVIEW. No Steam connection, no owner verification, no recovery preview and no write authorization.";
             PreviewButton.IsEnabled = false;
             RestoreButton.IsEnabled = false;
+            BackupBrowseButton.IsEnabled = false;
+            ProjectBrowseButton.IsEnabled = false;
+            ModhubBrowseButton.IsEnabled = false;
             BackupInput.IsEnabled = false;
             ProjectInput.IsEnabled = false;
             ModhubInput.IsEnabled = false;
@@ -67,11 +73,14 @@ public partial class RecoveryWindow : Window
     {
         _busy = value;
         PreviewButton.IsEnabled = !_offlineReviewOnly && !value;
-        BackupInput.IsEnabled = !value;
-        ProjectInput.IsEnabled = !value;
-        ModhubInput.IsEnabled = !value;
-        ReferenceInput.IsEnabled = !value;
-        ConfirmInput.IsEnabled = !value;
+        BackupBrowseButton.IsEnabled = !_offlineReviewOnly && !value;
+        ProjectBrowseButton.IsEnabled = !_offlineReviewOnly && !value;
+        ModhubBrowseButton.IsEnabled = !_offlineReviewOnly && !value;
+        BackupInput.IsEnabled = !_offlineReviewOnly && !value;
+        ProjectInput.IsEnabled = !_offlineReviewOnly && !value;
+        ModhubInput.IsEnabled = !_offlineReviewOnly && !value;
+        ReferenceInput.IsEnabled = !_offlineReviewOnly && !value;
+        ConfirmInput.IsEnabled = !_offlineReviewOnly && !value;
         UpdateRestore();
     }
 
