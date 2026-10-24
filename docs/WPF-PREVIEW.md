@@ -1,8 +1,57 @@
-# WPF preview — 0.6.0-preview.4 (not released)
+# WPF preview — 0.6.0-preview.5 (not released)
 
 The user requested a truly modern desktop UI after reviewing the dark WinForms 0.5 preview.
 This is a new **WPF** front-end with navigation, responsive content, readable cards,
 reduced visual noise, status and owner indicators, and separate recovery/preflight dialogs.
+
+## Functional dialog hardening (preview.5)
+
+The owner approved the preview.4 **main dashboard** after a native Windows
+read-only check of their healthy owned test item `3824260687`. The screenshot
+showed **healthy metadata, owner verified, 1,611 / 5,000 bytes** and repair and
+recovery locked. The slim main scrollbar only appeared when Activity and
+Diagnostics was expanded; the owner explicitly accepted this behavior. The
+main dashboard layout, font sizes and three distinct cards are now frozen
+unless a demonstrated defect calls for a change.
+
+This version addresses two dialog-level correctness issues without editing any
+Steam metadata transport or backend recovery paths:
+
+1. **Description estimate freshness**: editing the description invalidates the
+   previous estimate and disables copying it. An exception now sets an explicit
+   failed-estimate status, and Clear resets that status/color.
+2. **Recovery source freshness**: changing any original backup, project, ModHUB
+   file or reference ID instantly clears the prior verified preview and
+   confirmation and shows an explicit "Sources changed" message.
+3. **Locked offline Recovery UI review**: launch
+   `RUN-WPF-REVIEW-RECOVERY.cmd` from the preview.5 ZIP to inspect the recovery
+   window with NO Steam session, NO query, NO preview submission, NO write, and
+   all source/confirmation controls disabled. The real recovery path still
+   requires a fresh owner-verified eligible item, unchanged remote metadata,
+   original source checks and explicit approval.
+4. Offline `RUN-WPF-SMOKE.cmd` now exercises the description calculation,
+   invalidates it upon editing, verifies recovery-source invalidation and
+   asserts that the offline UI-only recovery dialog has **no actionable
+   controls**, as well as retaining previous Workshop URL and layout checks.
+
+### Native Windows functional checks for preview.5
+
+- `RUN-WPF-SMOKE.cmd`: should PASS on Windows before opening the main preview.
+- `RUN-WPF-PREVIEW.cmd`: confirm the preview.4 main dashboard is visually unchanged.
+- Click **Description**. Paste sample text (including accents or Unicode),
+  click **Estimate size**, then change that text. Confirm **Copy result**
+  disables immediately until estimation is repeated; **Clear** resets status.
+- Run `RUN-WPF-REVIEW-RECOVERY.cmd`: verify the recovery dialog can be viewed,
+  its controls remain visibly locked and NO Steam login, query, update or
+  backing file is required. This is *not* a valid candidate reconstruction
+  or restore test; it is visual-only.
+- Read-only CHECK METADATA on the already healthy test item is optional.
+  **Do not inject new Steam failures or perform a restore just for this UI pass.**
+
+**Qualification:** preview.5 source is committed and guarded by source checks,
+but the new .NET publish and Windows smoke have not been performed yet. The
+existing WinForms original-backup restore is the only real end-to-end write
+acceptance. Keep PR in Draft; no public release or merge into main.
 
 ## Hybrid design and native Workshop input (preview.4)
 
@@ -26,7 +75,7 @@ The native Windows offline UI smoke enters and selects a long Workshop URL,
 verifies it round-trips unchanged and no write actions unlock, in addition to
 the already-existing default-height/diagnostics checks. It makes **no Steam calls**.
 
-**This preview.4 has not yet been rebuilt or visually validated on Windows**.
+**Historical note:** preview.4 was built and visually validated on Windows; preview.5 remains pending.
 Use the existing `feat/wpf-modern-desktop` GitHub branch; on the VM, preserve
 local uncommitted preview.3 changes before switching back (see below). The
 previous preview.2 ZIP and the user's local preview.3 build may be kept for
