@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net9.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
     <!-- Transitional reference to the existing tested WinForms backend. -->
     <UseWindowsForms>true</UseWindowsForms>
@@ -14,7 +14,7 @@
     <PlatformTarget>x64</PlatformTarget>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <AssemblyName>SE2WorkshopUGCFix.Wpf</AssemblyName>
-    <Version>0.6.0-preview.9</Version>
+    <Version>0.6.0-preview.10</Version>
   </PropertyGroup>
   <ItemGroup>
     <!-- Reuse the EXACT tested Steam backend: no copied recovery logic. -->
