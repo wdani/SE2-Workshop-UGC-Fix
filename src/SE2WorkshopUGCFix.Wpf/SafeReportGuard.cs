@@ -86,6 +86,7 @@ internal static class SafeReportGuard
                     throw new InvalidDataException(
                         "Duplicate report fields are not permitted.");
                 if (!known.Contains(field.Name) ||
+                    !HasExpectedType(field.Name, field.Value.ValueKind) ||
                     field.Value.ValueKind is JsonValueKind.Array or JsonValueKind.Object ||
                     (field.Value.ValueKind == JsonValueKind.String &&
                      field.Value.GetString() is { Length: > 4096 }))
@@ -98,6 +99,35 @@ internal static class SafeReportGuard
             throw new InvalidDataException("The safe report is not valid JSON.", ex);
         }
     }
+
+    // Both real backend serializers emit only scalar status fields.
+    // A recognized field with a changed JSON type must not bypass the
+    // allowlist (for example, a string replacing a harmless boolean).
+    private static bool HasExpectedType(string name, JsonValueKind kind) =>
+        name switch
+        {
+            "appId" or "workshopItem" or "appIdExpected" or
+            "requestedWorkshopItem" or "originalBytes" => kind == JsonValueKind.Number,
+
+            "candidateBytes" or "descriptionChars" or "metadataBytes" =>
+                kind is JsonValueKind.Number or JsonValueKind.Null,
+
+            "ownerMatches" or "eligible" or "workshopDescriptionUpdated" or
+            "contentUpdated" or "detailsQuerySucceeded" or "responseWasCached" or
+            "returnedItemMatches" or "consumerAppMatches" or
+            "ownedBySignedInUser" or "getQueryUGCMetadataReturnedTrue" or
+            "rawMetadataOutputWasNull" or "steamUpdatesSubmitted" =>
+                kind is JsonValueKind.True or JsonValueKind.False,
+
+            "candidateHash" or "metadataSha256" =>
+                kind is JsonValueKind.String or JsonValueKind.Null,
+
+            "dateUtc" or "originalHash" or "reason" or
+            "classification" or "diagnosticType" or "detailQueryCode" or
+            "explanation" => kind == JsonValueKind.String,
+
+            _ => false
+        };
 
     private static bool IsExpectedApp(JsonElement root, string name) =>
         root.TryGetProperty(name, out var value) &&
