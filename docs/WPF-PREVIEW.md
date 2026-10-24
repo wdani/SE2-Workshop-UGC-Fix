@@ -1,8 +1,37 @@
-# WPF preview — 0.6.0-preview.7 (not released)
+# WPF preview — 0.6.0-preview.8 (not released)
 
 The user requested a truly modern desktop UI after reviewing the dark WinForms 0.5 preview.
 This is a new **WPF** front-end with navigation, responsive content, readable cards,
 reduced visual noise, status and owner indicators, and separate recovery/preflight dialogs.
+
+## Internal preview.8 — security and packaging qualification
+
+The owner confirmed the preview.7 healthy-item scan, private backup-folder opening
+and safe report copy to Notepad++ (2026-10-24). The exported summary contains
+Workshop ID 3824260687, 1,611 bytes, verified ownership and the expected
+original metadata SHA-256, without exposing the private JSON payload.
+These native Windows tests support the *read-only* features, not a live WPF write.
+
+New preview.8 work:
+- `SafeReportGuard` additionally rejects **duplicate JSON property names** and
+  mismatched primitive field types, closing ambiguities when JSON contains
+  repeated or manipulated fields.
+- `tests/SafeReportGuardTests` compiles the **actual** shared clipboard guard
+  on .NET 9 and tests realistic scan/probe reports plus malformed, private,
+  duplicated, wrong-AppID, altered-type, oversized and missing files. The
+  package script must pass this suite before publishing Windows artifacts.
+- Build packaging refuses changed tracked source or untracked WPF/test/build
+  source, produces an `SHA256-MANIFEST.txt` listing source commit and file
+  digests, validates ZIP paths/expected launchers/digests, and prints ZIP hash.
+  The manifest is **unsigned**, not a code signature.
+- All current UI/Steam behavior remains identical to the accepted preview.7.
+  No new Steam write path is enabled, no automatic release or PR merge.
+
+See [WPF-RELEASE-READINESS.md](WPF-RELEASE-READINESS.md) for the
+evidence matrix and explicit remaining publication gates.
+
+**Status: preview.8 source prepared; compiled .NET privacy suite, package
+build and native Windows smoke have NOT yet been executed.**
 
 ## Safe-report clipboard and backup-folder handling (preview.7)
 
