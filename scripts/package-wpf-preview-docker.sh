@@ -135,7 +135,7 @@ with zipfile.ZipFile(archive, "a") as z:
         f"{hashlib.sha256(z.read(name)).hexdigest()}  {name}"
         for name in sorted(members)
     ]
-    z.writestr("SHA256-MANIFEST.txt", "\\n".join(manifest) + "\\n")
+    z.writestr("SHA256-MANIFEST.txt", "\n".join(manifest) + "\n")
 
 with zipfile.ZipFile(archive) as z:
     names = z.namelist()
