@@ -108,7 +108,6 @@ assert 'UNSIGNED_TEST_ARTIFACT=true' in package_script
 assert "0.6.0-preview.9" in project and "0.6.0-preview.9" in package_script
 assert "RUN-WPF-REVIEW-RECOVERY.cmd" in package_script
 assert "--review-recovery-ui" in package_script
-assert "0.6.0-preview.8" in project and "0.6.0-preview.8" in package_script
 
 assert "RecoverySource.OriginalBackup or RecoverySource.WorkingItem" in contents["RecoveryWindow.xaml.cs"]
 assert "RESTORE " in contents["RecoveryWindow.xaml.cs"]
