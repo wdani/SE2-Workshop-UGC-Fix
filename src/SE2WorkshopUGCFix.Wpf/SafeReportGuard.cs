@@ -77,8 +77,14 @@ internal static class SafeReportGuard
                      !IsFalse(root, "workshopDescriptionUpdated"))
                 throw new InvalidDataException("Unrecognized safe scan report.");
 
+            // JsonElement.TryGetProperty picks the last duplicate. A copied
+            // report must not conceal a different value in an earlier entry.
+            var seen = new HashSet<string>(StringComparer.Ordinal);
             foreach (var field in root.EnumerateObject())
             {
+                if (!seen.Add(field.Name))
+                    throw new InvalidDataException(
+                        "Duplicate report fields are not permitted.");
                 if (!known.Contains(field.Name) ||
                     field.Value.ValueKind is JsonValueKind.Array or JsonValueKind.Object ||
                     (field.Value.ValueKind == JsonValueKind.String &&
