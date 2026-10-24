@@ -22,6 +22,33 @@ public partial class App : Application
                     recovery.RestoreButton.IsEnabled)
                     throw new InvalidOperationException("Unsafe WPF initial action state.");
 
+                // Offline functional smoke: estimate, invalidate on edit, never use Steam.
+                preflight.DescriptionInput.Text = "Short demo description with UTF-8: äöü";
+                preflight.EstimateButton.RaiseEvent(
+                    new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                if (!preflight.CopyButton.IsEnabled ||
+                    !preflight.EstimateStatus.Text.Contains("No Steam write"))
+                    throw new InvalidOperationException(
+                        "Offline description estimator failed.");
+                preflight.DescriptionInput.Text += " changed";
+                if (preflight.CopyButton.IsEnabled)
+                    throw new InvalidOperationException(
+                        "An outdated description estimate was still copyable.");
+
+                // The review window is a strictly offline UI gallery. No
+                // Steam query or recovery preview is possible via its controls.
+                var review = new RecoveryWindow(12345678UL, offlineReviewOnly: true);
+                if (review.PreviewButton.IsEnabled || review.RestoreButton.IsEnabled ||
+                    review.BackupInput.IsEnabled || review.ConfirmInput.IsEnabled)
+                    throw new InvalidOperationException(
+                        "Offline recovery review exposed actionable controls.");
+                recovery.BackupInput.Text = "changed backup path";
+                if (recovery.RestoreButton.IsEnabled ||
+                    !recovery.PreviewResult.Text.Contains("Sources changed"))
+                    throw new InvalidOperationException(
+                        "Changing recovery sources failed to invalidate preview.");
+                review.Close();
+
                 // Real WPF measure/arrange on Windows; the overview must fit
                 // the default window without a vertical scrollbar.
                 main.ShowInTaskbar = false;
@@ -70,6 +97,15 @@ public partial class App : Application
                 catch { /* Exit must still fail if report cannot be persisted. */ }
                 Shutdown(1);
             }
+            return;
+        }
+        // Locked visual check of the Recovery dialog without Steam or a damaged
+        // Workshop item; no live preview, submit, ownership lookup or writes.
+        if (e.Args.Length == 1 && e.Args[0] == "--review-recovery-ui")
+        {
+            var review = new RecoveryWindow(12345678UL, offlineReviewOnly: true);
+            MainWindow = review;
+            review.Show();
             return;
         }
         // A live read or change requires the original Steam guards and user action.
