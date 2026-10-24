@@ -29,6 +29,20 @@ assert "Condition=\"'$(EnableFixtureLab)' == 'true'\"" in legacy_project
 assert "SteamFix.Scan(id)" in contents["MainWindow.xaml.cs"]
 assert "SteamReadProbe.Run(id)" in contents["MainWindow.xaml.cs"]
 assert "SafeReportGuard.ReadValidated(_safeReportPath)" in contents["MainWindow.xaml.cs"]
+# Fail-closed UI state checks: incomplete diagnostic calls must not
+# leave owner-only repair and recovery actions enabled.
+main_code = contents["MainWindow.xaml.cs"]
+for title in ('Check failed — nothing changed', 'Probe failed — no changes'):
+    pos = main_code.index(f'SetStatus("{title}"')
+    handler_start = main_code.rfind('catch (Exception ex)', 0, pos)
+    assert handler_start >= 0 and "ResetScan();" in main_code[handler_start:pos], title
+assert "finally\n        {\n            // A recovery dialog may complete, fail or be canceled." in main_code
+assert "ResetScan();" in main_code[main_code.index("private void OpenRecovery_Click"):main_code.index("private void OpenPreflight_Click")]
+assert "ex is InvalidDataException || !File.Exists(_safeReportPath)" in main_code
+recovery_code = contents["RecoveryWindow.xaml.cs"]
+preview_error = recovery_code.index("PREVIEW STOPPED. NO STEAM CHANGES.")
+assert "InvalidatePreview();" in recovery_code[recovery_code.rfind("catch (Exception ex)", 0, preview_error):preview_error]
+
 assert "Clipboard.SetText(safeReport)" in contents["MainWindow.xaml.cs"]
 assert "Clipboard.SetText(File.ReadAllText(" not in contents["MainWindow.xaml.cs"]
 assert "DirectoryNotFoundException(" in contents["MainWindow.xaml.cs"]
@@ -91,7 +105,7 @@ assert 'git diff --quiet' in package_script
 assert 'SHA256-MANIFEST.txt' in package_script
 assert 'SOURCE_COMMIT={commit}' in package_script
 assert 'UNSIGNED_TEST_ARTIFACT=true' in package_script
-assert "0.6.0-preview.8" in project and "0.6.0-preview.8" in package_script
+assert "0.6.0-preview.9" in project and "0.6.0-preview.9" in package_script
 assert "RUN-WPF-REVIEW-RECOVERY.cmd" in package_script
 assert "--review-recovery-ui" in package_script
 assert "0.6.0-preview.8" in project and "0.6.0-preview.8" in package_script
