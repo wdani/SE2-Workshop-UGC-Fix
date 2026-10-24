@@ -47,11 +47,20 @@ assert "new RecoveryWindow(12345678UL, offlineReviewOnly: true)" in contents["Ap
 assert "Offline description estimator failed." in contents["App.xaml.cs"]
 assert "An outdated description estimate was still copyable." in contents["App.xaml.cs"]
 assert "Offline recovery review exposed actionable controls." in contents["App.xaml.cs"]
+assert "Offline recovery review mislabeled as a live recovery session." in contents["App.xaml.cs"]
+for name in ("BackupBrowseButton", "ProjectBrowseButton", "ModhubBrowseButton"):
+    assert f'Name="{name}"' in contents["RecoveryWindow.xaml"], name
+    assert f"{name}.IsEnabled = false;" in contents["RecoveryWindow.xaml.cs"], name
+    assert f"{name}.IsEnabled = !_offlineReviewOnly && !value;" in contents["RecoveryWindow.xaml.cs"], name
+    assert f"review.{name}.IsEnabled" in contents["App.xaml.cs"], name
+assert 'Name="RecoveryModeEyebrow"' in contents["RecoveryWindow.xaml"]
+assert 'OFFLINE VISUAL REVIEW · NO STEAM ACCESS' in contents["RecoveryWindow.xaml.cs"]
+
 assert "Changing recovery sources failed to invalidate preview." in contents["App.xaml.cs"]
 package_script = (root / "scripts/package-wpf-preview-docker.sh").read_text(encoding="utf-8")
 assert "RUN-WPF-REVIEW-RECOVERY.cmd" in package_script
 assert "--review-recovery-ui" in package_script
-assert "0.6.0-preview.5" in project or "0.6.0-preview.5" in package_script
+assert "0.6.0-preview.6" in project and "0.6.0-preview.6" in package_script
 
 assert "RecoverySource.OriginalBackup or RecoverySource.WorkingItem" in contents["RecoveryWindow.xaml.cs"]
 assert "RESTORE " in contents["RecoveryWindow.xaml.cs"]
