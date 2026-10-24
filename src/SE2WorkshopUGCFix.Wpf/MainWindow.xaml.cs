@@ -315,7 +315,10 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            if (!File.Exists(_safeReportPath)) ReportButton.IsEnabled = false;
+            // A malformed or unexpectedly changed report must not be
+            // repeatedly offered as safe to share without a fresh scan.
+            if (ex is InvalidDataException || !File.Exists(_safeReportPath))
+                ReportButton.IsEnabled = false;
             AddLog("Safe report not copied: " + ex.Message);
             Fail("Could not copy safe report", ex);
         }
