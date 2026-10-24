@@ -7,7 +7,7 @@
         Foreground="{StaticResource TextBrush}" FontFamily="Segoe UI" UseLayoutRounding="True">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="28,26,28,30">
-            <TextBlock Text="OWNER-ONLY RECOVERY / VERIFY BEFORE WRITING" Style="{StaticResource EyebrowStyle}"
+            <TextBlock Name="RecoveryModeEyebrow" Text="OWNER-ONLY RECOVERY / VERIFY BEFORE WRITING" Style="{StaticResource EyebrowStyle}"
                        Foreground="{StaticResource WarningBrush}"/>
             <TextBlock Name="RecoveryHeading" Text="Recover developer metadata" FontSize="27"
                        FontWeight="SemiBold" Margin="0,7,0,7"/>
@@ -26,7 +26,7 @@
                         <TextBox Name="BackupInput" Grid.Column="0" Style="{StaticResource FormFieldStyle}"
                                  TextChanged="SourceChanged" ToolTip="Same-item original metadata JSON"/>
                         <Button Grid.Column="1" Content="Browse…" Style="{StaticResource BaseButtonStyle}" Margin="10,0,0,0"
-                                Tag="backup" Click="Browse_Click"/>
+                                Name="BackupBrowseButton" Tag="backup" Click="Browse_Click"/>
                     </Grid>
                     <TextBlock Text="ORIGINAL VRAGE PROJECT · REQUIRED WITHOUT EXACT BACKUP"
                                Style="{StaticResource EyebrowStyle}" Margin="0,0,0,7"/>
@@ -38,7 +38,7 @@
                         <TextBox Name="ProjectInput" Grid.Column="0" Style="{StaticResource FormFieldStyle}"
                                  TextChanged="SourceChanged" ToolTip="Original .vrgproj"/>
                         <Button Grid.Column="1" Content="Browse…" Style="{StaticResource BaseButtonStyle}" Margin="10,0,0,0"
-                                Tag="project" Click="Browse_Click"/>
+                                Name="ProjectBrowseButton" Tag="project" Click="Browse_Click"/>
                     </Grid>
                     <TextBlock Text="ORIGINAL MODHUB METADATA · OPTIONAL"
                                Style="{StaticResource EyebrowStyle}" Margin="0,0,0,7"/>
@@ -50,7 +50,7 @@
                         <TextBox Name="ModhubInput" Grid.Column="0" Style="{StaticResource FormFieldStyle}"
                                  TextChanged="SourceChanged"/>
                         <Button Grid.Column="1" Content="Browse…" Style="{StaticResource BaseButtonStyle}" Margin="10,0,0,0"
-                                Tag="modhub" Click="Browse_Click"/>
+                                Name="ModhubBrowseButton" Tag="modhub" Click="Browse_Click"/>
                     </Grid>
                     <TextBlock Text="WORKING REFERENCE WORKSHOP ID · OPTIONAL"
                                Style="{StaticResource EyebrowStyle}" Margin="0,0,0,7"/>
