@@ -79,8 +79,8 @@ if not deps.is_file():
     # trust the project's framework/publish flags and native Windows smoke.
     print("NOTE: deps.json embedded in single-file publish; inspect bundle on Windows.")
 else:
-    if "net10.0-windows" not in deps.read_text(encoding="utf-8"):
-        raise RuntimeError("WPF publish did not target net10.0-windows")
+    if ".NETCoreApp,Version=v10.0" not in deps.read_text(encoding="utf-8"):
+        raise RuntimeError("WPF publish dependencies do not target .NET 10")
 
 archive = dest.parent / "SE2-Workshop-UGC-Fix-0.6.0-preview.10-WPF-win-x64-LOCAL-TEST.zip"
 smoke = (
