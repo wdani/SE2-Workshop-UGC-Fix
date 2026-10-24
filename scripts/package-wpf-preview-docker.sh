@@ -71,7 +71,7 @@ commit = sys.argv[2]
 exe = dest / "SE2WorkshopUGCFix.Wpf.exe"
 if not exe.is_file() or not exe.stat().st_size:
     raise SystemExit("WPF executable missing, compilation or publish incomplete.")
-archive = dest.parent / "SE2-Workshop-UGC-Fix-0.6.0-preview.8-WPF-win-x64-LOCAL-TEST.zip"
+archive = dest.parent / "SE2-Workshop-UGC-Fix-0.6.0-preview.9-WPF-win-x64-LOCAL-TEST.zip"
 smoke = (
     '@echo off\r\n'
     'cd /d "%~dp0"\r\n'
@@ -91,7 +91,7 @@ launcher = ('@echo off\r\n'
             'cd /d "%~dp0"\r\n'
             'start "" "%~dp0SE2WorkshopUGCFix.Wpf.exe"\r\n')
 readme = (
-    f"SE2 Workshop Recovery WPF 0.6.0-preview.8\r\nSource: {commit}\r\n"
+    f"SE2 Workshop Recovery WPF 0.6.0-preview.9\r\nSource: {commit}\r\n"
     "UNRELEASED LOCAL UI TEST. DO NOT DISTRIBUTE.\r\n"
     "SHA256-MANIFEST.txt contains per-file hashes. UNSIGNED: not a digital signature.\r\n"
     "Run RUN-WPF-SMOKE.cmd first; then RUN-WPF-PREVIEW.cmd.\r\n"
@@ -127,7 +127,7 @@ with zipfile.ZipFile(archive, "a") as z:
         raise RuntimeError("Pre-existing build manifest in publish output")
     manifest = [
         f"SOURCE_COMMIT={commit}",
-        "VERSION=0.6.0-preview.8",
+        "VERSION=0.6.0-preview.9",
         "ALGORITHM=SHA256",
         "UNSIGNED_TEST_ARTIFACT=true",
         "",
