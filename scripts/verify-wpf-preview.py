@@ -113,6 +113,28 @@ candidate_version = candidate.group(1)
 assert f"SE2-Workshop-UGC-Fix-{candidate_version}-WPF-win-x64-LOCAL-TEST.zip" in package_script
 assert f"SE2 Workshop Recovery WPF {candidate_version}" in package_script
 assert f"VERSION={candidate_version}" in package_script
+
+# The .NET 10 migration is a strictly separate candidate: compiling any
+# referenced WinForms project or offline safety runner under .NET 9 would
+# invalidate the migration and could require an unsupported runtime.
+assert candidate_version == "0.6.0-preview.10"
+assert "<TargetFramework>net10.0-windows</TargetFramework>" in project
+for target in (
+    root / "legacy-gui-v0.3.0/SE2WorkshopUGCFix/SE2WorkshopUGCFix.csproj",
+):
+    assert "<TargetFramework>net10.0-windows</TargetFramework>" in target.read_text(encoding="utf-8")
+for target in (
+    root / "tests/RecoverySafetyTests/RecoverySafetyTests.csproj",
+    root / "legacy-gui-v0.3.0/tests/MetadataSafetyTests/MetadataSafetyTests.csproj",
+    root / "tests/SafeReportGuardTests/SafeReportGuardTests.csproj",
+):
+    assert "<TargetFramework>net10.0</TargetFramework>" in target.read_text(encoding="utf-8")
+assert 'feat/wpf-net10-lts-qualification' in package_script
+assert 'mcr.microsoft.com/dotnet/sdk:10.0' in package_script
+assert '-f net10.0-windows -r win-x64' in package_script
+assert 'wpf-user-preview-net10' in package_script
+assert 'mcr.microsoft.com/dotnet/sdk:9.0' not in package_script
+
 assert "RUN-WPF-REVIEW-RECOVERY.cmd" in package_script
 assert "--review-recovery-ui" in package_script
 
