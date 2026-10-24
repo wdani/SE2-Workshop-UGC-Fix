@@ -9,16 +9,32 @@ namespace SE2WorkshopUGCFix.Wpf;
 public partial class RecoveryWindow : Window
 {
     private readonly ulong _itemId;
+    private readonly bool _offlineReviewOnly;
     private RecoveryPreviewResult? _ready;
     private bool _busy;
 
-    public RecoveryWindow(ulong workshopId)
+    public RecoveryWindow(ulong workshopId, bool offlineReviewOnly = false)
     {
         _itemId = workshopId;
+        _offlineReviewOnly = offlineReviewOnly;
         InitializeComponent();
         WindowAppearance.ApplyDarkTitleBar(this);
         RecoveryHeading.Text = "Recover Workshop item " + _itemId;
         ConfirmHint.Text = "ENTER EXACTLY: RESTORE " + _itemId;
+        if (_offlineReviewOnly)
+        {
+            Title = "Recovery assistant · offline UI review";
+            RecoveryHeading.Text = "Recovery assistant · UI review";
+            ConfirmHint.Text = "LOCKED · preview-only demonstration";
+            PreviewResult.Text = "OFFLINE UI REVIEW. No Steam connection, no owner verification, no recovery preview and no write authorization.";
+            PreviewButton.IsEnabled = false;
+            RestoreButton.IsEnabled = false;
+            BackupInput.IsEnabled = false;
+            ProjectInput.IsEnabled = false;
+            ModhubInput.IsEnabled = false;
+            ReferenceInput.IsEnabled = false;
+            ConfirmInput.IsEnabled = false;
+        }
     }
 
     private void InvalidatePreview()
@@ -29,14 +45,19 @@ public partial class RecoveryWindow : Window
     }
 
     private void SourceChanged(object sender,
-        System.Windows.Controls.TextChangedEventArgs e) => InvalidatePreview();
+        System.Windows.Controls.TextChangedEventArgs e)
+    {
+        InvalidatePreview();
+        if (PreviewResult is not null)
+            PreviewResult.Text = "Sources changed. Build a new read-only preview before any restore can be considered.";
+    }
 
     private void ConfirmChanged(object sender,
         System.Windows.Controls.TextChangedEventArgs e) => UpdateRestore();
 
     private void UpdateRestore()
     {
-        RestoreButton.IsEnabled = !_busy &&
+        RestoreButton.IsEnabled = !_offlineReviewOnly && !_busy &&
             _ready is { Session.Plan.EligibleForApply: true } &&
             (_ready.Session.Plan.Source is RecoverySource.OriginalBackup or RecoverySource.WorkingItem) &&
             ConfirmInput.Text == "RESTORE " + _itemId;
@@ -45,7 +66,7 @@ public partial class RecoveryWindow : Window
     private void SetBusy(bool value)
     {
         _busy = value;
-        PreviewButton.IsEnabled = !value;
+        PreviewButton.IsEnabled = !_offlineReviewOnly && !value;
         BackupInput.IsEnabled = !value;
         ProjectInput.IsEnabled = !value;
         ModhubInput.IsEnabled = !value;
@@ -56,7 +77,7 @@ public partial class RecoveryWindow : Window
 
     private void Browse_Click(object sender, RoutedEventArgs e)
     {
-        if (_busy || sender is not System.Windows.Controls.Button button) return;
+        if (_busy || _offlineReviewOnly || sender is not System.Windows.Controls.Button button) return;
         var kind = button.Tag?.ToString();
         var dialog = new OpenFileDialog {
             CheckFileExists = true,
@@ -74,7 +95,7 @@ public partial class RecoveryWindow : Window
 
     private async void Preview_Click(object sender, RoutedEventArgs e)
     {
-        if (_busy) return;
+        if (_busy || _offlineReviewOnly) return;
         InvalidatePreview();
         var backup = BackupInput.Text.Trim();
         var project = ProjectInput.Text.Trim();
@@ -102,7 +123,7 @@ public partial class RecoveryWindow : Window
 
     private async void Restore_Click(object sender, RoutedEventArgs e)
     {
-        if (_busy || !RestoreButton.IsEnabled || _ready is not { } selected) return;
+        if (_busy || _offlineReviewOnly || !RestoreButton.IsEnabled || _ready is not { } selected) return;
         var message =
             $"This WILL update ONLY internal developer metadata for your owned Workshop item {_itemId}.\n\n" +
             $"Source: {selected.Session.Plan.Source}\nCandidate bytes: {selected.Session.Plan.CandidateBytes}\n\n" +
