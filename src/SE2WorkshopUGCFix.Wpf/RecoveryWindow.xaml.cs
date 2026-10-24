@@ -125,6 +125,9 @@ public partial class RecoveryWindow : Window
         }
         catch (Exception ex)
         {
+            // A failure after assigning _ready must not leave a proposal
+            // eligible for submission on the next UI event.
+            InvalidatePreview();
             PreviewResult.Text = "PREVIEW STOPPED. NO STEAM CHANGES.\n" + ex.Message;
         }
         finally { SetBusy(false); }
