@@ -39,9 +39,17 @@ public partial class App : Application
                 // Steam query or recovery preview is possible via its controls.
                 var review = new RecoveryWindow(12345678UL, offlineReviewOnly: true);
                 if (review.PreviewButton.IsEnabled || review.RestoreButton.IsEnabled ||
-                    review.BackupInput.IsEnabled || review.ConfirmInput.IsEnabled)
+                    review.BackupInput.IsEnabled || review.ProjectInput.IsEnabled ||
+                    review.ModhubInput.IsEnabled || review.ReferenceInput.IsEnabled ||
+                    review.ConfirmInput.IsEnabled ||
+                    review.BackupBrowseButton.IsEnabled ||
+                    review.ProjectBrowseButton.IsEnabled ||
+                    review.ModhubBrowseButton.IsEnabled)
                     throw new InvalidOperationException(
                         "Offline recovery review exposed actionable controls.");
+                if (!review.RecoveryModeEyebrow.Text.Contains("NO STEAM ACCESS"))
+                    throw new InvalidOperationException(
+                        "Offline recovery review mislabeled as a live recovery session.");
                 recovery.BackupInput.Text = "changed backup path";
                 if (recovery.RestoreButton.IsEnabled ||
                     !recovery.PreviewResult.Text.Contains("Sources changed"))
