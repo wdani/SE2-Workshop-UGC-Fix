@@ -40,6 +40,8 @@ assert "HashSet<string> ProbeFields" in guard
 assert "contentUpdated" in guard and "steamUpdatesSubmitted" in guard
 assert "JsonValueKind.Object" in guard and "JsonValueKind.Array" in guard
 assert "MaximumReportBytes" in guard
+assert "Duplicate report fields are not permitted." in guard
+assert "HasExpectedType(field.Name, field.Value.ValueKind)" in guard
 assert "Only report-SAFE-TO-SHARE.json may be copied." in guard
 assert "Clipboard guard allowed private original metadata." in contents["App.xaml.cs"]
 assert "Clipboard guard allowed a private backup filename." in contents["App.xaml.cs"]
@@ -74,9 +76,25 @@ assert 'OFFLINE VISUAL REVIEW · NO STEAM ACCESS' in contents["RecoveryWindow.xa
 
 assert "Changing recovery sources failed to invalidate preview." in contents["App.xaml.cs"]
 package_script = (root / "scripts/package-wpf-preview-docker.sh").read_text(encoding="utf-8")
+safe_report_project = root / "tests/SafeReportGuardTests/SafeReportGuardTests.csproj"
+safe_report_tests = root / "tests/SafeReportGuardTests/Program.cs"
+assert safe_report_project.is_file() and safe_report_tests.is_file()
+assert "../../src/SE2WorkshopUGCFix.Wpf/SafeReportGuard.cs" in safe_report_project.read_text(encoding="utf-8")
+test_source = safe_report_tests.read_text(encoding="utf-8")
+for case in ("duplicate owner field", "duplicate report type",
+             "private metadata payload", "scan classification type changed",
+             "private backup filename", "oversized report file",
+             "missing report file"):
+    assert case in test_source, case
+assert "dotnet run --project tests/SafeReportGuardTests/SafeReportGuardTests.csproj" in package_script
+assert 'git diff --quiet' in package_script
+assert 'SHA256-MANIFEST.txt' in package_script
+assert 'SOURCE_COMMIT={commit}' in package_script
+assert 'UNSIGNED_TEST_ARTIFACT=true' in package_script
+assert "0.6.0-preview.8" in project and "0.6.0-preview.8" in package_script
 assert "RUN-WPF-REVIEW-RECOVERY.cmd" in package_script
 assert "--review-recovery-ui" in package_script
-assert "0.6.0-preview.7" in project and "0.6.0-preview.7" in package_script
+assert "0.6.0-preview.8" in project and "0.6.0-preview.8" in package_script
 
 assert "RecoverySource.OriginalBackup or RecoverySource.WorkingItem" in contents["RecoveryWindow.xaml.cs"]
 assert "RESTORE " in contents["RecoveryWindow.xaml.cs"]
