@@ -120,7 +120,8 @@ def audit_zip(path: Path, expected_commit: str | None) -> None:
     print("NOTE: Single-file .NET executable may embed native DLLs; no bundle extraction done.")
 
 
-def audit_nupkg(path: Path) -> None:
+def audit_nupkg(path: Path, expected_native_git_blob: str | None = None,
+                expected_native_size: int | None = None) -> None:
     with zipfile.ZipFile(path) as z:
         # NuGet archives may legitimately record empty directory entries;
         # consumer WPF ZIPs do not and remain strict.
@@ -152,13 +153,31 @@ def audit_nupkg(path: Path) -> None:
             raise ValueError("NuGet package identity, version or license mismatch")
         if NATIVE not in entries:
             raise ValueError("Pinned NuGet package lacks expected win-x64 native DLL")
+        native_size = entries[NATIVE].file_size
+        if expected_native_size is not None and native_size != expected_native_size:
+            raise ValueError("Native DLL size differs from upstream pinned source")
+        # Git object IDs hash "blob <size>\\0" + content (NOT a file's raw SHA-1).
+        # This is a source-byte comparison, not a signature or proof of Valve rights.
+        upstream_blob = hashlib.sha1(f"blob {native_size}\\0".encode("ascii"))
+        native_sha = hashlib.sha256()
         with z.open(entries[NATIVE]) as stream:
-            native_sha = sha256_stream(stream)
+            for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                native_sha.update(chunk)
+                upstream_blob.update(chunk)
+        upstream_blob_sha = upstream_blob.hexdigest()
+        if expected_native_git_blob is not None:
+            if not re.fullmatch("[0-9a-f]{40}", expected_native_git_blob):
+                raise ValueError("Expected upstream Git blob ID is not SHA-1 format")
+            if upstream_blob_sha != expected_native_git_blob:
+                raise ValueError("Native DLL differs from pinned upstream Git blob")
         print("PASS: pinned Steamworks.NET.AnyCPU package identity/metadata")
         print("  package:", meta["id"], meta["version"])
         print("  managed wrapper license:", meta["license"])
-        print("  NuGet steam_api64.dll SHA256:", native_sha)
-        print("  NuGet steam_api64.dll bytes:", entries[NATIVE].file_size)
+        print("  NuGet steam_api64.dll SHA256:", native_sha.hexdigest())
+        print("  NuGet steam_api64.dll Git blob:", upstream_blob_sha)
+        print("  NuGet steam_api64.dll bytes:", native_size)
+        if expected_native_git_blob is not None:
+            print("  Pin confirmed: NuGet DLL matches known upstream Git blob")
     with path.open("rb") as stream:
         print("  NuGet package SHA256:", sha256_stream(stream))
     print("NOTE: DLL from NuGet is NOT proof of Valve redistribution rights.")
@@ -169,16 +188,24 @@ def main() -> int:
     parser.add_argument("--zip", type=Path, help="Local unreleased WPF ZIP")
     parser.add_argument("--nupkg", type=Path, help="Locally obtained pinned NuGet .nupkg")
     parser.add_argument("--expected-commit", help="Git SHA to compare with ZIP manifest")
+    parser.add_argument("--expected-native-git-blob",
+                        help="Known upstream Git blob SHA-1 (requires --nupkg)")
+    parser.add_argument("--expected-native-size", type=int,
+                        help="Known upstream DLL size in bytes (requires --nupkg)")
     args = parser.parse_args()
     if not args.zip and not args.nupkg:
         parser.error("Provide --zip and/or --nupkg")
     if args.expected_commit and not args.zip:
         parser.error("--expected-commit requires --zip")
+    if (args.expected_native_git_blob is not None or args.expected_native_size is not None) and not args.nupkg:
+        parser.error("--expected-native-* options require --nupkg")
+    if args.expected_native_size is not None and args.expected_native_size <= 0:
+        parser.error("--expected-native-size must be positive")
     try:
         if args.zip:
             audit_zip(args.zip, args.expected_commit)
         if args.nupkg:
-            audit_nupkg(args.nupkg)
+            audit_nupkg(args.nupkg, args.expected_native_git_blob, args.expected_native_size)
         print("NOT A PUBLIC RELEASE APPROVAL: provenance, licenses and publisher still unverified")
         return 0
     except (OSError, ValueError, UnicodeError, zipfile.BadZipFile, ET.ParseError) as exc:
