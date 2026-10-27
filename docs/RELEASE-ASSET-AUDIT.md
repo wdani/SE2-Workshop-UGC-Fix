@@ -152,6 +152,54 @@ packaging/UI smoke check. Do not modify the owner-tested preview.10 app to
 insert branding now; avoid unauthorised Keen/Steam logos and use sanitized
 screenshot examples.
 
+## New optional release notice-content gate (2026-10-27)
+
+`scripts/check-release-notices.py` is a separate **read-only, fail-closed**
+check for **a future release candidate**, not a patch to the already-tested
+preview.10 package. First it invokes the existing ZIP/source SHA256 verifier.
+Then it requires these exact files **inside the verified ZIP**:
+
+- `LICENSE` — byte-for-byte equal to the repository's approved project MIT
+  license.
+- `licenses/Steamworks.NET.AnyCPU-MIT.txt` — byte-for-byte equal to
+  the pinned upstream copyright/MIT license text kept in the repository.
+- `THIRD-PARTY-NOTICES.txt` — a non-trivial UTF-8 notices index referring
+  at minimum to `Steamworks.NET.AnyCPU 2026.165.2`, Valve
+  `steam_api64.dll`, and Microsoft `.NET 10`.
+
+Invoke when a **new candidate ZIP including reviewed notices** exists:
+
+```bash
+python3 scripts/check-release-notices.py \
+  --zip /path/to/SE2-Workshop-UGC-Fix-CANDIDATE.zip \
+  --expected-commit THE_TRUSTED_40_CHARACTER_GIT_SHA
+```
+
+The expected commit must come from the release review, not from the untrusted
+ZIP. The current auditor checks the `0.6.0-preview.10` manifest: if the
+future release candidate has a different version, update/review the manifest
+version constraint in `scripts/audit-release-assets.py` **separately**.
+No release ZIP/notice index has been created or released in this step.
+The existing real preview.10 ZIP **must fail this notice gate**, because
+the owner already confirmed its notices were absent. This is correct.
+
+**Important limitations:** Even a `PASS` means **required notice files
+are present and the two known MIT texts match repository source**, not that
+all native/.NET notices are complete, Valve redistribution has been authorised,
+the executable matches a trusted build, the publisher is authenticated, or
+the owner approved public release. Those gates remain **manual, blocking
+and independent**. Checking a few component names in the index is not a
+substitute for legal/technical review.
+
+Added **12 further synthetic tests** in
+`tests/ReleaseAssetAuditTests/test_release_notice_gate.py`. They test exact
+MIT text matches, missing license/index files, doctored notices with matching
+ZIP hashes, missing native/runtime notice references, mismatched source SHA,
+tampered manifest and byte-for-byte read-only ZIP behavior. The original 18
+ZIP/NuGet tests passed on the owner VM on 2026-10-27. **These 12 new tests
+are committed but not yet independently executed on the owner's VM**;
+do not report them as passed until there is test evidence.
+
 ## What remains to be done before a public Windows ZIP
 
 | Topic | Current result | Release decision |
