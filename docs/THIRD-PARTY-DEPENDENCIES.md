@@ -94,6 +94,36 @@ None of these observations alone establishes the right to redistribute an
 actual binary ZIP. Microsoft additionally requires
 [licensing/third-party notices for .NET binary distributions](https://github.com/dotnet/runtime/blob/main/docs/project/licensing-assets.md).
 
+## Source-level native asset evidence and Windows .NET runtime terms
+
+Additional tag-specific evidence was recorded on **2026-10-27**:
+
+- The pinned `Steamworks.NET.AnyCPU/2026.165.2` GitHub source has
+  `com.rlabrecque.steamworks.net/Plugins/steam_api64.dll` at **319,128 bytes**,
+  Git blob object ID `0ca8f77b8a315d2d43ea3087623f61c8fbe9ca3e`.
+  Its tagged `Standalone3.0/Steamworks.NET.csproj` includes that path in
+  `runtimes/win-x64/native`. The public GitHub API's path/size/hash
+  constitute evidence of **that tagged upstream file**, *not* proof of
+  Steamworks SDK provenance or Valve redistribution permission.
+- The offline NuGet inspector can optionally compare a real `.nupkg` native
+  DLL against both the upstream **Git blob** and exact byte count while
+  recording its plain-file SHA256. See
+  [RELEASE-ASSET-AUDIT.md](RELEASE-ASSET-AUDIT.md). Actual package bytes
+  have **not** yet been compared.
+- Microsoft distinguishes Windows **.NET product distributions**, which
+  use the **.NET Library License**, from .NET library source and ordinary
+  packages (which often use MIT). The official
+  [license information](https://github.com/dotnet/core/blob/main/license-information.md)
+  and [asset licensing model](https://github.com/dotnet/runtime/blob/main/docs/project/licensing-assets.md)
+  call for the applicable product license and third-party notices with
+  binary distributions. Do **not** label the complete self-contained
+  Windows .NET runtime as MIT merely because the project source and managed
+  Steamworks.NET wrapper are MIT-licensed.
+- Microsoft's [single-file deployment documentation](https://learn.microsoft.com/en-us/dotnet/core/deploying/single-file/overview)
+  confirms `IncludeNativeLibrariesForSelfExtract=true` enables embedding
+  native assets that are extracted on startup. A visible ZIP member list
+  cannot certify the absence of Steam's native DLL.
+
 ## Project ownership and use of game data
 
 - The owner selected the permissive **MIT License** for the project's
