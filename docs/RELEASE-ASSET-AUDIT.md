@@ -194,6 +194,52 @@ this proves correspondence with a particular upstream repository object,
 **not** correspondence to an authorised Valve SDK distribution, the final
 Windows single-file bundle, or this project's entitlement to redistribute it.
 
+## Automated official NuGet package checksum + pinned-native comparison
+
+**Added 2026-10-27 (source prepared, not yet run on Dev-Worker).**
+`scripts/probe-official-nuget-provenance.py` provides a single opt-in
+CLI command from the project's `feat/release-asset-license-audit` branch:
+
+```bash
+python3 scripts/probe-official-nuget-provenance.py
+```
+
+It uses only the fixed NuGet.org v3 flat-container URLs for
+`Steamworks.NET.AnyCPU/2026.165.2`, requires HTTPS and an approved NuGet
+host even for redirects, downloads the small `.nupkg` and corresponding
+NuGet `.sha512` sidecar with bounded response size, checks **SHA-512 of
+the complete NuGet package** against that official index, and invokes
+the offline `audit_nupkg` against the temporary downloaded package:
+
+- NuGet ID `Steamworks.NET.AnyCPU`, exact version `2026.165.2`,
+  managed wrapper MIT metadata.
+- `runtimes/win-x64/native/steam_api64.dll` inside the downloaded nupkg.
+- **319,128-byte native DLL** and Git blob object
+  `0ca8f77b8a315d2d43ea3087623f61c8fbe9ca3e`, independently recorded
+  from the matching tagged GitHub source tree.
+- SHA256 of both the native DLL and the complete NuGet package is printed
+  for later release evidence.
+
+All temporary download files are cleaned automatically after the run. The
+script **does use Internet access to NuGet.org**, unlike the earlier offline
+ZIP audit; it does not call Steam, launch any EXE, upload private content,
+edit the tested preview.10 ZIP or change the application.
+
+A **positive** result would demonstrate that the current NuGet binary asset
+matches that exact public tagged GitHub object *and* NuGet's matching SHA-512
+sidecar. It would **not** establish a Valve-authorised SDK binary, eligibility
+to redistribute it, the bytes inside the self-contained Windows EXE, or a
+cryptographic signature/authentication of the package publisher.
+
+The network in this assistant's execution environment cannot reach NuGet,
+so the real package **has not been downloaded or validated here**. The
+owner's Dev-Worker can perform that independent step once. The test suite
+has **4 recently added Git-blob/size tests plus 6 mocked network/checksum
+probe tests**, all new cases presently **unexecuted on Dev-Worker**.
+The earlier **30/30 tests were confirmed PASS on the VM** at commit
+`c4421678a48d163c3089e9bd7fa535960bbbdec7`. An additional run
+of the same test discovery command is required before claiming **40/40**.
+
 ## New optional release notice-content gate (2026-10-27)
 
 `scripts/check-release-notices.py` is a separate **read-only, fail-closed**
