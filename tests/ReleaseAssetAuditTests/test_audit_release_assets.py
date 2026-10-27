@@ -70,12 +70,14 @@ class AssetAuditTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.dir = Path(self.temp.name)
 
-    def run_audit(self, *, zip_path=None, nupkg=None, sha=COMMIT, passes=True):
+    def run_audit(self, *, zip_path=None, nupkg=None, sha=COMMIT,
+                  passes=True, extra_args=()):
         args = [sys.executable, str(AUDITOR)]
         if zip_path:
             args += ["--zip", str(zip_path), "--expected-commit", sha]
         if nupkg:
             args += ["--nupkg", str(nupkg)]
+        args.extend(extra_args)
         p = subprocess.run(args, capture_output=True, text=True, check=False, timeout=20)
         self.assertEqual(p.returncode == 0, passes, p.stdout + "\n" + p.stderr)
         return p.stdout + p.stderr
@@ -177,6 +179,36 @@ class AssetAuditTests(unittest.TestCase):
         path = self.dir / "duplicate-id.nupkg"
         sample_nupkg(path, duplicated_id=True)
         self.run_audit(nupkg=path, passes=False)
+
+    def test_pinned_upstream_git_blob_matches_exact_bytes(self):
+        path = self.dir / "pinned.nupkg"
+        sample_nupkg(path)
+        sample = b"MZ dummy native"
+        git_object = b"blob " + str(len(sample)).encode() + b"\\0" + sample
+        expected = hashlib.sha1(git_object).hexdigest()
+        output = self.run_audit(nupkg=path, extra_args=(
+            "--expected-native-git-blob", expected,
+            "--expected-native-size", str(len(sample)),
+        ))
+        self.assertIn("Pin confirmed: NuGet DLL matches known upstream Git blob", output)
+
+    def test_pinned_upstream_git_blob_mismatch_rejected(self):
+        path = self.dir / "wrong-upstream.nupkg"
+        sample_nupkg(path)
+        self.run_audit(nupkg=path, passes=False,
+                       extra_args=("--expected-native-git-blob", "b" * 40))
+
+    def test_upstream_binary_size_mismatch_rejected(self):
+        path = self.dir / "wrong-size.nupkg"
+        sample_nupkg(path)
+        self.run_audit(nupkg=path, passes=False,
+                       extra_args=("--expected-native-size", "319128"))
+
+    def test_malformed_upstream_blob_id_rejected(self):
+        path = self.dir / "invalid-git-hash.nupkg"
+        sample_nupkg(path)
+        self.run_audit(nupkg=path, passes=False,
+                       extra_args=("--expected-native-git-blob", "not-a-git-blob"))
 
     def test_missing_native_dll_rejected(self):
         path = self.dir / "no-native.nupkg"
