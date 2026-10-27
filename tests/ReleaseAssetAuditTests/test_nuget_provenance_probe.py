@@ -31,7 +31,7 @@ class PinnedNuGetProvenanceTests(unittest.TestCase):
         sample_nupkg(path)
         self.package = path.read_bytes()
         binary = b"MZ dummy native"
-        git_input = b"blob " + str(len(binary)).encode() + b"\\0" + binary
+        git_input = b"blob " + str(len(binary)).encode() + b"\0" + binary
         self.globals["EXPECTED_NATIVE_SIZE"] = len(binary)
         self.globals["EXPECTED_NATIVE_GIT_BLOB"] = hashlib.sha1(git_input).hexdigest()
 
