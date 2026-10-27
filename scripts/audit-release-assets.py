@@ -158,7 +158,7 @@ def audit_nupkg(path: Path, expected_native_git_blob: str | None = None,
             raise ValueError("Native DLL size differs from upstream pinned source")
         # Git object IDs hash "blob <size>\\0" + content (NOT a file's raw SHA-1).
         # This is a source-byte comparison, not a signature or proof of Valve rights.
-        upstream_blob = hashlib.sha1(f"blob {native_size}\\0".encode("ascii"))
+        upstream_blob = hashlib.sha1(f"blob {native_size}\0".encode("ascii"))
         native_sha = hashlib.sha256()
         with z.open(entries[NATIVE]) as stream:
             for chunk in iter(lambda: stream.read(1024 * 1024), b""):
