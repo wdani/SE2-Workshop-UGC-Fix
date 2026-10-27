@@ -36,7 +36,7 @@ def sha256_stream(stream) -> str:
     return digest.hexdigest()
 
 
-def members(z: zipfile.ZipFile) -> dict[str, zipfile.ZipInfo]:
+def members(z: zipfile.ZipFile, *, allow_dirs: bool = False) -> dict[str, zipfile.ZipInfo]:
     result: dict[str, zipfile.ZipInfo] = {}
     total = 0
     windows_names: set[str] = set()
@@ -44,16 +44,19 @@ def members(z: zipfile.ZipFile) -> dict[str, zipfile.ZipInfo]:
         raise ValueError("Excessive ZIP member count")
     for entry in z.infolist():
         name = entry.filename
-        pp = PurePosixPath(name)
+        is_dir = entry.is_dir()
+        normalized = name[:-1] if is_dir else name
+        pp = PurePosixPath(normalized)
         parts = pp.parts
-        win_key = name.casefold()
-        if (not name or name in result or win_key in windows_names
-                or pp.is_absolute() or pp.as_posix() != name
-                or "\\" in name or ":" in name or ".." in parts or name.endswith("/")
+        win_key = normalized.casefold()
+        if (not normalized or name in result or win_key in windows_names
+                or (is_dir and (not allow_dirs or entry.file_size))
+                or pp.is_absolute() or pp.as_posix() != normalized
+                or "\\" in normalized or ":" in normalized or ".." in parts
                 or any(part.rstrip(". ") != part or
                        part.split(".", 1)[0].upper() in WINDOWS_RESERVED
                        for part in parts)
-                or any(ord(ch) < 32 or ord(ch) == 127 for ch in name)
+                or any(ord(ch) < 32 or ord(ch) == 127 for ch in normalized)
                 or (entry.external_attr >> 16) & 0o170000 == 0o120000):
             raise ValueError("Unsafe, duplicate or symlink ZIP member")
         total += entry.file_size
@@ -119,7 +122,9 @@ def audit_zip(path: Path, expected_commit: str | None) -> None:
 
 def audit_nupkg(path: Path) -> None:
     with zipfile.ZipFile(path) as z:
-        entries = members(z)
+        # NuGet archives may legitimately record empty directory entries;
+        # consumer WPF ZIPs do not and remain strict.
+        entries = members(z, allow_dirs=True)
         nuspecs = [name for name in entries if name.lower().endswith(".nuspec")]
         if len(nuspecs) != 1:
             raise ValueError("Expected exactly one NuGet .nuspec")
