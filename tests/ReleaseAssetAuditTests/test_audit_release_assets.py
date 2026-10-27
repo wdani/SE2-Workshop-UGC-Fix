@@ -184,7 +184,7 @@ class AssetAuditTests(unittest.TestCase):
         path = self.dir / "pinned.nupkg"
         sample_nupkg(path)
         sample = b"MZ dummy native"
-        git_object = b"blob " + str(len(sample)).encode() + b"\\0" + sample
+        git_object = b"blob " + str(len(sample)).encode() + b"\0" + sample
         expected = hashlib.sha1(git_object).hexdigest()
         output = self.run_audit(nupkg=path, extra_args=(
             "--expected-native-git-blob", expected,
