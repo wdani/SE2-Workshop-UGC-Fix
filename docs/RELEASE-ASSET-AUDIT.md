@@ -152,6 +152,48 @@ packaging/UI smoke check. Do not modify the owner-tested preview.10 app to
 insert branding now; avoid unauthorised Keen/Steam logos and use sanitized
 screenshot examples.
 
+## Pinned upstream Windows native DLL provenance checkpoint — 2026-10-27
+
+The exact [`2026.165.2` tagged Steamworks.NET.AnyCPU project](https://github.com/Akarinnnnn/Steamworks.NET.AnyCPU/blob/2026.165.2/Standalone3.0/Steamworks.NET.csproj)
+at line 55 includes
+`../com.rlabrecque.steamworks.net/Plugins/steam_api64.dll` in
+`runtimes/win-x64/native`. The corresponding **public tagged GitHub
+repository object** is:
+
+| Field | Provenance evidence |
+| --- | --- |
+| Repository | `Akarinnnnn/Steamworks.NET.AnyCPU` |
+| Tag | `2026.165.2` |
+| Source path | `com.rlabrecque.steamworks.net/Plugins/steam_api64.dll` |
+| File size | **319,128 bytes** |
+| Git **blob ID** (SHA-1 Git object hash) | `0ca8f77b8a315d2d43ea3087623f61c8fbe9ca3e` |
+
+This is from the GitHub API's metadata for that exact tagged source
+file. A Git blob ID is **not the same as a plain-file SHA256** and is
+not a legal attestation. The byte comparison calculates SHA-1 over
+`blob <size>\\0<file bytes>`, the standard Git object input, in addition
+to independent plain-file SHA256 for the NuGet asset. An optional strict
+pin was added to `scripts/audit-release-assets.py`:
+
+```bash
+python3 scripts/audit-release-assets.py \
+  --nupkg /path/to/steamworks.net.anycpu.2026.165.2.nupkg \
+  --expected-native-size 319128 \
+  --expected-native-git-blob 0ca8f77b8a315d2d43ea3087623f61c8fbe9ca3e
+```
+
+**Status: source asset metadata VERIFIED, actual NuGet asset bytes NOT YET
+AVAILABLE FOR THIS COMPARISON.** The new check is optional because the
+original synthetic test fixtures have intentionally fake DLL bytes. Four
+additional regression tests cover a matching Git object ID, mismatching
+upstream identity, wrong size and malformed expected IDs. **These 4 new
+tests remain unrun on the owner's Dev-Worker VM.**
+
+Even if the NuGet binary matches GitHub's pinned source byte-for-byte,
+this proves correspondence with a particular upstream repository object,
+**not** correspondence to an authorised Valve SDK distribution, the final
+Windows single-file bundle, or this project's entitlement to redistribute it.
+
 ## New optional release notice-content gate (2026-10-27)
 
 `scripts/check-release-notices.py` is a separate **read-only, fail-closed**
