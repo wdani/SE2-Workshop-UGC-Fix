@@ -145,6 +145,19 @@ class AssetAuditTests(unittest.TestCase):
         self.assertIn("PASS: pinned Steamworks.NET.AnyCPU", output)
         self.assertIn("NuGet steam_api64.dll SHA256:", output)
 
+    def test_nupkg_safe_directory_entries_are_allowed(self):
+        path = self.dir / "directories.nupkg"
+        sample_nupkg(path)
+        with zipfile.ZipFile(path, "a") as z:
+            z.writestr("runtimes/", b"")
+            z.writestr("runtimes/win-x64/", b"")
+        self.run_audit(nupkg=path)
+
+    def test_windows_zip_directory_entry_is_refused(self):
+        path = self.dir / "folder-marker.zip"
+        sample_zip(path, extra=[("runtimes/", b"")])
+        self.run_audit(zip_path=path, passes=False)
+
     def test_nested_metadata_cannot_override_canonical_fields(self):
         path = self.dir / "nested.nupkg"
         sample_nupkg(path, override_nested=True)
