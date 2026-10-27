@@ -17,6 +17,16 @@ import zipfile
 PKG_ID = "Steamworks.NET.AnyCPU"
 PKG_VERSION = "2026.165.2"
 NATIVE = "runtimes/win-x64/native/steam_api64.dll"
+EXPECTED_VERSION = "0.6.0-preview.10"
+MAX_MEMBERS = 1500
+MAX_UNCOMPRESSED = 1_000_000_000
+MAX_MANIFEST = 4_000_000
+MAX_NUSPEC = 1_000_000
+WINDOWS_RESERVED = {
+    "CON", "PRN", "AUX", "NUL",
+    *(f"COM{i}" for i in range(1, 10)),
+    *(f"LPT{i}" for i in range(1, 10)),
+}
 
 
 def sha256_stream(stream) -> str:
@@ -29,19 +39,28 @@ def sha256_stream(stream) -> str:
 def members(z: zipfile.ZipFile) -> dict[str, zipfile.ZipInfo]:
     result: dict[str, zipfile.ZipInfo] = {}
     total = 0
-    if len(z.infolist()) > 1500:
+    windows_names: set[str] = set()
+    if len(z.infolist()) > MAX_MEMBERS:
         raise ValueError("Excessive ZIP member count")
     for entry in z.infolist():
         name = entry.filename
         pp = PurePosixPath(name)
-        if (not name or name in result or pp.is_absolute()
-                or "\\" in name or ".." in pp.parts or name.endswith("/")
+        parts = pp.parts
+        win_key = name.casefold()
+        if (not name or name in result or win_key in windows_names
+                or pp.is_absolute() or pp.as_posix() != name
+                or "\\" in name or ":" in name or ".." in parts or name.endswith("/")
+                or any(part.rstrip(". ") != part or
+                       part.split(".", 1)[0].upper() in WINDOWS_RESERVED
+                       for part in parts)
+                or any(ord(ch) < 32 or ord(ch) == 127 for ch in name)
                 or (entry.external_attr >> 16) & 0o170000 == 0o120000):
             raise ValueError("Unsafe, duplicate or symlink ZIP member")
         total += entry.file_size
-        if total > 1_000_000_000:
+        if total > MAX_UNCOMPRESSED:
             raise ValueError("ZIP uncompressed size limit exceeded")
         result[name] = entry
+        windows_names.add(win_key)
     return result
 
 
@@ -50,6 +69,8 @@ def audit_zip(path: Path, expected_commit: str | None) -> None:
         entries = members(z)
         if "SHA256-MANIFEST.txt" not in entries:
             raise ValueError("Missing SHA256-MANIFEST.txt")
+        if entries["SHA256-MANIFEST.txt"].file_size > MAX_MANIFEST:
+            raise ValueError("Manifest exceeds size limit")
         lines = z.read("SHA256-MANIFEST.txt").decode("utf-8").splitlines()
         if len(lines) < 6 or not lines[0].startswith("SOURCE_COMMIT="):
             raise ValueError("Invalid manifest header")
@@ -58,14 +79,18 @@ def audit_zip(path: Path, expected_commit: str | None) -> None:
             raise ValueError("Invalid source commit")
         if expected_commit and commit != expected_commit:
             raise ValueError("Source commit mismatch")
-        if "ALGORITHM=SHA256" not in lines[:5] or "UNSIGNED_TEST_ARTIFACT=true" not in lines[:5]:
-            raise ValueError("Unexpected manifest format")
+        expected_header = [
+            f"SOURCE_COMMIT={commit}", f"VERSION={EXPECTED_VERSION}",
+            "ALGORITHM=SHA256", "UNSIGNED_TEST_ARTIFACT=true", "",
+        ]
+        if lines[:5] != expected_header:
+            raise ValueError("Unexpected manifest format or version")
         known = {}
-        for line in lines[1:]:
-            if not line or "  " not in line:
-                continue
+        for line in lines[5:]:
+            if "  " not in line:
+                raise ValueError("Malformed manifest hash entry")
             digest, name = line.split("  ", 1)
-            if not re.fullmatch("[0-9a-f]{64}", digest) or name in known:
+            if not re.fullmatch("[0-9a-f]{64}", digest) or not name or name in known:
                 raise ValueError("Invalid or duplicate digest entry")
             known[name] = digest
         if set(known) != set(entries) - {"SHA256-MANIFEST.txt"}:
@@ -98,11 +123,23 @@ def audit_nupkg(path: Path) -> None:
         nuspecs = [name for name in entries if name.lower().endswith(".nuspec")]
         if len(nuspecs) != 1:
             raise ValueError("Expected exactly one NuGet .nuspec")
+        if entries[nuspecs[0]].file_size > MAX_NUSPEC:
+            raise ValueError("NuGet metadata exceeds size limit")
         tree = ET.fromstring(z.read(nuspecs[0]))
+        if tree.tag.rsplit("}", 1)[-1] != "package":
+            raise ValueError("Invalid NuGet root element")
+        metadata = next(
+            (child for child in tree if child.tag.rsplit("}", 1)[-1] == "metadata"),
+            None,
+        )
+        if metadata is None:
+            raise ValueError("NuGet metadata missing")
         meta = {}
-        for node in tree.iter():
+        for node in metadata:
             key = node.tag.rsplit("}", 1)[-1]
             if key in ("id", "version", "license"):
+                if key in meta:
+                    raise ValueError("Duplicate NuGet metadata field")
                 meta[key] = (node.text or "").strip()
         if (meta.get("id", "").lower() != PKG_ID.lower()
                 or meta.get("version") != PKG_VERSION
