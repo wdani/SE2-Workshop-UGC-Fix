@@ -28,12 +28,29 @@ MAX_NUPKG_BYTES = 20_000_000
 ALLOWED_HOSTS = frozenset({"api.nuget.org", "globalcdn.nuget.org", "www.nuget.org"})
 
 
+def approved_https(url: str) -> bool:
+    parsed = urllib.parse.urlsplit(url)
+    return (parsed.scheme == "https" and parsed.hostname in ALLOWED_HOSTS
+            and parsed.username is None and parsed.password is None
+            and parsed.port in (None, 443))
+
+
+class PinnedNuGetRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, request, fp, code, msg, headers, newurl):
+        if not approved_https(newurl):
+            raise ValueError("Unapproved NuGet redirect destination")
+        return super().redirect_request(request, fp, code, msg, headers, newurl)
+
+
 def verified_fetch(url: str, max_bytes: int) -> bytes:
-    # urllib validates HTTPS certificates. Redirects may occur on CDN-backed
-    # endpoints; restrict the resulting final origin as well.
-    with urllib.request.urlopen(url, timeout=30) as response:
+    # HTTPS validation and a locked-down redirect handler avoid fetching
+    # from arbitrary hosts even before validating the response.
+    if not approved_https(url):
+        raise ValueError("Unapproved NuGet endpoint")
+    opener = urllib.request.build_opener(PinnedNuGetRedirect)
+    with opener.open(url, timeout=30) as response:
         final = urllib.parse.urlsplit(response.geturl())
-        if final.scheme != "https" or final.hostname not in ALLOWED_HOSTS:
+        if not approved_https(response.geturl()):
             raise ValueError("Unapproved NuGet redirect destination")
         length = response.headers.get("Content-Length")
         if length and int(length) > max_bytes:
