@@ -105,13 +105,60 @@ on the owner's dev-worker VM or the actual preview.10 ZIP**. Do not mark their
 results PASS without a real test transcript. The project still has no new
 binary release authorization; integrity checks and legal rights are distinct.
 
+## Owner's real preview.10 ZIP audit — verified 2026-10-27
+
+The owner ran the read-only inspector on the Dev-Worker VM against the
+**existing local** `preview.10` archive, passing
+`--expected-commit 67b0872dfa4a3e6627495c039097ac240b0efb14`.
+The owner supplied the actual output:
+
+```text
+PASS: WPF ZIP member coverage, source and SHA256 content checks
+  source: 67b0872dfa4a3e6627495c039097ac240b0efb14
+  members: 7
+  visible native DLL: False
+  license/notice files: NONE (release blocker)
+  ZIP SHA256: 634fd3d79d689b21379aaa348660fcc22065a75f34dc96022157923e2813973a
+NOTE: Single-file .NET executable may embed native DLLs; no bundle extraction done.
+NOT A PUBLIC RELEASE APPROVAL: provenance, licenses and publisher still unverified
+```
+
+**Evidence classification:** **PASS for internal archive/member SHA256 integrity
+and expected source commit**, based on the owner's live local execution.
+Seven members are present. The archive does not contain visible native
+Steamworks DLL files, **but .NET single-file bundling may contain those inside
+the EXE**. The ZIP lacks `LICENSE`, the prepared
+`licenses/Steamworks.NET.AnyCPU-MIT.txt` and
+`THIRD-PARTY-NOTICES.txt`: a **concrete public redistribution blocker**, not
+a failure of the tested Steam read-only program.
+
+**Next release-candidate actions (not retroactive edits to the tested ZIP):**
+Include project MIT license, exact pinned managed-wrapper copyright/MIT
+notice, and reviewed .NET/runtime/Valve third-party notices in the new
+release packaging; extend the pre-release acceptance gate to require them.
+Before offering any downloads, independently inspect embedded native DLL
+provenance/Valve distribution conditions and capture a trusted, externally
+published ZIP hash. This local audit is **not** third-party code-signing.
+
+## Planned community usability package — before public release
+
+Owner requested (2026-10-27) an **original compact program logo** and a
+**well-designed illustrated beginner guide**, not text-only documentation.
+Track through [#8: logo/Windows icon](https://github.com/wdani/SE2-Workshop-UGC-Fix/issues/8)
+and [#9: illustrated offline HTML/PDF guide](https://github.com/wdani/SE2-Workshop-UGC-Fix/issues/9).
+Plan concept work in parallel, final icons/screenshots **after feature/UI
+acceptance and before first public release**, followed by a separate
+packaging/UI smoke check. Do not modify the owner-tested preview.10 app to
+insert branding now; avoid unauthorised Keen/Steam logos and use sanitized
+screenshot examples.
+
 ## What remains to be done before a public Windows ZIP
 
 | Topic | Current result | Release decision |
 | --- | --- | --- |
 | MIT license for original code | Chosen and committed | **Resolved** |
-| Steamworks.NET managed MIT notice | Exact upstream tagged text archived | **Source notice prepared; packaging pending** |
-| ZIP build-time SHA256 manifest | Present in preview.10 packaging source; actual ZIP hash not supplied | **Evidence pending** |
+| Steamworks.NET managed MIT notice | Exact upstream tagged text archived; real ZIP contains **no LICENSE/THIRD-PARTY-NOTICES** | **Packaging blocked** |
+| ZIP build-time SHA256 manifest | Real preview.10 ZIP, 7 members, source commit verified, full ZIP SHA256 recorded | **PASS (owner local audit)** |
 | Direct NuGet native DLL inventory | Tag proves configured packaging; actual package bytes not directly audited | **Pending** |
 | Embedded native DLL inside WPF single-file EXE | Cannot infer payload from ZIP member names | **Pending independent bundle/asset inspection** |
 | Valve SDK redistribution entitlement | Conditional license text known; owner's particular entitlement unverified | **Blocked** |
