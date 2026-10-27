@@ -75,6 +75,36 @@ internal manifest is **unsigned**, even a full integrity PASS **cannot
 authenticate the original publisher**. An external trusted checksum and
 repeatable build are needed to support that claim.
 
+## Audit hardening and synthetic negative tests (2026-10-27)
+
+The inspector now rejects ambiguous Windows ZIP names (case-insensitive
+collisions, NTFS alternate-data-stream colons, Windows-reserved device names,
+path normalization inconsistencies, traversal, backslashes and symlinks).
+It verifies the **exact** preview.10 manifest version and required header,
+refuses missing/unlisted/mismatched digest entries, and bounds metadata size.
+For NuGet packages, it reads `<metadata>` **direct children only** so nested
+unrelated XML cannot replace package identity, version or license; safe empty
+NuGet directory records are permitted without weakening the strict consumer
+ZIP check.
+
+Added **18 synthetic `unittest` cases** under
+`tests/ReleaseAssetAuditTests/test_audit_release_assets.py`, including
+valid ZIP/NuGet fixtures, forged manifest digests, wrong source SHA, mismatched
+version/license, missing DLL, duplicate ZIP entries, Windows case collisions,
+path traversal, reserved device names, alternate data streams, symlinks,
+nested NuGet metadata and safe directory records.
+
+Run only the Python tests, with no Docker/Steam/Windows calls:
+
+```bash
+python3 -m unittest discover -s tests/ReleaseAssetAuditTests -v
+```
+
+**Evidence status:** these cases are implemented but **have not yet been run
+on the owner's dev-worker VM or the actual preview.10 ZIP**. Do not mark their
+results PASS without a real test transcript. The project still has no new
+binary release authorization; integrity checks and legal rights are distinct.
+
 ## What remains to be done before a public Windows ZIP
 
 | Topic | Current result | Release decision |
