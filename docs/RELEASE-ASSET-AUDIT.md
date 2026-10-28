@@ -194,6 +194,37 @@ this proves correspondence with a particular upstream repository object,
 **not** correspondence to an authorised Valve SDK distribution, the final
 Windows single-file bundle, or this project's entitlement to redistribute it.
 
+## 2026-10-28 Dev-Worker confirmation and corrected NuGet registration hive
+
+**User-provided actual VM output at commit `77c071c8e217f8fea072ab3fc15aabab05aa4886`:**
+```text
+Ran 42 tests in 1.795s
+
+OK
+PROVENANCE CHECK STOPPED: NuGet HTTP 404 for
+https://api.nuget.org/v3/registration5-semver2/steamworks.net.anycpu/index.json
+```
+
+All **42 synthetic Python tests PASSED**. The real NuGet package was
+**NOT downloaded**, so no real DLL SHA256 or byte-for-byte upstream identity
+has been confirmed. This 404 is now localized to the registration index URL,
+not to the .nupkg or catalog download.
+
+The [actual official NuGet v3 service index](https://api.nuget.org/v3/index.json)
+advertises **`RegistrationsBaseUrl/3.6.0`** at
+`https://api.nuget.org/v3/registration5-gz-semver2/` (not the
+`registration5-semver2` path used in the failed build). Microsoft's
+[NuGet registration documentation](https://learn.microsoft.com/en-us/nuget/api/registration-base-url-resource)
+confirms that registration hive uses **gzip responses** and supports
+SemVer 2.0. The script now uses that advertised base for both the
+registration index and any paginated registration pages. The existing
+size-bounded gzip response handler remains in place.
+
+Added regression tests locking the exact public index path, accepting a safe
+paginated registration page and rejecting a page from the obsolete hive.
+**The revised test suite and real probe have not yet been run on Dev-Worker.**
+Do not assert NuGet provenance PASS before receiving actual output.
+
 ## Automated official NuGet package checksum + pinned-native comparison
 
 **Updated 2026-10-28 after first owner-VM run.**
