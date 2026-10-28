@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import gzip
 import io
 import json
 from contextlib import redirect_stdout
@@ -13,6 +14,7 @@ from pathlib import Path
 import runpy
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from test_audit_release_assets import sample_nupkg
 
@@ -154,6 +156,28 @@ class PinnedNuGetProvenanceTests(unittest.TestCase):
         }
         with self.assertRaisesRegex(ValueError, "Unapproved NuGet registration page URL"):
             self.probe()
+
+    def test_gzipped_registration_response_is_decoded_with_bounds(self):
+        body = b'{"items":[]}'
+        payload = gzip.compress(body)
+        url = self.globals["REG_URL"]
+        class Response:
+            headers = {"Content-Encoding": "gzip", "Content-Length": str(len(payload))}
+            def __enter__(self):
+                return self
+            def __exit__(self, *_args):
+                return None
+            def geturl(self):
+                return url
+            def read(self, _max_bytes):
+                return payload
+        class Opener:
+            def open(self, _request, timeout=30):
+                return Response()
+        # Mock the stdlib opener: no actual HTTP or DNS traffic.
+        with patch("urllib.request.build_opener", return_value=Opener()):
+            result = self.module["verified_fetch"](url, 1024)
+        self.assertEqual(result, body)
 
     def test_disallowed_nuget_url_rejected(self):
         allowed = self.module["approved_https"]
