@@ -68,7 +68,7 @@ class PinnedNuGetProvenanceTests(unittest.TestCase):
             path = Path(td) / "wrong.nupkg"
             sample_nupkg(path, version="2026.165.3")
             self.fake_download(data=path.read_bytes())
-            with self.assertRaisesRegex(ValueError, "metadata"):
+            with self.assertRaisesRegex(ValueError, "NuGet package identity, version or license mismatch"):
                 self.probe()
 
     def test_disallowed_nuget_url_rejected(self):
