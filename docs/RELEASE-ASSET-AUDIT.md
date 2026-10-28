@@ -194,6 +194,43 @@ this proves correspondence with a particular upstream repository object,
 **not** correspondence to an authorised Valve SDK distribution, the final
 Windows single-file bundle, or this project's entitlement to redistribute it.
 
+## 2026-10-28 Final Dev-Worker NuGet source-identity qualification — PASS
+
+User-supplied terminal transcript at **`f491df5d41d95acbe64f2d07009947608d1516ef`**:
+```text
+Ran 46 tests in 1.787s
+OK
+PASS: official NuGet catalog SHA512 + byte count match downloaded package
+PASS: pinned Steamworks.NET.AnyCPU package identity/metadata
+  package: Steamworks.NET.AnyCPU 2026.165.2
+  managed wrapper license: MIT
+  NuGet steam_api64.dll SHA256: e6d9bafb9a41e42fba7b21553db49f8719027af3f0deb23ff86cfc44d60e776d
+  NuGet steam_api64.dll Git blob: 0ca8f77b8a315d2d43ea3087623f61c8fbe9ca3e
+  NuGet steam_api64.dll bytes: 319128
+  Pin confirmed: NuGet DLL matches known upstream Git blob
+  NuGet package SHA256: aeef3c4caeeaeacf60a7f2b04463c292da1ae9795abf66617c4d803df356caac
+PASS: pinned NuGet win-x64 DLL matches version-tagged upstream Git blob
+NOT APPROVED FOR REDISTRIBUTION: Valve rights, bundled EXE,
+Microsoft/runtime notices and publisher authentication remain open.
+```
+
+**Verified with real NuGet package:** the official NuGet catalog SHA512
+and byte-count match the downloaded package; package ID/version/MIT
+metadata match the pin; its x64 `steam_api64.dll` matches byte-for-byte
+the recorded version-tagged upstream **Git blob identity** and size.
+The native DLL and entire package SHA256 hashes above are now recorded
+for repeatable future checks. All **46 offline unit/security tests PASS**
+on the owner's VM; the real NuGet probe PASS followed those tests.
+
+**Precisely NOT verified:** whether the `steam_api64.dll` actually embedded
+within the existing self-contained WPF EXE has those same bytes, whether
+this upstream file is eligible Valve SDK redistributable material under
+the author's particular Steamworks terms, whether all .NET 10 Windows
+binary copyright notices will ship, or any signature/publisher identity.
+The *real* preview.10 ZIP's prior integrity PASS is separate; that ZIP
+contains **no release licenses/notices**, so it is still an unreleased
+local-test artifact. Keep public distribution blocked.
+
 ## 2026-10-28 Dev-Worker confirmation and corrected NuGet registration hive
 
 **User-provided actual VM output at commit `77c071c8e217f8fea072ab3fc15aabab05aa4886`:**
@@ -267,9 +304,9 @@ script **does use Internet access to NuGet.org**, unlike the earlier offline
 ZIP audit; it does not call Steam, launch any EXE, upload private content,
 edit the tested preview.10 ZIP or change the application.
 
-A **positive** result would demonstrate that the current NuGet binary asset
-matches that exact public tagged GitHub object *and* NuGet's matching SHA-512
-sidecar. It would **not** establish a Valve-authorised SDK binary, eligibility
+The **actual positive result above** demonstrates that the pinned NuGet
+binary asset matches the version-tagged public GitHub object and NuGet's
+catalog SHA-512 + recorded package byte size. It would **not** establish a Valve-authorised SDK binary, eligibility
 to redistribute it, the bytes inside the self-contained Windows EXE, or a
 cryptographic signature/authentication of the package publisher.
 
@@ -346,7 +383,7 @@ do not report them as passed until there is test evidence.
 | MIT license for original code | Chosen and committed | **Resolved** |
 | Steamworks.NET managed MIT notice | Exact upstream tagged text archived; real ZIP contains **no LICENSE/THIRD-PARTY-NOTICES** | **Packaging blocked** |
 | ZIP build-time SHA256 manifest | Real preview.10 ZIP, 7 members, source commit verified, full ZIP SHA256 recorded | **PASS (owner local audit)** |
-| Direct NuGet native DLL inventory | Tag proves configured packaging; actual package bytes not directly audited | **Pending** |
+| Direct NuGet native DLL inventory | Actual `2026.165.2` package downloaded; catalog SHA512 and 319,128-byte x64 DLL Git blob identity verified, both SHA256 values recorded | **PASS: upstream NuGet file identity only** |
 | Embedded native DLL inside WPF single-file EXE | Cannot infer payload from ZIP member names | **Pending independent bundle/asset inspection** |
 | Valve SDK redistribution entitlement | Conditional license text known; owner's particular entitlement unverified | **Blocked** |
 | Microsoft .NET 10 self-contained runtime notices | Distribution model documented; actual shipped runtime file list absent | **Pending** |
