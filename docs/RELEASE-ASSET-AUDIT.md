@@ -196,7 +196,7 @@ Windows single-file bundle, or this project's entitlement to redistribute it.
 
 ## Automated official NuGet package checksum + pinned-native comparison
 
-**Added 2026-10-27 (source prepared, not yet run on Dev-Worker).**
+**Updated 2026-10-28 after first owner-VM run.**
 `scripts/probe-official-nuget-provenance.py` provides a single opt-in
 CLI command from the project's `feat/release-asset-license-audit` branch:
 
@@ -204,12 +204,20 @@ CLI command from the project's `feat/release-asset-license-audit` branch:
 python3 scripts/probe-official-nuget-provenance.py
 ```
 
-It uses only the fixed NuGet.org v3 flat-container URLs for
-`Steamworks.NET.AnyCPU/2026.165.2`, requires HTTPS and an approved NuGet
-host even for redirects, downloads the small `.nupkg` and corresponding
-NuGet `.sha512` sidecar with bounded response size, checks **SHA-512 of
-the complete NuGet package** against that official index, and invokes
-the offline `audit_nupkg` against the temporary downloaded package:
+It uses the official NuGet v3 **registration index** to discover the
+version-specific **catalog entry**, reads that entry's documented
+`packageHash` (SHA512) and `packageSize`, and separately downloads only
+the exact `Steamworks.NET.AnyCPU/2026.165.2` `.nupkg` from the pinned
+flat-container URL. HTTPS/approved NuGet origins and redirects are
+required; downloads/decompression have size limits.
+**SHA-512 and byte size** of the complete package must agree with the
+official catalog before invoking the offline `audit_nupkg`.
+
+The earlier script wrongly requested a `.nupkg.sha512` **sidecar** from
+the public flat-container endpoint. That endpoint is not documented as a
+downloadable flat-container resource, and the owner's first attempt
+returned **HTTP 404**. The corrected version uses documented registration
+and catalog resources instead.
 
 - NuGet ID `Steamworks.NET.AnyCPU`, exact version `2026.165.2`,
   managed wrapper MIT metadata.
@@ -231,14 +239,23 @@ sidecar. It would **not** establish a Valve-authorised SDK binary, eligibility
 to redistribute it, the bytes inside the self-contained Windows EXE, or a
 cryptographic signature/authentication of the package publisher.
 
-The network in this assistant's execution environment cannot reach NuGet,
-so the real package **has not been downloaded or validated here**. The
-owner's Dev-Worker can perform that independent step once. The test suite
-has **4 recently added Git-blob/size tests plus 6 mocked network/checksum
-probe tests**, all new cases presently **unexecuted on Dev-Worker**.
-The earlier **30/30 tests were confirmed PASS on the VM** at commit
-`c4421678a48d163c3089e9bd7fa535960bbbdec7`. An additional run
-of the same test discovery command is required before claiming **40/40**.
+**Observed on owner VM before correction, 2026-10-28:**
+`Ran 40 tests in 1.755s / FAILED (failures=1)`. The wrong-version
+negative test did trigger the proper reject exception, but expected the
+literal word `metadata` while the real error was
+`NuGet package identity, version or license mismatch`. This was a
+**test assertion error**, not a security bypass. The live NuGet probe
+then stopped with HTTP 404 at the undocumented `.nupkg.sha512` URL.
+
+The test assertion and metadata source have both been corrected, and
+the mocked registration/catalog suite now covers **8** cases (including
+wrong catalog ID and unexpected package URL); together with the original
+18 asset tests, 12 notice tests and 4 Git blob tests, the total is
+**42 synthetic tests**, **not yet re-run by owner after these fixes**.
+The earlier **30/30 PASS** at `c442167` remains valid. Real NuGet
+package bytes, their SHA256 and the actual catalog hash are **not yet
+confirmed**, and an eventual green provenance test cannot confer legal
+rights.
 
 ## New optional release notice-content gate (2026-10-27)
 
