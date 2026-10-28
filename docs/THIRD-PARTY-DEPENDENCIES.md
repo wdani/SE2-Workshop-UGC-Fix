@@ -71,6 +71,80 @@ source, Steam, Space Engineers 2 data/assets or the Steam API DLL.
 A newer package version may exist, but upgrading is a separate dependency,
 compatibility and security review—not a documentation-only change.
 
+## Verified license compatibility and source-notice preparation
+
+Valve's official [open-source Steamworks guidance](https://partner.steamgames.com/doc/sdk/uploading/distributing_opensource)
+explicitly names **MIT** as generally compatible with its SDK, which supports
+the author's license selection for the project's source code. This is **not**
+an individual SDK usage or binary redistribution permission.
+
+The exact MIT text from the pinned
+[`Steamworks.NET.AnyCPU` tag `2026.165.2`](https://github.com/Akarinnnnn/Steamworks.NET.AnyCPU/blob/2026.165.2/LICENSE.txt)
+was copied to [`licenses/Steamworks.NET.AnyCPU-MIT.txt`](../licenses/Steamworks.NET.AnyCPU-MIT.txt).
+It names copyright © 2013–2026 Riley Labrecque. It is an upstream
+third-party notice, not the license governing Valve's native DLL.
+**A source notice existing in GitHub is not proof that the tested
+preview.10 ZIP already carries the required notices.**
+
+The [read-only release asset audit](RELEASE-ASSET-AUDIT.md) and its
+`scripts/audit-release-assets.py` helper explicitly distinguish:
+NuGet package native file, a visible ZIP native file, and a native file
+potentially embedded inside the self-contained .NET single-file executable.
+None of these observations alone establishes the right to redistribute an
+actual binary ZIP. Microsoft additionally requires
+[licensing/third-party notices for .NET binary distributions](https://github.com/dotnet/runtime/blob/main/docs/project/licensing-assets.md).
+
+## Actual pinned NuGet and upstream native binary comparison — PASS (2026-10-28)
+
+The owner executed the live `scripts/probe-official-nuget-provenance.py`
+on the Ubuntu Dev-Worker VM after all **46/46 Python audit tests PASSED**.
+Its downloaded official NuGet `Steamworks.NET.AnyCPU 2026.165.2`
+package matched the official NuGet catalog's **SHA-512 and package size**,
+and its x64 `steam_api64.dll` matched the exact known version-tagged
+upstream Git **blob hash and 319,128-byte size**.
+
+Recorded actual SHA-256 digests:
+
+- `steam_api64.dll`: `e6d9bafb9a41e42fba7b21553db49f8719027af3f0deb23ff86cfc44d60e776d`
+- NuGet `.nupkg`: `aeef3c4caeeaeacf60a7f2b04463c292da1ae9795abf66617c4d803df356caac`
+
+**This establishes upstream NuGet file identity.** It does **not**
+establish permission to redistribute Valve SDK files or verify the
+binary actually embedded inside the Windows single-file executable;
+those remain independent gates. The self-contained Windows .NET runtime
+licensing and third-party notices remain open.
+
+## Source-level native asset evidence and Windows .NET runtime terms
+
+Additional tag-specific evidence was recorded on **2026-10-27**:
+
+- The pinned `Steamworks.NET.AnyCPU/2026.165.2` GitHub source has
+  `com.rlabrecque.steamworks.net/Plugins/steam_api64.dll` at **319,128 bytes**,
+  Git blob object ID `0ca8f77b8a315d2d43ea3087623f61c8fbe9ca3e`.
+  Its tagged `Standalone3.0/Steamworks.NET.csproj` includes that path in
+  `runtimes/win-x64/native`. The public GitHub API's path/size/hash
+  constitute evidence of **that tagged upstream file**, *not* proof of
+  Steamworks SDK provenance or Valve redistribution permission.
+- The offline NuGet inspector can optionally compare a real `.nupkg` native
+  DLL against both the upstream **Git blob** and exact byte count while
+  recording its plain-file SHA256. See
+  [RELEASE-ASSET-AUDIT.md](RELEASE-ASSET-AUDIT.md). Actual package bytes
+  **have now been compared successfully**, as recorded above. The actual
+  bundled WPF EXE still has not been independently inspected.
+- Microsoft distinguishes Windows **.NET product distributions**, which
+  use the **.NET Library License**, from .NET library source and ordinary
+  packages (which often use MIT). The official
+  [license information](https://github.com/dotnet/core/blob/main/license-information.md)
+  and [asset licensing model](https://github.com/dotnet/runtime/blob/main/docs/project/licensing-assets.md)
+  call for the applicable product license and third-party notices with
+  binary distributions. Do **not** label the complete self-contained
+  Windows .NET runtime as MIT merely because the project source and managed
+  Steamworks.NET wrapper are MIT-licensed.
+- Microsoft's [single-file deployment documentation](https://learn.microsoft.com/en-us/dotnet/core/deploying/single-file/overview)
+  confirms `IncludeNativeLibrariesForSelfExtract=true` enables embedding
+  native assets that are extracted on startup. A visible ZIP member list
+  cannot certify the absence of Steam's native DLL.
+
 ## Project ownership and use of game data
 
 - The owner selected the permissive **MIT License** for the project's

@@ -99,6 +99,16 @@ See [third-party dependency evidence](THIRD-PARTY-DEPENDENCIES.md) and
 Microsoft's [.NET support policy](https://dotnet.microsoft.com/en-us/platform/support/policy).
 No item above permits a public release by itself.
 
+### 2026-10-27 acceptance updates — .NET 10 and real ZIP integrity
+
+**Read-only runtime acceptance:** the separate [Draft PR #6](https://github.com/wdani/SE2-Workshop-UGC-Fix/pull/6) has owner-confirmed .NET 10 compilation and compiled safety tests, successful Windows offline WPF smoke and a **real Steam owner-verified healthy-item read**; write/restore qualification is still separate.
+
+**Real artifact verification:** the owner ran [Draft PR #7](https://github.com/wdani/SE2-Workshop-UGC-Fix/pull/7)'s read-only asset auditor against the existing preview.10 ZIP. Result: **PASS**, 7 members hashed, source commit `67b0872dfa4a3e6627495c039097ac240b0efb14`, full ZIP SHA256 `634fd3d79d689b21379aaa348660fcc22065a75f34dc96022157923e2813973a`. This is integrity evidence, **not proof of publisher authenticity**. The ZIP contains **no license/notice files**, and no separately visible native DLL; the WPF single-file EXE **may bundle `steam_api64.dll`**.
+
+**Pre-release packaging requirement:** a *new, separately reviewed* release candidate must include the project [MIT license](../LICENSE), pinned upstream Steamworks.NET MIT notice and correctly audited runtime/native third-party notices. The release check must fail if required notices are absent. Do not relabel the owner-tested preview.10 ZIP as a public release. Native Valve SDK redistribution rights and original DLL provenance are **not yet confirmed**.
+
+**Community delivery readiness:** owner requested an original small [program icon (#8)](https://github.com/wdani/SE2-Workshop-UGC-Fix/issues/8) and a genuinely [illustrated offline guide (#9)](https://github.com/wdani/SE2-Workshop-UGC-Fix/issues/9). Develop ideas in parallel, but finalize screenshots, icon integration and visual instructions **after functional/UI feature freeze and before first public download**, with a separate release-candidate smoke. No external proprietary game/Steam artwork without rights.
+
 ### Source and build integrity
 
 - The dev-worker build script checks the repository origin and exact
