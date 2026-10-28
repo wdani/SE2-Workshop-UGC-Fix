@@ -11,6 +11,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import zlib
 from pathlib import Path
 import re
 import runpy
@@ -52,17 +53,30 @@ def verified_fetch(url: str, max_bytes: int) -> bytes:
         raise ValueError("Unapproved NuGet endpoint")
     opener = urllib.request.build_opener(PinnedNuGetRedirect)
     try:
-        with opener.open(url, timeout=30) as response:
+        request = urllib.request.Request(url, headers={"Accept-Encoding": "gzip, identity"})
+        with opener.open(request, timeout=30) as response:
             if not approved_https(response.geturl()):
                 raise ValueError("Unapproved NuGet redirect destination")
             length = response.headers.get("Content-Length")
             if length and int(length) > max_bytes:
                 raise ValueError("Remote NuGet response exceeds size limit")
+            encoding = response.headers.get("Content-Encoding", "identity").lower()
+            if encoding not in ("identity", "gzip"):
+                raise ValueError("Unsupported NuGet content encoding")
             data = response.read(max_bytes + 1)
     except urllib.error.HTTPError as exc:
         raise ValueError(f"NuGet HTTP {exc.code} for {url}") from exc
     if not data or len(data) > max_bytes:
         raise ValueError("Remote NuGet response empty or exceeds size limit")
+    if encoding == "gzip":
+        inflater = zlib.decompressobj(wbits=31)
+        result = inflater.decompress(data, max_bytes + 1)
+        if len(result) > max_bytes or inflater.unconsumed_tail:
+            raise ValueError("Decompressed NuGet data exceeds size limit")
+        result += inflater.flush(max_bytes + 1 - len(result))
+        if len(result) > max_bytes or not inflater.eof:
+            raise ValueError("NuGet gzip response truncated or oversized")
+        data = result
     return data
 
 
