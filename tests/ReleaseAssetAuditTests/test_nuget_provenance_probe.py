@@ -109,6 +109,52 @@ class PinnedNuGetProvenanceTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Unexpected NuGet package URL"):
             self.probe()
 
+    def test_registration_endpoint_matches_official_nuget_service_index(self):
+        # Official https://api.nuget.org/v3/index.json resource
+        # RegistrationsBaseUrl/3.6.0 as verified 2026-10-28.
+        self.assertEqual(
+            self.globals["REG_URL"],
+            "https://api.nuget.org/v3/registration5-gz-semver2/"
+            "steamworks.net.anycpu/index.json",
+        )
+
+    def test_safe_paginated_registration_page_is_supported(self):
+        self.fake_download()
+        real_read_json = self.globals["read_json"]
+        subpage = ("https://api.nuget.org/v3/registration5-gz-semver2/"
+                   "steamworks.net.anycpu/2026.165.0-2026.165.3.json")
+        def paginated(url):
+            if url == self.globals["REG_URL"]:
+                return {"items": [{"@id": subpage}]}
+            if url == subpage:
+                return {
+                    "items": [{
+                        "catalogEntry": {
+                            "@id": self.catalog_url,
+                            "id": "Steamworks.NET.AnyCPU",
+                            "version": "2026.165.2",
+                        },
+                        "packageContent": self.globals["PKG_URL"],
+                    }]
+                }
+            return real_read_json(url)
+        self.globals["read_json"] = paginated
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            self.probe()
+        self.assertIn("pinned NuGet win-x64 DLL matches", buf.getvalue())
+
+    def test_wrong_registration_page_base_is_rejected(self):
+        self.fake_download()
+        self.globals["read_json"] = lambda url: {
+            "items": [{"@id": (
+                "https://api.nuget.org/v3/registration5-semver2/"
+                "steamworks.net.anycpu/page.json"
+            )}]
+        }
+        with self.assertRaisesRegex(ValueError, "Unapproved NuGet registration page URL"):
+            self.probe()
+
     def test_disallowed_nuget_url_rejected(self):
         allowed = self.module["approved_https"]
         self.assertTrue(allowed("https://api.nuget.org/v3-flatcontainer/file"))
