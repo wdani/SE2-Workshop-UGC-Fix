@@ -94,6 +94,26 @@ None of these observations alone establishes the right to redistribute an
 actual binary ZIP. Microsoft additionally requires
 [licensing/third-party notices for .NET binary distributions](https://github.com/dotnet/runtime/blob/main/docs/project/licensing-assets.md).
 
+## Actual pinned NuGet and upstream native binary comparison — PASS (2026-10-28)
+
+The owner executed the live `scripts/probe-official-nuget-provenance.py`
+on the Ubuntu Dev-Worker VM after all **46/46 Python audit tests PASSED**.
+Its downloaded official NuGet `Steamworks.NET.AnyCPU 2026.165.2`
+package matched the official NuGet catalog's **SHA-512 and package size**,
+and its x64 `steam_api64.dll` matched the exact known version-tagged
+upstream Git **blob hash and 319,128-byte size**.
+
+Recorded actual SHA-256 digests:
+
+- `steam_api64.dll`: `e6d9bafb9a41e42fba7b21553db49f8719027af3f0deb23ff86cfc44d60e776d`
+- NuGet `.nupkg`: `aeef3c4caeeaeacf60a7f2b04463c292da1ae9795abf66617c4d803df356caac`
+
+**This establishes upstream NuGet file identity.** It does **not**
+establish permission to redistribute Valve SDK files or verify the
+binary actually embedded inside the Windows single-file executable;
+those remain independent gates. The self-contained Windows .NET runtime
+licensing and third-party notices remain open.
+
 ## Source-level native asset evidence and Windows .NET runtime terms
 
 Additional tag-specific evidence was recorded on **2026-10-27**:
@@ -109,7 +129,8 @@ Additional tag-specific evidence was recorded on **2026-10-27**:
   DLL against both the upstream **Git blob** and exact byte count while
   recording its plain-file SHA256. See
   [RELEASE-ASSET-AUDIT.md](RELEASE-ASSET-AUDIT.md). Actual package bytes
-  have **not** yet been compared.
+  **have now been compared successfully**, as recorded above. The actual
+  bundled WPF EXE still has not been independently inspected.
 - Microsoft distinguishes Windows **.NET product distributions**, which
   use the **.NET Library License**, from .NET library source and ordinary
   packages (which often use MIT). The official
