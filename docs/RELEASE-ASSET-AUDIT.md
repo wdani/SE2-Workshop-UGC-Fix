@@ -194,6 +194,71 @@ this proves correspondence with a particular upstream repository object,
 **not** correspondence to an authorised Valve SDK distribution, the final
 Windows single-file bundle, or this project's entitlement to redistribute it.
 
+## Next independent gate: actual preview.10 .NET single-file bundle inventory
+
+**Implemented after the successful 46/46 and real NuGet audit; NOT YET
+EXECUTED on the owner's actual Windows ZIP.**
+
+`scripts/inspect-preview10-singlefile.py` is a deliberately narrow,
+**read-only** .NET bundle format v6.0 inspector, based on Microsoft's
+[HostModel Bundler.cs](https://github.com/dotnet/runtime/blob/main/src/installer/managed/Microsoft.NET.HostModel/Bundle/Bundler.cs),
+[Manifest.cs](https://github.com/dotnet/runtime/blob/main/src/installer/managed/Microsoft.NET.HostModel/Bundle/Manifest.cs),
+[FileEntry.cs](https://github.com/dotnet/runtime/blob/main/src/installer/managed/Microsoft.NET.HostModel/Bundle/FileEntry.cs)
+and [TargetInfo.cs](https://github.com/dotnet/runtime/blob/main/src/installer/managed/Microsoft.NET.HostModel/Bundle/TargetInfo.cs).
+TargetInfo uses bundle **major version 6** for .NET 6 and higher.
+
+It **does not run the EXE or any .NET code**. Its only input is the
+existing owner-tested local preview.10 ZIP on the Ubuntu Dev-Worker VM:
+
+```bash
+python3 scripts/inspect-preview10-singlefile.py
+```
+
+Checks performed:
+1. Check **full existing ZIP SHA256** against the owner-established
+   `634fd3d79d689b21379aaa348660fcc22065a75f34dc96022157923e2813973a`;
+   then re-check every ZIP member digest and expected source commit
+   `67b0872dfa4a3e6627495c039097ac240b0efb14`. **Fail closed**
+   if this is not the original validated ZIP.
+2. Copy the EXE member into an automatically removed **private temporary
+   directory** for read-only memory mapping. This does not change the ZIP,
+   original EXE, Steam, metadata, or installed software.
+3. Require the official 32-byte bundle signature and header offset;
+   parse only supported **bundle v6.0**, with strict limits on file count,
+   manifest lengths, names and uncompressed bytes. Enumerate file types,
+   lengths and positions; do not extract or execute embedded DLLs.
+4. Find **exactly one** `steam_api64.dll` with native file type 2.
+   Compute SHA256 from its embedded bytes, supporting both plain file
+   content and bounded raw DEFLATE (`.NET DeflateStream`). Require exactly
+   **319,128 bytes** and SHA256
+   `e6d9bafb9a41e42fba7b21553db49f8719027af3f0deb23ff86cfc44d60e776d`.
+   Reject malformed, unknown, oversized or mismatched payloads.
+5. Report the bundle entry count, number of native binaries and whether
+   `coreclr.dll` appears in the manifest, as an initial **runtime
+   inventory**, not proof that all runtime licensing notices are present.
+
+**This new step is only a technical byte comparison.** Even if the
+embedded native file matches NuGet, it is not a Valve SDK permission,
+security signature, or confirmation of the completeness of Microsoft
+.NET binary/runtime notices. The existing preview.10 ZIP still contains
+**no standalone license/third-party notice files**.
+
+Added **16 additional synthetic security/regression cases** under
+`tests/ReleaseAssetAuditTests/test_singlefile_bundle_audit.py`
+(plain/compressed native data, exact SHA, archive immutability,
+wrong ZIP identity, wrong native hash/size, absent/duplicated native
+DLL, incorrect file type, old/new unsupported bundle versions,
+missing signature, invalid header offset, truncated manifest,
+corrupt compressed data and repeated bundle marker).
+These cases are **committed but not yet executed on Dev-Worker**.
+The previous owner-provided **46/46 PASS** still stands at `f491df5`.
+Expected Python test count after this change: **62**.
+
+If the *actual* .NET bundle inspection fails, record the specific reason;
+do **not** rewrite/repack the original owner-tested ZIP or assume the
+Valve binary is absent. No WPF C#/XAML, Steam backend, packaging script,
+or published binary has been changed.
+
 ## 2026-10-28 Final Dev-Worker NuGet source-identity qualification — PASS
 
 User-supplied terminal transcript at **`f491df5d41d95acbe64f2d07009947608d1516ef`**:
