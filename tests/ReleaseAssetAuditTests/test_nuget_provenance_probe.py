@@ -1,13 +1,13 @@
-"""Synthetic tests for official pinned NuGet retrieval and source comparison.
+"""Synthetic official NuGet registration/catalog SHA512 + upstream Git tests.
 
-No network calls: each test replaces the downloader with known fixture bytes.
-Original Windows/Steam package untouched.
+All downloads are mocked (no real HTTP), all archives temporary.
 """
 from __future__ import annotations
 
 import base64
 import hashlib
 import io
+import json
 from contextlib import redirect_stdout
 from pathlib import Path
 import runpy
@@ -34,30 +34,58 @@ class PinnedNuGetProvenanceTests(unittest.TestCase):
         git_input = b"blob " + str(len(binary)).encode() + b"\0" + binary
         self.globals["EXPECTED_NATIVE_SIZE"] = len(binary)
         self.globals["EXPECTED_NATIVE_GIT_BLOB"] = hashlib.sha1(git_input).hexdigest()
+        self.catalog_url = "https://api.nuget.org/v3/catalog0/data/2026.10.10.01.02.03/steamworks.net.anycpu.2026.165.2.json"
 
-    def fake_download(self, *, data=None, hash_sidecar=None):
+    def fake_download(self, *, data=None, hash_digest=None, package_version=None,
+                      pkg_link=None, catalog_id=None):
         package = self.package if data is None else data
-        good_digest = base64.b64encode(hashlib.sha512(package).digest())
-        sidecar = good_digest if hash_sidecar is None else hash_sidecar
-        self.globals["verified_fetch"] = (
-            lambda url, limit: sidecar if url.endswith(".sha512") else package
-        )
+        good_digest = base64.b64encode(hashlib.sha512(package).digest()).decode()
+        digest = good_digest if hash_digest is None else hash_digest
+        url = self.globals["PKG_URL"]
+        index = {
+            "items": [{
+                "items": [{
+                    "catalogEntry": {
+                        "@id": self.catalog_url,
+                        "id": "Steamworks.NET.AnyCPU",
+                        "version": "2026.165.2",
+                    },
+                    "packageContent": url if pkg_link is None else pkg_link,
+                }]
+            }]
+        }
+        catalog = {
+            "id": "Steamworks.NET.AnyCPU" if catalog_id is None else catalog_id,
+            "version": "2026.165.2" if package_version is None else package_version,
+            "packageHashAlgorithm": "SHA512",
+            "packageHash": digest,
+            "packageSize": len(package),
+        }
+        def get(url, max_bytes):
+            if url == self.globals["REG_URL"]:
+                return json.dumps(index).encode()
+            if url == self.catalog_url:
+                return json.dumps(catalog).encode()
+            if url == self.globals["PKG_URL"]:
+                return package
+            raise ValueError("Unexpected mocked NuGet download URL")
+        self.globals["verified_fetch"] = get
 
     def test_valid_pinned_nuget_sha512_and_git_blob(self):
         self.fake_download()
         buf = io.StringIO()
         with redirect_stdout(buf):
             self.probe()
-        self.assertIn("PASS: NuGet official v3 sidecar SHA512", buf.getvalue())
+        self.assertIn("official NuGet catalog SHA512", buf.getvalue())
         self.assertIn("Pin confirmed: NuGet DLL matches known upstream Git blob", buf.getvalue())
         self.assertIn("NOT APPROVED FOR REDISTRIBUTION", buf.getvalue())
 
-    def test_wrong_sha512_sidecar_blocks(self):
-        self.fake_download(hash_sidecar=base64.b64encode(b"0" * 64))
-        with self.assertRaisesRegex(ValueError, "SHA512 sidecar"):
+    def test_wrong_catalog_sha512_blocks(self):
+        self.fake_download(hash_digest=base64.b64encode(b"0" * 64).decode())
+        with self.assertRaisesRegex(ValueError, "catalog SHA512"):
             self.probe()
 
-    def test_correct_nuget_hash_but_wrong_upstream_git_blob_blocks(self):
+    def test_correct_catalog_hash_but_wrong_upstream_git_blob_blocks(self):
         self.fake_download()
         self.globals["EXPECTED_NATIVE_GIT_BLOB"] = "f" * 40
         with self.assertRaisesRegex(ValueError, "Git blob"):
@@ -70,6 +98,16 @@ class PinnedNuGetProvenanceTests(unittest.TestCase):
             self.fake_download(data=path.read_bytes())
             with self.assertRaisesRegex(ValueError, "NuGet package identity, version or license mismatch"):
                 self.probe()
+
+    def test_catalog_identity_mismatch_blocked(self):
+        self.fake_download(catalog_id="Unrelated.Package")
+        with self.assertRaisesRegex(ValueError, "catalog identity"):
+            self.probe()
+
+    def test_registration_unexpected_package_url_blocked(self):
+        self.fake_download(pkg_link="https://example.net/evil.nupkg")
+        with self.assertRaisesRegex(ValueError, "Unexpected NuGet package URL"):
+            self.probe()
 
     def test_disallowed_nuget_url_rejected(self):
         allowed = self.module["approved_https"]
