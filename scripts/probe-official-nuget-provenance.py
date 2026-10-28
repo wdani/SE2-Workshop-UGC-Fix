@@ -27,7 +27,7 @@ PKG_ID = "steamworks.net.anycpu"
 PKG_VERSION = "2026.165.2"
 PKG_NAME = f"{PKG_ID}.{PKG_VERSION}.nupkg"
 PKG_URL = f"https://api.nuget.org/v3-flatcontainer/{PKG_ID}/{PKG_VERSION}/{PKG_NAME}"
-REG_URL = f"https://api.nuget.org/v3/registration5-semver2/{PKG_ID}/index.json"
+REG_URL = f"https://api.nuget.org/v3/registration5-gz-semver2/{PKG_ID}/index.json"
 EXPECTED_NATIVE_SIZE = 319128
 EXPECTED_NATIVE_GIT_BLOB = "0ca8f77b8a315d2d43ea3087623f61c8fbe9ca3e"
 MAX_NUPKG_BYTES = 20_000_000
@@ -115,7 +115,7 @@ def fetch_catalog_sha512() -> tuple[bytes, int]:
             if (not approved_https(url if isinstance(url, str) else "")
                     or parsed.hostname != "api.nuget.org"
                     or not parsed.path.startswith(
-                        f"/v3/registration5-semver2/{PKG_ID}/")
+                        f"/v3/registration5-gz-semver2/{PKG_ID}/")
                     or not parsed.path.endswith(".json")):
                 raise ValueError("Unapproved NuGet registration page URL")
             leaves = read_json(url).get("items")
