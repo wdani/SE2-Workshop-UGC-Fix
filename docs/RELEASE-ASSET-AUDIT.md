@@ -215,8 +215,11 @@ official catalog before invoking the offline `audit_nupkg`.
 
 The earlier script wrongly requested a `.nupkg.sha512` **sidecar** from
 the public flat-container endpoint. That endpoint is not documented as a
-downloadable flat-container resource, and the owner's first attempt
-returned **HTTP 404**. The corrected version uses documented registration
+downloadable flat-container resource. The owner's first attempt returned
+**HTTP 404**, but the old error output did not identify **which of the two
+requests** returned 404; the sidecar is therefore the primary suspected
+cause, not an individually confirmed failing URL. The corrected script
+prints the exact URL on a future HTTP failure. The corrected version uses documented registration
 and catalog resources instead.
 
 - NuGet ID `Steamworks.NET.AnyCPU`, exact version `2026.165.2`,
