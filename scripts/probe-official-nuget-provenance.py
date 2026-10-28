@@ -9,6 +9,7 @@ No legal redistribution approval, code signing or EXE bundle validation.
 from __future__ import annotations
 
 import base64
+import binascii
 import hashlib
 import json
 import zlib
@@ -167,6 +168,6 @@ def run_probe() -> None:
 if __name__ == "__main__":
     try:
         run_probe()
-    except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError,
-            urllib.error.URLError, EOFError) as exc:
+    except (OSError, ValueError, TypeError, KeyError, AttributeError,
+            binascii.Error, zlib.error, urllib.error.URLError, EOFError) as exc:
         raise SystemExit("PROVENANCE CHECK STOPPED: " + str(exc))
